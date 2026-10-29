@@ -24,6 +24,6 @@ internal fun registerInventory() {
                 else -> "equipment slot $slot"
             }
         }))
-        client.gui.setScreen(InventoryScreen(player))
+        client.setScreen(InventoryScreen(player))
     }
 }

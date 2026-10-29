@@ -8,6 +8,6 @@ internal fun registerUuid() {
     registerCommand("uuid", "uuid", "Copy an online player or loaded entity UUID", unavailable = ::worldUnavailable) {
         worldUnavailable()?.let { error(it) }
         val client = Minecraft.getInstance()
-        client.gui.setScreen(UuidScreen(client.gui.screen()))
+        client.setScreen(UuidScreen(client.screen))
     }
 }

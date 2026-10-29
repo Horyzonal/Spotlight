@@ -75,7 +75,7 @@ internal object BlockHitActions {
                     val draft = SavedLocation(UUID.randomUUID().toString(), "${hit.name} (${hit.x}, ${hit.y}, ${hit.z})",
                         hit.x.toDouble(), hit.y.toDouble(), hit.z.toDouble(), hit.dimension, hit.scope)
                     
-                    client.schedule { client.gui.setScreen(LocationEditScreen(client.gui.screen(), draft)) }
+                    client.schedule { client.setScreen(LocationEditScreen(client.screen, draft)) }
                 }
                 else -> error("Unknown block hit action")
             }

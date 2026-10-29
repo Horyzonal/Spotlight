@@ -49,7 +49,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     private val rows = mutableListOf<Row>()
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun init() {
         stops = timelineNormalize(stops)
@@ -84,7 +84,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         paste.setTooltip(Tooltip.create(catalogText("Replace input with clipboard text; clipboard read only on explicit Paste or native paste shortcut")))
         rows += Row("", listOf(cycle, paste), 20)
         timeline = GradientTimeline(font, stops, selectedStop, ::updateStops) { index ->
-            minecraft.gui.setScreen(ColorPickerScreen(this, stops[index].color) { picked ->
+            minecraft.setScreen(ColorPickerScreen(this, stops[index].color) { picked ->
                 updateStops(stops.mapIndexed { i, stop -> if (i == index) stop.copy(color = picked) else stop }, index)
             })
         }

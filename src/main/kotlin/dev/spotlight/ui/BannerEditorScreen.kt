@@ -16,10 +16,11 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.model.geom.ModelLayers
 import net.minecraft.client.model.`object`.banner.BannerFlagModel
 import net.minecraft.core.Holder
+import net.minecraft.core.component.DataComponents
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.block.entity.BannerPattern
 import net.minecraft.world.level.block.entity.BannerPatternLayers
@@ -34,8 +35,11 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     private var query = ""
     private var notice = "Click a pattern to add · first layer bottom, last top. Draft stays here until closed."
     private val baseIcons by lazy { DyeColor.entries.associateWith { CreativeBanner.createBanner(it, emptyList()) } }
-    
-    private val dyeIcons by lazy { DyeColor.entries.associateWith { ItemStack(Items.DYE.pick(it)) } }
+
+    private val dyeIcons by lazy {
+        BuiltInRegistries.ITEM.filter { it.components().has(DataComponents.DYE) }
+            .associate { it.components().get(DataComponents.DYE)!! to ItemStack(it) }
+    }
     private val rows = mutableListOf<List<AbstractWidget>>()
     private lateinit var patternGrid: BannerPatternGrid
     private lateinit var layerList: BannerLayersWidget
@@ -45,7 +49,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     private lateinit var form: Form
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun init() {
         if (!loaded) {
@@ -163,7 +167,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         icons: Map<DyeColor, ItemStack>,
         private val current: () -> DyeColor,
         private val choose: (DyeColor) -> Unit,
-    ) : AbstractContainerWidget(0, 0, 100, 56, catalogText("$label; arrows choose color")) {
+    ) : AbstractContainerWidget(0, 0, 100, 56, catalogText("$label; arrows choose color"), defaultSettings(6)) {
         private val swatches = DyeColor.entries.map { color -> Swatch(color, icons.getValue(color)) }
         private fun columns() = if (width >= 16 * 20) 16 else 8
         private fun layoutSwatches() {

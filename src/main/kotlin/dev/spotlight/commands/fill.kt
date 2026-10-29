@@ -9,7 +9,7 @@ internal fun registerFill() {
         unavailable = { regionCommandUnavailable("fill") }) {
         regionCommandUnavailable("fill")?.let { error(it) }
         val client = Minecraft.getInstance()
-        client.gui.setScreen(FillScreen(client.gui.screen()))
+        client.setScreen(FillScreen(client.screen))
     }
 }
 

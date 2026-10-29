@@ -38,7 +38,7 @@ internal class PromptScreen(
     private fun save() {
         try {
             submit(input.value)
-            if (minecraft.gui.screen() === this) minecraft.gui.setScreen(parent)
+            if (minecraft.screen === this) minecraft.setScreen(parent)
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             input.message = catalogText("${title.string}. $error")
@@ -52,7 +52,7 @@ internal class PromptScreen(
         return super.keyPressed(event)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

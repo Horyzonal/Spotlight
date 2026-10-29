@@ -122,7 +122,7 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         val third = panelWidth / 3
         addRenderableWidget(catalogButton(if (manual) "Play (Enter)" else "Stop selected ($primaryModifierLabel+S)", left, bottom - 22, third) { act() })
         addRenderableWidget(catalogButton("Stop all…", left + third, bottom - 22, third) {
-            minecraft.gui.setScreen(ConfirmSpotlightScreen(this, "Stop all sounds?", "Stops every vanilla/modded sound and queued playback. Confirm with Delete; this removes no files.") {
+            minecraft.setScreen(ConfirmSpotlightScreen(this, "Stop all sounds?", "Stops every vanilla/modded sound and queued playback. Confirm with Delete; this removes no files.") {
                 runCatching { SoundControls.stopAll() }.fold({ status = "All sounds stopped" }, { status = "Stop failed: ${it.message}" })
                 refresh()
             })
@@ -172,7 +172,7 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         }
         return super.keyPressed(event)
     }
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
         super.extractRenderState(graphics, mouseX, mouseY, delta)

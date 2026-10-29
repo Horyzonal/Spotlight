@@ -24,7 +24,7 @@ class SnakeScreen(private val parent: Screen?) : Screen(catalogText("Snake")) {
     }
 
     override fun tick() { super.tick(); game.tick() }
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun keyPressed(event: KeyEvent): Boolean {
         when (event.key()) {

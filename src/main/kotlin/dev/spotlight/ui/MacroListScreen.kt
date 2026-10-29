@@ -60,26 +60,26 @@ class MacroListScreen(private val parent: SpotlightScreen) : Screen(catalogText(
         results.drop(offset).take(count).forEachIndexed { index, macro ->
             rows += addRenderableWidget(macroButton("${if (offset + index == selected) "• " else ""}${macro.name} · Click Edit / Enter Run · ${macro.template}", left, 72 + index * rowStep, panelWidth) {
                 selected = offset + index
-                minecraft.gui.setScreen(MacroEditorScreen(this, macro))
+                minecraft.setScreen(MacroEditorScreen(this, macro))
             })
         }
         search.message = catalogText("Search macros. ${results.getOrNull(selected)?.name ?: "No matches"}. ${selected + 1} of ${results.size}. ${error.orEmpty()}")
     }
 
     private fun chosen(): Macro? = results.getOrNull(rows.indexOfFirst { it.isFocused }.takeIf { it >= 0 }?.plus(offset) ?: selected)
-    private fun run() { chosen()?.let { minecraft.gui.setScreen(MacroRunScreen(this, it)) } }
+    private fun run() { chosen()?.let { minecraft.setScreen(MacroRunScreen(this, it)) } }
     private fun edit(new: Boolean) {
         val macro = if (new) null else chosen() ?: return
-        minecraft.gui.setScreen(MacroEditorScreen(this, macro))
+        minecraft.setScreen(MacroEditorScreen(this, macro))
     }
     private fun delete() {
         val macro = chosen() ?: return
-        minecraft.gui.setScreen(ConfirmSpotlightScreen(this, "Delete ${macro.name}?", "This removes the saved macro. This cannot be undone.") {
+        minecraft.setScreen(ConfirmSpotlightScreen(this, "Delete ${macro.name}?", "This removes the saved macro. This cannot be undone.") {
             try { MacroRuntime.store().remove(macro.id); macros = MacroRuntime.store().list(); refresh() }
             catch (failure: Exception) { error = failure.message ?: failure.javaClass.simpleName }
         })
     }
-    private fun tab(index: Int) { if (index != 2) { minecraft.gui.setScreen(parent); parent.openMacroTab(index) } }
+    private fun tab(index: Int) { if (index != 2) { minecraft.setScreen(parent); parent.openMacroTab(index) } }
     override fun keyPressed(event: KeyEvent): Boolean {
         if (event.isEscape) { onClose(); return true }
         if (primaryModifier(event) && !event.hasAltDown()) {
@@ -107,7 +107,7 @@ class MacroListScreen(private val parent: SpotlightScreen) : Screen(catalogText(
         if (vertical != 0.0) { selected += if (vertical > 0) -1 else 1; refresh(); return true }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         super.extractRenderState(graphics, mouseX, mouseY, delta)

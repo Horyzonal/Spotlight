@@ -46,7 +46,7 @@ internal class LocationEditScreen(private val parent: Screen?, private val locat
                 z = coordinate(3), dimension = values[4])
             LocationActions.save(draft)
             notifySpotlight("Saved location ${draft.name}")
-            minecraft.gui.setScreen(parent)
+            minecraft.setScreen(parent)
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             fields.first().message = catalogText("Name. $error")
@@ -61,7 +61,7 @@ internal class LocationEditScreen(private val parent: Screen?, private val locat
         return super.keyPressed(event)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

@@ -27,7 +27,7 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
 
     private fun choose(source: () -> SavedLocation) {
         try {
-            minecraft.gui.setScreen(LocationEditScreen(parent, source()))
+            minecraft.setScreen(LocationEditScreen(parent, source()))
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             focused?.let { if (it is net.minecraft.client.gui.components.AbstractWidget) it.message = catalogText("Add location. $error") }
@@ -58,7 +58,7 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
         return super.keyPressed(event)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

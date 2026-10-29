@@ -146,8 +146,8 @@ object Spotlight {
 
     fun preferences(): Preferences = savedPreferences
 
-    fun open(parent: Screen? = Minecraft.getInstance().gui.screen()) {
-        Minecraft.getInstance().gui.setScreen(SpotlightScreen(parent))
+    fun open(parent: Screen? = Minecraft.getInstance().screen) {
+        Minecraft.getInstance().setScreen(SpotlightScreen(parent))
     }
 
     fun serverCommands(): List<SpotlightCommand> {
@@ -167,7 +167,7 @@ object Spotlight {
 
 internal fun notifySpotlight(message: String) {
     val client = Minecraft.getInstance()
-    SystemToast.add(client.gui.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+    SystemToast.add(client.toastManager, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
         Component.literal("Spotlight"), Component.literal(message))
 }
 

@@ -29,7 +29,7 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
     private var summary: FittingMultiLineTextWidget? = null
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun init() {
         summary = null

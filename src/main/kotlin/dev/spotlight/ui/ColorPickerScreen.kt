@@ -31,7 +31,7 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
     private var fieldY = 0
 
     override fun isPauseScreen() = false
-    override fun onClose() { dragging = null; minecraft.gui.setScreen(parent) }
+    override fun onClose() { dragging = null; minecraft.setScreen(parent) }
 
     override fun init() {
         dragging = null

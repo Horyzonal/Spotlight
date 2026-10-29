@@ -86,7 +86,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
     private fun reload() {
         reloadList()
         CraftingRecipes.refresh {
-            if (minecraft.gui.screen() === this) reloadList()
+            if (minecraft.screen === this) reloadList()
         }
         sourceStatus = CraftingRecipes.status()
     }
@@ -158,7 +158,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
         return super.keyPressed(event)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     private fun text(graphics: GuiGraphicsExtractor, value: String, x: Int, y: Int, available: Int, color: Long = 0xFFF2F5FC) {
         graphics.themeText(font, catalogClip(font, value, available), x, y, SpotlightTheme.color(color))

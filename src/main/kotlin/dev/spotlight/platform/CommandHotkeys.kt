@@ -37,13 +37,13 @@ internal object CommandHotkeys {
         }.keys
         val newlyPressed = pressed - held
         held = pressed
-        if (!client.isWindowActive || client.gui.screen() != null || client.gui.overlay() != null || client.player == null) return
+        if (!client.isWindowActive || client.screen != null || client.overlay != null || client.player == null) return
         for (id in newlyPressed) {
             try {
                 val command = Spotlight.allCommands().firstOrNull { it.id == id } ?: continue
                 Spotlight.dispatch(command)
             } catch (failure: Exception) { notifySpotlight(failure.message ?: "Command failed") }
-            if (client.gui.screen() != null) break
+            if (client.screen != null) break
         }
     }
 }

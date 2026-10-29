@@ -36,7 +36,7 @@ class SpotlightClient : ClientModInitializer {
             RegionSelection.tick()
             CommandHotkeys.tick()
             while (key.consumeClick()) {
-                if (client.gui.screen() !is SpotlightScreen) Spotlight.open()
+                if (client.screen !is SpotlightScreen) Spotlight.open()
             }
         }
     }

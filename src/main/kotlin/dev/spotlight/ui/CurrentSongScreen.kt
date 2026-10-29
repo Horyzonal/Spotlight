@@ -64,7 +64,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         addRenderableWidget(catalogButton("Back", left + panelWidth - 16 - half, controlsY + 5, half) { onClose() })
             .setTooltip(Tooltip.create(catalogText("Back (Esc); playback continues")))
         addRenderableWidget(catalogButton("Open library", center - minOf(144, panelWidth - 32) / 2, controlsY + 38,
-            minOf(144, panelWidth - 32).coerceAtLeast(1)) { minecraft.gui.setScreen(MusicPlayerScreen(this)) })
+            minOf(144, panelWidth - 32).coerceAtLeast(1)) { minecraft.setScreen(MusicPlayerScreen(this)) })
             .setTooltip(Tooltip.create(catalogText("Open music library to choose a song")))
         refresh()
         setInitialFocus(play)
@@ -143,7 +143,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         return super.keyPressed(event)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val foreground = SpotlightTheme.color(0xFFF2F5FC)

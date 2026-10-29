@@ -65,6 +65,6 @@ object MacroRuntime {
 
     fun run(macro: Macro) {
         val client = Minecraft.getInstance()
-        client.gui.setScreen(MacroRunScreen(client.gui.screen(), macro))
+        client.setScreen(MacroRunScreen(client.screen, macro))
     }
 }

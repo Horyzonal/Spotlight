@@ -75,11 +75,11 @@ internal class CommandMenuScreen(
 
     private fun choose(index: Int) {
         val action = actions.getOrNull(index)?.takeIf { it.enabled } ?: return
-        minecraft.gui.setScreen(parent)
+        minecraft.setScreen(parent)
         action.run()
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     private fun moveSelection(direction: Int) {
         val enabled = entries.map { it.actionIndex }.filter { actions.getOrNull(it)?.enabled == true }

@@ -8,6 +8,6 @@ internal fun registerBanner() {
     registerCommand("banner_editor", "Banner editor", "Create banners and shields from base dye and registry patterns; Creative give", unavailable = ::worldUnavailable) {
         worldUnavailable()?.let { error(it) }
         val client = Minecraft.getInstance()
-        client.gui.setScreen(BannerEditorScreen(client.gui.screen()))
+        client.setScreen(BannerEditorScreen(client.screen))
     }
 }

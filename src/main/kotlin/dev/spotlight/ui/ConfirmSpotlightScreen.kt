@@ -40,7 +40,7 @@ internal class ConfirmSpotlightScreen(
     private fun finish(confirmed: Boolean) {
         if (completed) return
         completed = true
-        minecraft.gui.setScreen(parent)
+        minecraft.setScreen(parent)
         if (confirmed) confirm()
     }
 

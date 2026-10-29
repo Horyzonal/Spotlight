@@ -44,7 +44,7 @@ internal object FindTargets {
     fun initialize() {
         LevelRenderEvents.BEFORE_GIZMOS.register { context ->
             if (Minecraft.getInstance().level === highlightLevel && System.nanoTime() < expires) {
-                context.levelRenderer().collectPerFrameRenderThreadGizmos().use {
+                context.levelRenderer().collectPerFrameGizmos().use {
                     highlights.forEach { Gizmos.cuboid(it, GizmoStyle.stroke(0xff55ffff.toInt(), 2f)).setAlwaysOnTop() }
                 }
             }

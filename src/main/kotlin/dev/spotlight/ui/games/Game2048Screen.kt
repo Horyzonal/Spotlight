@@ -26,7 +26,7 @@ class Game2048Screen(private val parent: Screen?) : Screen(catalogText("2048")) 
         addRenderableWidget(spotlightButton(backLabel, left + buttonWidth + 8, height - 28, buttonWidth) { onClose() })
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
 
     override fun keyPressed(event: KeyEvent): Boolean {
         if (event.isEscape) { onClose(); return true }

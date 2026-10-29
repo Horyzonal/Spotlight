@@ -27,10 +27,10 @@ public abstract class RegionSelectionMouseMixin {
         if (action == InputConstants.RELEASE) {
             if (left) spotlight$leftDown = false;
             else spotlight$rightDown = false;
-            if (held && client.gui.screen() == null) ci.cancel();
+            if (held && client.screen == null) ci.cancel();
             return;
         }
-        if (action != InputConstants.PRESS || client.gui.screen() != null || client.gui.overlay() != null ||
+        if (action != InputConstants.PRESS || client.screen != null || client.getOverlay() != null ||
                 !client.isWindowActive() || !client.mouseHandler.isMouseGrabbed() || !RegionSelection.INSTANCE.active()) return;
         if (left) spotlight$leftDown = true;
         else spotlight$rightDown = true;

@@ -297,7 +297,7 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
             sent = true
         } catch (failure: Exception) { fail(failure) }
         finally { execution.finish(sent) }
-        if (sent) minecraft.gui.setScreen(null)
+        if (sent) minecraft.setScreen(null)
     }
     private fun fail(failure: Exception) {
         error = failure.message ?: failure.javaClass.simpleName
@@ -327,7 +327,7 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
         }
         return super.keyPressed(event)
     }
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun getNarrationMessage(): Component = catalogText("${macro.name}. ${arguments.getOrNull(index)?.let { "${it.name}: ${it.type}. " }.orEmpty()}${command ?: liveText}. ${error ?: variableError.orEmpty()}")
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))

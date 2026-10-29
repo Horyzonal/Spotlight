@@ -8,6 +8,6 @@ internal fun registerClone() {
         unavailable = { regionCommandUnavailable("clone") }) {
         regionCommandUnavailable("clone")?.let { error(it) }
         val client = Minecraft.getInstance()
-        client.gui.setScreen(CloneScreen(client.gui.screen()))
+        client.setScreen(CloneScreen(client.screen))
     }
 }

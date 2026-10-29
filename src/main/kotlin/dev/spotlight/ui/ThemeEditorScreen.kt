@@ -65,7 +65,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
     private var recreateFields = true
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun init() {
         panelWidth = minOf(680, (width - 24).coerceAtLeast(1))
         left = (width - panelWidth) / 2
@@ -133,7 +133,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
     private fun pick(token: ThemeColor) {
         val key = "colors.${token.key}"
         val original = values.getValue(key).trim().drop(1).toLongOrNull(16)?.toInt() ?: return
-        minecraft.gui.setScreen(ColorPickerScreen(this, original and 0xFFFFFF) { rgb ->
+        minecraft.setScreen(ColorPickerScreen(this, original and 0xFFFFFF) { rgb ->
             fields.getValue(key).value = argb(themePickerArgb(original, rgb))
         })
     }

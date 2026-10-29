@@ -7,6 +7,6 @@ import java.net.URI
 internal fun registerCatalog() {
     registerCommand("extensions_catalog", "Browse Fabric extensions", "Open Modrinth Fabric mod catalog in browser; no downloads or code loading") {
         val client = Minecraft.getInstance()
-        ConfirmLinkScreen.confirmLinkNow(client.gui.screen(), URI.create("https://modrinth.com/mods?g=categories:fabric"))
+        ConfirmLinkScreen.confirmLinkNow(client.screen, URI.create("https://modrinth.com/mods?g=categories:fabric"))
     }
 }

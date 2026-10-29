@@ -6,6 +6,6 @@ import net.minecraft.client.Minecraft
 internal fun registerMusic() {
     registerCommand("music_player", "Music player", "Search loaded Minecraft music and loop selected track client-side") {
         val client = Minecraft.getInstance()
-        client.gui.setScreen(MusicPlayerScreen(client.gui.screen()))
+        client.setScreen(MusicPlayerScreen(client.screen))
     }
 }

@@ -7,6 +7,6 @@ import net.minecraft.client.Minecraft
 internal fun registerRecipes() {
     registerCommand("recipes", "Crafting recipes", "Search crafting outputs and recipe IDs; preview ingredients and inventory availability", unavailable = ::worldUnavailable) {
         val client = Minecraft.getInstance()
-        client.gui.setScreen(RecipeScreen(client.gui.screen()))
+        client.setScreen(RecipeScreen(client.screen))
     }
 }

@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft
 internal fun registerLocation() {
     registerCommand("add_location", "Add location", "Save current, looked-at, or entered coordinates", unavailable = ::worldUnavailable) {
         val client = Minecraft.getInstance()
-        client.gui.setScreen(AddLocationScreen(client.gui.screen()))
+        client.setScreen(AddLocationScreen(client.screen))
     }
     registerCommand("spawn_location", "Spawn location", "Teleport to saved world spawn; not a bed or respawn anchor", unavailable = {
         worldUnavailable() ?: if (LocationActions.spawn() == null) LocationActions.spawnStatus() else null

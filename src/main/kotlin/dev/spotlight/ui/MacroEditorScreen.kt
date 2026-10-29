@@ -118,7 +118,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
 
     private fun delete() {
         val saved = macro ?: return
-        minecraft.gui.setScreen(ConfirmSpotlightScreen(this, "Delete ${saved.name}?", "This removes the saved macro. This cannot be undone.") {
+        minecraft.setScreen(ConfirmSpotlightScreen(this, "Delete ${saved.name}?", "This removes the saved macro. This cannot be undone.") {
             try { MacroRuntime.store().remove(saved.id); onClose() }
             catch (failure: Exception) { error = failure.message ?: failure.javaClass.simpleName }
         })
@@ -305,7 +305,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
             else "Suggested placeholder: $option. Tab opens suggestions. Escape dismisses preview."))
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Macro name"), left, 17, SpotlightTheme.color(0xFFF2F5FC))

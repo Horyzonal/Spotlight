@@ -84,7 +84,7 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         }
         return super.keyPressed(event)
     }
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
         super.extractRenderState(graphics, mouseX, mouseY, delta)

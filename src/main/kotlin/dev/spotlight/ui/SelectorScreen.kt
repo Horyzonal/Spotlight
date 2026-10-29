@@ -134,7 +134,7 @@ class SelectorScreen(
             val reader = StringReader(text)
             EntitySelectorParser(reader, true).parse()
             require(!reader.canRead()) { "Unexpected selector suffix" }
-            minecraft.gui.setScreen(parent)
+            minecraft.setScreen(parent)
             accept(text)
         } catch (failure: Exception) { showError(failure.message ?: "Invalid selector") }
     }
@@ -146,7 +146,7 @@ class SelectorScreen(
         triggerImmediateNarration(true)
     }
 
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft.setScreen(parent) }
     override fun keyPressed(event: KeyEvent): Boolean {
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event)) { apply(); return true }

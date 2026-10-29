@@ -42,7 +42,7 @@ object RegionSelection {
         KeyMapping.releaseAll()
         player.stopUsingItem()
         client.gameMode?.stopDestroyBlock()
-        client.gui.setScreen(null)
+        client.setScreen(null)
         session = Session(state, level, player, connection)
         enterDown = enterPressed()
         ticks = 0
@@ -62,7 +62,7 @@ object RegionSelection {
             session = null
             return false
         }
-        if (client.gui.screen() != null) {
+        if (client.screen != null) {
             cancel()
             return false
         }
@@ -88,7 +88,7 @@ object RegionSelection {
     fun tick() {
         if (!active()) return
         val client = Minecraft.getInstance()
-        if (!client.isWindowActive || client.gui.overlay() != null) {
+        if (!client.isWindowActive || client.overlay != null) {
             cancel()
             return
         }
@@ -147,7 +147,7 @@ object RegionSelection {
                         b.x.toDouble() + 1, b.y.toDouble() + 1, b.z.toDouble() + 1).inflate(0.01),
                         GizmoStyle.stroke(color, width)).setAlwaysOnTop()
                 }
-                context.levelRenderer().collectPerFrameRenderThreadGizmos().use {
+                context.levelRenderer().collectPerFrameGizmos().use {
                     state.first?.let { draw(it to it, 3f) }
                     state.second?.let { draw(it to it, 3f) }
                     state.bounds()?.let { draw(it, 2f) }

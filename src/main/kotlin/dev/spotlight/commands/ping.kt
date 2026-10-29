@@ -8,6 +8,6 @@ internal fun registerPing() {
     registerCommand("ping", "Ping", "Show ping for all online players", unavailable = ::worldUnavailable) {
         worldUnavailable()?.let { error(it) }
         val client = Minecraft.getInstance()
-        client.gui.setScreen(PingScreen(client.gui.screen()))
+        client.setScreen(PingScreen(client.screen))
     }
 }
