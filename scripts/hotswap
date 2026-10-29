@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+scripts/dev classes
+if [ -z "${JAVA_HOME:-}" ]; then
+    for home in .jdk/Contents/Home .jdk "$HOME/Library/Application Support/PrismLauncher/java/java-runtime-epsilon/jre.bundle/Contents/Home"; do
+        if [ -x "$home/bin/javac" ]; then
+            JAVA_HOME="$home"
+            break
+        fi
+    done
+fi
+: "${JAVA_HOME:?Set JAVA_HOME to JDK 25 or newer.}"
+exec "$JAVA_HOME/bin/java" --add-modules jdk.jdi scripts/HotSwap.java build/classes/kotlin/main build/classes/java/main

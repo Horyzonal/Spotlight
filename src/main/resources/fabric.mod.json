@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "spotlight",
+  "version": "${version}",
+  "name": "Spotlight",
+  "description": "Keyboard-first Minecraft command palette with fuzzy search, macros, item and recipe tools, locations, region selection, text and banner editors, music controls, themes and mini-games.",
+  "authors": ["Horyzonal"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.spotlight.platform.SpotlightClient"] },
+  "mixins": ["spotlight.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": ">=0.165.0+26.3",
+    "fabric-language-kotlin": ">=1.14.2+kotlin.2.4.21"
+  }
+}

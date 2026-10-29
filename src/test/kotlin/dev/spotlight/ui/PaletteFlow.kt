@@ -1,0 +1,43 @@
+package dev.spotlight.ui
+
+fun main() {
+    SelectorModelCheck.main(emptyArray())
+    val itemFirst = PaletteFlow()
+    itemFirst.state.query = "stone"
+    itemFirst.chooseItem("minecraft:stone", false)
+    check(itemFirst.state.stage == PaletteStage.ACTIONS)
+    itemFirst.chooseCommand("test:give", true, true)
+    check(itemFirst.state.stage == PaletteStage.QUANTITY && itemFirst.state.query == "1")
+    check(itemFirst.back() && itemFirst.state.itemId == "minecraft:stone")
+    check(itemFirst.back() && itemFirst.state.query == "stone")
+    check(!itemFirst.back())
+    val flow = PaletteFlow()
+    flow.chooseCommand("test:give", true, true)
+    flow.chooseItem("minecraft:stone", true)
+    check(flow.state.stage == PaletteStage.QUANTITY)
+    check(flow.back() && flow.state.stage == PaletteStage.ITEMS && flow.state.itemId == null)
+    for (stage in listOf(PaletteStage.NUMBER, PaletteStage.ENTITY, PaletteStage.BLOCK, PaletteStage.LOCATION)) {
+        flow.start(stage, "test:input")
+        check(flow.state.stage == stage && flow.state.itemId == null)
+        check(flow.back())
+    }
+    check(parseGive("/give") == GiveArguments("@s", "", "1"))
+    check(parseGive("/give stone 32") == GiveArguments("@s", "stone", "32"))
+    check(parseGive("/give\tstone 32") == GiveArguments("@s", "stone", "32"))
+    check(parseGive("/giveaway stone") == null)
+    check(parseGive("/give Alex stone 8") == GiveArguments("Alex", "stone", "8"))
+    check(parseGive("/give stone 2147483648") == GiveArguments("@s", "stone", "2147483648"))
+    check(parseGive("/give stone -1") == GiveArguments("@s", "stone", "-1"))
+    check(parseGive("/give @p stone 0") == GiveArguments("@p", "stone", "0"))
+    check(parseGive("/give @p stone[minecraft:custom_name='\"Named stone\"'] 2") == null)
+    check(parseGive("/give stone[minecraft:custom_data={foo:1}] 2") == null)
+    val give = requireNotNull(parseGive("/give @a[name=\"A B\"] minecraft:stone 64"))
+    flow.startGive(give)
+    flow.chooseItem("minecraft:stone", true)
+    check(flow.state.give?.target == "@a[name=\"A B\"]" && flow.state.query == "64")
+    check(flow.back() && flow.state.give == give)
+    check(parseGive("/give @a[name=\"unfinished]") == null)
+    check(parseGive("/give Alex stone 2 extra") == null)
+    check(parseGive("/time set day") == null)
+    println("Palette routing and /give parser checks passed")
+}

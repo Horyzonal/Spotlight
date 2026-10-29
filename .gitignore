@@ -1,0 +1,30 @@
+.gradle/
+.gradle-user-home/
+.kotlin/
+.jdk/
+build/
+run/
+logs/
+bin/
+
+# macOS metadata
+.DS_Store
+._*
+
+hs_err_pid*
+replay_pid*
+*.hprof
+crash-reports/
+
+# Local secrets; keep shareable templates
+.env
+.env.*
+!.env.example
+
+# Local IDE state
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/

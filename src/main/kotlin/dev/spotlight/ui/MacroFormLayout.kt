@@ -1,0 +1,88 @@
+package dev.spotlight.ui
+
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.components.AbstractContainerWidget
+import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.components.events.GuiEventListener
+import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.client.input.MouseButtonEvent
+
+internal const val macroFieldStep = 38
+
+internal fun macroFormScroll(index: Int, scroll: Int, viewport: Int, count: Int): Int {
+    val top = index * macroFieldStep
+    val bottom = top + macroFieldStep
+    return (if (top < scroll) top else if (bottom > scroll + viewport) bottom - viewport else scroll)
+        .coerceIn(0, (count * macroFieldStep - viewport).coerceAtLeast(0))
+}
+
+
+internal class MacroFormLayout(
+    x: Int, y: Int, width: Int, height: Int,
+    private val font: Font,
+    val fields: List<EditBox>,
+    private val labels: List<String>,
+    private val onFocus: (Int) -> Unit,
+) : AbstractContainerWidget(x, y, width, height, catalogText("Macro arguments"), defaultSettings(6)) {
+    override fun children(): List<EditBox> = fields
+    override fun contentHeight() = fields.size * macroFieldStep
+    override fun scrollRate() = macroFieldStep.toDouble()
+
+    private fun positionFields() {
+        fields.forEachIndexed { index, field ->
+            field.x = x
+            field.y = y + index * macroFieldStep + 14 - scrollAmount().toInt()
+            field.width = (width - 10).coerceAtLeast(1)
+        }
+    }
+
+    override fun setScrollAmount(amount: Double) {
+        super.setScrollAmount(amount)
+        positionFields()
+    }
+
+    override fun setFocused(listener: GuiEventListener?) {
+        super.setFocused(listener)
+        val index = fields.indexOf(listener)
+        if (index >= 0) {
+            setScrollAmount(macroFormScroll(index, scrollAmount().toInt(), height, fields.size).toDouble())
+            onFocus(index)
+        }
+    }
+
+    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+        if (!isMouseOver(event.x(), event.y())) return false
+        positionFields()
+        return super.mouseClicked(event, doubleClick)
+    }
+
+    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
+        
+        if (!isMouseOver(event.x(), event.y()) && !isOverScrollbar(event.x(), event.y())) return false
+        return super.mouseDragged(event, dx, dy)
+    }
+
+    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        positionFields()
+        graphics.enableScissor(x, y, right, bottom)
+        val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
+        fields.forEachIndexed { index, field ->
+            if (field.bottom > y && field.y - 14 < bottom) {
+                graphics.themeText(font, catalogClip(font, labels[index], field.width), field.x, field.y - 12,
+                    SpotlightTheme.color(0xFFF2F5FC))
+                field.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
+            }
+        }
+        graphics.disableScissor()
+        extractScrollbar(graphics, mouseX, mouseY)
+    }
+
+    override fun updateWidgetNarration(output: NarrationElementOutput) {
+        (focused as? EditBox)?.updateNarration(output)
+    }
+}
+
+internal fun macroFormSelect(drafts: MutableMap<String, String>, active: String, value: String) {
+    drafts[active] = value
+}

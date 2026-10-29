@@ -1,0 +1,406 @@
+plugins {
+    id 'net.fabricmc.fabric-loom'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    implementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
+}
+
+kotlin {
+    jvmToolchain(java_version.toInteger())
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = java_version.toInteger()
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand version: project.version
+    }
+}
+
+loom {
+    runs {
+        client {
+            if (project.hasProperty('clientDebug')) {
+                vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
+            }
+        }
+    }
+}
+
+tasks.register('coreCheck', JavaExec) {
+    group = 'verification'
+    description = 'Run Kotlin core assertions without a test framework.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.CoreCheckKt'
+    enableAssertions = true
+}
+
+tasks.register('platformCheck', JavaExec) {
+    group = 'verification'
+    description = 'Run Minecraft platform assertions.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.PlatformCheck'
+    enableAssertions = true
+}
+
+tasks.register('paletteCheck', JavaExec) {
+    group = 'verification'
+    description = 'Run palette flow assertions.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.PaletteFlowKt'
+    enableAssertions = true
+}
+
+tasks.register('requestedCoreCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check calculator, bindings, locations and sync reconciliation.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.RequestedCoreCheck'
+    enableAssertions = true
+}
+
+tasks.register('commandSuggestionCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check typed command spans, registry metadata and Brigadier contexts.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.CommandSuggestionTreeCheck'
+    enableAssertions = true
+}
+
+tasks.register('paletteShortcutCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check keyboard routes and preserve text-editing shortcuts.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.PaletteShortcutsCheck'
+    enableAssertions = true
+}
+
+tasks.register('macroCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check macro parsing, typed expansion, persistence and injection boundaries.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.MacroCheck'
+    enableAssertions = true
+}
+
+tasks.register('macroRuntimeCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check macro variable discovery and stable command descriptors.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.MacroRuntimeCheck'
+    enableAssertions = true
+}
+
+tasks.register('themeCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check original theme defaults, config validation and safe loading.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.ThemeCheck'
+    enableAssertions = true
+}
+
+tasks.register('menuLayoutCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check grouped shortcut headings and keyboard scrolling.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.MenuLayoutCheck'
+    enableAssertions = true
+}
+
+tasks.register('macroCompletionCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check placeholder autocomplete filtering and safe replacement spans.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.MacroCompletionCheck'
+    enableAssertions = true
+}
+
+tasks.register('addLocationCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check strict clipboard coordinate parsing.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.AddLocationCheck'
+    enableAssertions = true
+}
+
+tasks.register('nearestBlockSearchCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check nearest-first block search against brute-force results.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.NearestBlockSearchCheck'
+    enableAssertions = true
+}
+
+tasks.register('blockHitActionsCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check bounded hit actions and stale-world rejection.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.BlockHitActionsCheck'
+    enableAssertions = true
+}
+
+tasks.register('paletteClickCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check result click routing and centered menus.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.PaletteClickCheck'
+    enableAssertions = true
+}
+
+tasks.register('extendedOptionsCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check full integer-bound FOV/gamma parsing and atomic persistence.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.ExtendedOptionsCheck'
+    enableAssertions = true
+}
+
+tasks.register('runnerGamesCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check Snake and Dino gameplay.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.games.RunnerGamesCheck'
+    enableAssertions = true
+}
+
+tasks.register('puzzleGamesCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check 2048 and Tetris gameplay.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.games.PuzzleGamesCheck'
+    enableAssertions = true
+}
+
+tasks.register('serverPluginsCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check inferred server namespaces and isolated completion timeout.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.ServerPluginsCheck'
+    enableAssertions = true
+}
+
+tasks.register('styledTextCheck', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.StyledTextCheck'
+    enableAssertions = true
+}
+
+tasks.register('creativeBannerCheck', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.CreativeBannerCheck'
+    enableAssertions = true
+}
+
+tasks.register('textEditorCheck', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.TextEditorScreenCheck'
+    enableAssertions = true
+}
+
+tasks.register('colorPickerCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check RGB/HSV conversion and gradient color-stop editing.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.ColorPickerCheck'
+    enableAssertions = true
+}
+
+tasks.register('regionSelectionCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check fill/clone selection state, command bounds and volume.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.RegionSelectionCheck'
+    enableAssertions = true
+}
+
+tasks.register('ingredientAllocationCheck', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.IngredientAllocationCheck'
+    enableAssertions = true
+}
+
+tasks.register('recipeIndexCheck', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.RecipeIndexCheck'
+    enableAssertions = true
+}
+
+tasks.register('soundControlsCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check sound instance identity, stale tokens and playback input bounds.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.SoundControlsCheck'
+    enableAssertions = true
+}
+
+tasks.register('musicTracksCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check named recordings, exact-file playback and sound-pack resolution.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.platform.MusicTracksCheck'
+    enableAssertions = true
+}
+
+tasks.register('nowPlayingWidgetCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check compact footer widget layout bounds.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.NowPlayingWidgetCheck'
+    enableAssertions = true
+}
+
+tasks.register('themeLibraryCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check Catppuccin presets, custom themes and safe theme application.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.core.ThemeLibraryCheck'
+    enableAssertions = true
+}
+
+tasks.register('bannerPatternGridCheck', JavaExec) {
+    group = 'verification'
+    description = 'Check loom-style banner grid layout and navigation.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.spotlight.ui.BannerPatternGridCheck'
+    enableAssertions = true
+}
+
+tasks.withType(Jar).configureEach {
+    reproducibleFileOrder = true
+    preserveFileTimestamps = false
+}
+
+tasks.named('jar') {
+    from('LICENSE', 'THIRD_PARTY_NOTICES')
+}
+
+tasks.register('releaseCheck') {
+    group = 'verification'
+    description = 'Validate release contents, licenses, entrypoints and Mixin classes.'
+    dependsOn tasks.named('jar'), tasks.named('testClasses')
+    inputs.file(tasks.named('jar').flatMap { it.archiveFile })
+    doLast {
+        def archive = tasks.named('jar').get().archiveFile.get().asFile
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            def names = zip.entries().collect { it.name }.toSet()
+            def requireEntry = { String name ->
+                if (!names.contains(name)) throw new GradleException("Release JAR missing ${name}")
+            }
+            ['fabric.mod.json', 'LICENSE', 'THIRD_PARTY_NOTICES'].each(requireEntry)
+            ['LICENSE', 'THIRD_PARTY_NOTICES'].each { name ->
+                zip.getInputStream(zip.getEntry(name)).withCloseable {
+                    if (it.bytes != project.file(name).bytes) throw new GradleException("Release JAR changed ${name}")
+                }
+            }
+            def resources = sourceSets.main.output.resourcesDir
+            if (resources.exists()) resources.eachFileRecurse { file ->
+                if (file.isFile()) requireEntry(resources.toPath().relativize(file.toPath()).toString().replace('\\', '/'))
+            }
+            def unwanted = names.findAll { name ->
+                name.startsWith('net/minecraft/') ||
+                    name ==~ /dev\/.*Check(?:Kt)?(?:\$.*)?\.class/ ||
+                    name ==~ /.*(?:^|\/)(?:\.DS_Store|\._[^\/]*|\.gradle|\.kotlin|\.idea|\.vscode|build|bin|run|logs|crash-reports|\.env(?:\..*)?)(?:\/.*)?/ ||
+                    name.endsWith('.hprof') || name.endsWith('.sh') || name.endsWith('.bat') ||
+                    name.endsWith('.launch') || name.endsWith('.vmoptions')
+            }
+            sourceSets.test.output.classesDirs.each { dir ->
+                if (dir.exists()) dir.eachFileRecurse { file ->
+                    def name = dir.toPath().relativize(file.toPath()).toString().replace('\\', '/')
+                    if (file.isFile() && name.endsWith('.class') && names.contains(name)) unwanted.add(name)
+                }
+            }
+            names.findAll { !it.endsWith('/') && !it.endsWith('.jar') }.each { name ->
+                zip.getInputStream(zip.getEntry(name)).withCloseable {
+                    def content = new String(it.bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (content.contains('-agentlib:jdwp') || content.contains('-Xrunjdwp')) unwanted.add(name)
+                }
+            }
+            if (unwanted) throw new GradleException("Release JAR contains development or Minecraft files: ${unwanted}")
+            def readJson = { String name ->
+                requireEntry(name)
+                zip.getInputStream(zip.getEntry(name)).withCloseable {
+                    new groovy.json.JsonSlurper().parse(it, 'UTF-8')
+                }
+            }
+            def requireClass = { String name -> requireEntry(name.replace('.', '/') + '.class') }
+            def metadata = readJson('fabric.mod.json')
+            if (metadata.version != project.version.toString() || metadata.license != 'MIT' || metadata.authors != ['Horyzonal']) {
+                throw new GradleException('Release metadata version, license or authors mismatch')
+            }
+            metadata.entrypoints.values().flatten().each { entry ->
+                requireClass((entry instanceof Map ? entry.value : entry).split('::', 2)[0])
+            }
+            metadata.mixins.each { entry ->
+                def config = readJson(entry instanceof Map ? entry.config : entry)
+                ['mixins', 'client', 'server'].each { side ->
+                    (config[side] ?: []).each { requireClass(config.package ? "${config.package}.${it}" : it) }
+                }
+                if (config.plugin) requireClass(config.plugin)
+                if (config.refmap) requireEntry(config.refmap)
+            }
+            if (metadata.accessWidener) requireEntry(metadata.accessWidener)
+            (metadata.jars ?: []).each { requireEntry(it.file) }
+            logger.lifecycle("Release JAR validated: ${archive.name} (${names.size()} entries)")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'releaseCheck'
+}
+
+tasks.named('test') {
+    failOnNoDiscoveredTests = false
+}
+
+tasks.named('check') {
+    dependsOn 'coreCheck', 'platformCheck', 'paletteCheck', 'requestedCoreCheck', 'commandSuggestionCheck', 'paletteShortcutCheck', 'macroCheck', 'macroRuntimeCheck', 'themeCheck', 'menuLayoutCheck', 'macroCompletionCheck', 'addLocationCheck', 'nearestBlockSearchCheck', 'blockHitActionsCheck', 'paletteClickCheck', 'extendedOptionsCheck', 'runnerGamesCheck', 'puzzleGamesCheck', 'styledTextCheck', 'creativeBannerCheck', 'textEditorCheck', 'colorPickerCheck', 'regionSelectionCheck', 'ingredientAllocationCheck', 'recipeIndexCheck', 'soundControlsCheck', 'musicTracksCheck', 'nowPlayingWidgetCheck', 'themeLibraryCheck', 'bannerPatternGridCheck', 'serverPluginsCheck'
+}
