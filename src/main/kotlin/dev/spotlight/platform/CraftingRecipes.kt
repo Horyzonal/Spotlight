@@ -38,7 +38,7 @@ private fun stackKey(stack: ItemStack, output: Boolean = false) =
 private data class RecipeKey(val shapeless: Boolean, val width: Int, val height: Int, val slots: Any, val result: StackKey)
 private fun recipeKey(view: CraftingRecipeView): RecipeKey {
     val slots = view.ingredients.map { alternatives -> alternatives.filterNot { it.isEmpty }.map { stackKey(it) }.toSet() }
-    
+
     return RecipeKey(view.shapeless, if (view.shapeless) 0 else view.width, if (view.shapeless) 0 else view.height,
         if (view.shapeless) slots.groupingBy { it }.eachCount() else slots, stackKey(view.result, true))
 }
@@ -62,7 +62,7 @@ internal fun mergeRecipeViews(views: List<CraftingRecipeView>): List<CraftingRec
 object CraftingRecipes {
     private var skipped: Map<String, String> = emptyMap()
 
-    
+
     fun unsupported(): Map<String, String> {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
@@ -101,7 +101,7 @@ object CraftingRecipes {
         return "$localStatus; $serverStatus"
     }
 
-    
+
     fun refresh(onUpdate: () -> Unit) {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
@@ -176,7 +176,7 @@ object CraftingRecipes {
                 return@execute
             }
 
-            val context = ContextMap.builder().set(SlotDisplayContext.REGISTRIES, loaded.registries).build()
+            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.registries).create(SlotDisplayContext.CONTEXT)
             val views = mutableListOf<CraftingRecipeView>()
             val unsupported = loaded.unsupported.toMutableMap()
             var offset = 0
@@ -199,7 +199,7 @@ object CraftingRecipes {
                     }
                 } while (System.nanoTime() < deadline)
                 if (offset < loaded.entries.size) {
-                    
+
                     CompletableFuture.delayedExecutor(1, java.util.concurrent.TimeUnit.MILLISECONDS)
                         .execute { client.schedule(Runnable { chunk() }) }
                 } else {
@@ -213,14 +213,14 @@ object CraftingRecipes {
         } }
     }
 
-    
+
     fun list(): List<CraftingRecipeView> {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
         syncSession(client)
         skipped = emptyMap()
         skipped = localSnapshot.unsupported + snapshot.unsupported
-        
+
         val views = (localSnapshot.views + snapshot.views).map { view -> view.copy(
             ingredients = view.ingredients.map { alternatives -> alternatives.map { it.copy() } }, result = view.result.copy(),
         ) }
@@ -276,7 +276,7 @@ object CraftingRecipes {
         }
     }
 
-    
+
     fun inventoryStatus(recipe: CraftingRecipeView): List<Boolean> {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe inventory checks require the client thread" }

@@ -33,7 +33,9 @@ internal object GradientTimelineCheck {
             evenlySpaced(added)
             if (count > 1) evenlySpaced(timelineNormalize(list.drop(1)))
         }
-        check(InputConstants.MOUSE_BUTTON_LEFT == 1 && InputConstants.MOUSE_BUTTON_RIGHT == 3)
-        println("Color list insertion reorder, snapping, normalization, limits and SDL button checks passed")
+        check(!opensPaletteMenu(InputConstants.MOUSE_BUTTON_LEFT, insidePalette = true, insideInput = false))
+        check(opensPaletteMenu(InputConstants.MOUSE_BUTTON_RIGHT, insidePalette = true, insideInput = false))
+        check(!opensPaletteMenu(InputConstants.MOUSE_BUTTON_MIDDLE, insidePalette = true, insideInput = false))
+        println("Color list insertion reorder, snapping, normalization, limits and native button checks passed")
     }
 }

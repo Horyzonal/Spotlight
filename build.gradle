@@ -14,6 +14,10 @@ dependencies {
     implementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
 }
 
+base {
+    archivesName = "spotlight-mc${minecraft_version}"
+}
+
 kotlin {
     jvmToolchain(java_version.toInteger())
 }
@@ -32,6 +36,7 @@ processResources {
 loom {
     runs {
         client {
+            runDir "run/${minecraft_version}"
             if (project.hasProperty('clientDebug')) {
                 vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
             }

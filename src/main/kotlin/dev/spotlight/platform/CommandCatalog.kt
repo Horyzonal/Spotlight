@@ -71,7 +71,7 @@ internal object CommandCatalog {
                 entry("@p", "Nearest player", "Nearest player", kind), entry("@r", "Random player", "Random player", kind),
                 entry("@e", "All entities", "Entity selector", kind)
             )
-            SelectionKind.ADVANCEMENTS -> client.connection?.advancements?.tree()?.nodes()?.map {
+            SelectionKind.ADVANCEMENTS -> client.connection?.advancements?.tree?.nodes()?.map {
                 val holder = it.holder()
                 entry(holder.id().toString(), net.minecraft.advancements.Advancement.name(holder).string,
                     "Client-known advancement · ${holder.id()}", kind)
@@ -85,9 +85,9 @@ internal object CommandCatalog {
             SelectionKind.TAGS -> registries().flatMap { entries(it, kind, tags = true) }
             SelectionKind.TIMES -> listOf("day", "noon", "night", "midnight").map { entry(it, it, "Time preset", kind) }
             SelectionKind.WEATHERS -> listOf("clear", "rain", "thunder").map { entry(it, it, "Weather", kind) }
-            
+
             SelectionKind.IP -> emptyList()
-            
+
             SelectionKind.RECIPES -> registry("recipe")?.let { entries(it, kind) }.orEmpty()
             else -> selectionRegistries[kind]?.let { registry(it) }?.let { entries(it, kind) }.orEmpty()
         }.sortedBy { it.value }

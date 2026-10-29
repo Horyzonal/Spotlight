@@ -102,13 +102,15 @@ internal fun resolveMusicTracks(
 internal class TrackSoundInstance(file: Identifier) : AbstractSoundInstance(
     file, SoundSource.MUSIC, SoundInstance.createUnseededRandom(),
 ) {
+    private val trackEvent: WeighedSoundEvents
+
     init {
         looping = true
         relative = true
         attenuation = SoundInstance.Attenuation.NONE
         sound = Sound(file, ConstantFloat.of(1f), ConstantFloat.of(1f), 1, Sound.Type.FILE, true, false, 16)
-        soundEvent = WeighedSoundEvents(file, null).also { it.addSound(requireNotNull(sound)) }
+        trackEvent = WeighedSoundEvents(file, null).also { it.addSound(requireNotNull(sound)) }
     }
 
-    override fun getOrResolve(manager: SoundManager): WeighedSoundEvents = requireNotNull(soundEvent)
+    override fun resolve(manager: SoundManager): WeighedSoundEvents = trackEvent
 }

@@ -27,7 +27,7 @@ class SpotlightClient : ClientModInitializer {
         FabricLoader.getInstance().getEntrypoints("spotlight", SpotlightExtension::class.java)
             .forEach { it.registerCommands() }
         val key = KeyMappingHelper.registerKeyMapping(KeyMapping(
-            "key.spotlight.open", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE,
+            "key.spotlight.open", InputConstants.Type.KEYSYM, InputConstants.KEY_GRAVE,
             KeyMapping.Category.register(Identifier.parse("spotlight:controls")),
         ))
         ClientTickEvents.END_CLIENT_TICK.register { client ->

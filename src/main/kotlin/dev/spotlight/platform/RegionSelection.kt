@@ -69,7 +69,7 @@ object RegionSelection {
         return true
     }
 
-    
+
     fun selectPoint(button: Int) {
         if (!active()) return
         val left = button == InputConstants.MOUSE_BUTTON_LEFT
@@ -92,7 +92,7 @@ object RegionSelection {
             cancel()
             return
         }
-        if (InputConstants.isKeyDown(InputConstants.KEY_ESCAPE)) {
+        if (InputConstants.isKeyDown(client.window, InputConstants.KEY_ESCAPE)) {
             cancel()
             return
         }
@@ -103,7 +103,7 @@ object RegionSelection {
             val current = session ?: return
             try {
                 val command = current.state.command(current.level.minY, current.level.maxY)
-                
+
                 session = null
                 Spotlight.executeSlash(command)
                 message("Submitted $command; server checks permissions, loaded chunks and volume limit")
@@ -113,8 +113,11 @@ object RegionSelection {
         } else if (++ticks % 20 == 0) hint()
     }
 
-    private fun enterPressed() = InputConstants.isKeyDown(InputConstants.KEY_RETURN) ||
-        InputConstants.isKeyDown(InputConstants.KEY_NUMPADENTER)
+    private fun enterPressed(): Boolean {
+        val window = Minecraft.getInstance().window
+        return InputConstants.isKeyDown(window, InputConstants.KEY_RETURN) ||
+            InputConstants.isKeyDown(window, InputConstants.KEY_NUMPADENTER)
+    }
 
     private fun message(text: String) {
         Minecraft.getInstance().player?.sendOverlayMessage(Component.literal(text))

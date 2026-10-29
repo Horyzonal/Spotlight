@@ -31,8 +31,8 @@ internal object LocalRecipeIndex {
                       val unsupported: Map<String, String>)
 
     fun packs(client: Minecraft): List<PackResources> = buildList {
-        add(client.vanillaPackResources.fullResources())
-        
+        add(client.vanillaPackResources)
+
         for (mod in FabricLoader.getInstance().allMods.sortedBy { it.metadata.id }) {
             if (mod.metadata.id == "minecraft") continue
             for ((index, root) in mod.rootPaths.withIndex()) {
@@ -44,7 +44,7 @@ internal object LocalRecipeIndex {
     }
 
     fun load(packs: List<PackResources>): Loaded {
-        
+
         val resources = MultiPackResourceManager(PackType.SERVER_DATA, packs)
         val unsupported = linkedMapOf<String, String>()
         fun <T : Any> copyRegistry(source: Registry<T>): MappedRegistry<T> {
@@ -52,7 +52,7 @@ internal object LocalRecipeIndex {
             for ((key, value) in source.entrySet()) {
                 val holder = copy.register(key, value, RegistrationInfo.BUILT_IN)
                 val original = source.get(key).orElseThrow()
-                
+
                 if (original.areComponentsBound()) holder.bindComponents(original.components())
             }
             val loader = TagLoader(TagLoader.ElementLookup.fromFrozenRegistry(copy),
@@ -66,8 +66,8 @@ internal object LocalRecipeIndex {
         }
         val copies = BuiltInRegistries.REGISTRY.map { copyRegistry(it) }
         val registries = RegistryAccess.ImmutableRegistryAccess(copies).freeze()
-        
-        val defaults = VanillaRegistries.createWorldLookup()
+
+        val defaults = VanillaRegistries.createLookup()
         val lookup = HolderLookup.Provider.create(java.util.stream.Stream.concat(
             registries.listRegistries(), defaults.listRegistries().filter { registries.lookup(it.key()).isEmpty }))
 
@@ -81,7 +81,7 @@ internal object LocalRecipeIndex {
                 val bytes = resource.open().use { it.readNBytes(512 * 1024 + 1) }
                 require(bytes.size <= 512 * 1024) { "Recipe exceeds 512 KiB" }
                 val json = StrictJsonParser.parse(bytes.toString(Charsets.UTF_8).reader())
-                
+
                 require(!json.isJsonObject || !json.asJsonObject.has("fabric:load_conditions")) {
                     "Conditional local recipe needs Fabric reload context"
                 }
@@ -93,6 +93,6 @@ internal object LocalRecipeIndex {
         return Loaded(entries, registries, lookup, unsupported)
     }
 
-    fun decode(entry: Entry, loaded: Loaded) = net.minecraft.world.item.crafting.Recipe.DIRECT_CODEC
+    fun decode(entry: Entry, loaded: Loaded) = net.minecraft.world.item.crafting.Recipe.CODEC
         .parse(loaded.lookup.createSerializationContext(JsonOps.INSTANCE), entry.json).getOrThrow()
 }

@@ -1,5 +1,6 @@
 package dev.spotlight.ui
 
+import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.platform.CreativeBanner
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractContainerWidget
@@ -22,7 +23,6 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.block.entity.BannerPattern
 import net.minecraft.world.level.block.entity.BannerPatternLayers
-import org.lwjgl.sdl.SDLKeycode
 
 class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Banner editor")) {
     private var loaded = false
@@ -175,10 +175,10 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         override fun scrollRate() = 0.0
         override fun keyPressed(event: KeyEvent): Boolean {
             val offset = when (event.key()) {
-                SDLKeycode.SDLK_LEFT -> -1
-                SDLKeycode.SDLK_RIGHT -> 1
-                SDLKeycode.SDLK_UP -> -columns()
-                SDLKeycode.SDLK_DOWN -> columns()
+                InputConstants.KEY_LEFT -> -1
+                InputConstants.KEY_RIGHT -> 1
+                InputConstants.KEY_UP -> -columns()
+                InputConstants.KEY_DOWN -> columns()
                 else -> return super.keyPressed(event)
             }
             val index = (DyeColor.entries.indexOf(current()) + offset).coerceIn(0, swatches.lastIndex)
@@ -188,7 +188,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         }
         override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
             layoutSwatches()
-            return event.button() == 1 && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+            return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
         }
         override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
             layoutSwatches()
@@ -204,7 +204,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             init { setTooltip(Tooltip.create(message)) }
             override fun onClick(event: MouseButtonEvent, doubleClick: Boolean) { choose(color) }
             override fun keyPressed(event: KeyEvent): Boolean {
-                if (!event.isConfirmation && event.key() != SDLKeycode.SDLK_SPACE) return false
+                if (!event.isConfirmation && event.key() != InputConstants.KEY_SPACE) return false
                 choose(color)
                 return true
             }

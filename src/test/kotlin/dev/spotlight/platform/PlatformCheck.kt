@@ -37,8 +37,8 @@ internal object PlatformCheck {
         Bootstrap.bootStrap()
         dev.spotlight.ui.SoundMenuCheck.main(emptyArray())
         dev.spotlight.ui.CurrentSongCheck.run()
-        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(VanillaRegistries.createWorldLookup()).forEach { it.apply() }
-        val registries = VanillaRegistries.createWorldLookup()
+        val registries = VanillaRegistries.createLookup()
+        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val formatted = StyledText(listOf(ColoredRun("red\n", 0xFF0000), ColoredRun("blue\n\n", 0x0000FF)),
             TextStyle(bold = true, italic = false, underlined = true, strikethrough = true, obfuscated = true))
         val component = CreativeText.component(formatted)
@@ -71,6 +71,17 @@ internal object PlatformCheck {
         check(Spotlight.commands == listOf(command))
         check(CommandContext().text == "")
         check(!SpotlightClient.shouldReplaceCommandKey())
+        val hotkeys = (('A'..'Z') + ('0'..'9')).map { it.toString() } + (1..25).map { "F$it" } +
+            listOf("SPACE", "TAB", "ENTER", "ESCAPE", "BACKSPACE", "DELETE", "INSERT", "HOME", "END",
+                "PAGEUP", "PAGEDOWN", "UP", "DOWN", "LEFT", "RIGHT", "MINUS", "EQUAL", "LEFT_BRACKET",
+                "RIGHT_BRACKET", "BACKSLASH", "SEMICOLON", "APOSTROPHE", "GRAVE_ACCENT", "COMMA", "PERIOD",
+                "SLASH", "CAPS_LOCK", "SCROLL_LOCK", "NUM_LOCK", "PRINT_SCREEN", "PAUSE", "KP_DECIMAL",
+                "KP_DIVIDE", "KP_MULTIPLY", "KP_SUBTRACT", "KP_ADD", "KP_ENTER", "KP_EQUAL") + (0..9).map { "KP_$it" }
+        hotkeys.forEach { check(hotkeyCode(it) != null) { "Unsupported hotkey: $it" } }
+        check(hotkeyCode("PAGEUP") == com.mojang.blaze3d.platform.InputConstants.KEY_PAGEUP)
+        check(hotkeyCode("KP_ENTER") == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER)
+        check(hotkeyCode("KP_DECIMAL") == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_DECIMAL)
+        check(hotkeyCode("UNSUPPORTED") == null)
         dev.spotlight.core.SpotlightSettingsCheck.main(emptyArray())
         check(Spotlight.requestedQuery == null)
         Spotlight.requestedQuery = "/seed "

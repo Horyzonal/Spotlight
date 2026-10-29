@@ -1,5 +1,6 @@
 package dev.spotlight.ui
 
+import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractContainerWidget
@@ -12,7 +13,6 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.model.`object`.banner.BannerFlagModel
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.level.block.entity.BannerPatternLayers
-import org.lwjgl.sdl.SDLKeycode
 
 internal fun <T> moveBannerLayer(layers: MutableList<T>, index: Int, target: Int): Int {
     if (index !in layers.indices || target !in layers.indices) return index
@@ -71,10 +71,10 @@ internal class BannerLayersWidget(
         setFocused(rows.getOrNull(selected))
     }
     override fun keyPressed(event: KeyEvent): Boolean {
-        if (event.key() == SDLKeycode.SDLK_DELETE || event.key() == SDLKeycode.SDLK_BACKSPACE) { remove(selected); return true }
+        if (event.key() == InputConstants.KEY_DELETE || event.key() == InputConstants.KEY_BACKSPACE) { remove(selected); return true }
         val offset = when (event.key()) {
-            SDLKeycode.SDLK_UP -> -1
-            SDLKeycode.SDLK_DOWN -> 1
+            InputConstants.KEY_UP -> -1
+            InputConstants.KEY_DOWN -> 1
             else -> return super.keyPressed(event)
         }
         if (rows.isEmpty()) return true
@@ -84,7 +84,7 @@ internal class BannerLayersWidget(
     }
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         layoutRows()
-        if (event.button() != 1 || !isMouseOver(event.x(), event.y())) return false
+        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || !isMouseOver(event.x(), event.y())) return false
         val row = rows.firstOrNull { it.isMouseOver(event.x(), event.y()) }
         if (row != null) {
             setFocused(row)

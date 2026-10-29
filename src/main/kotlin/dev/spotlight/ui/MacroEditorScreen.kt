@@ -229,7 +229,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
             first = (first + if (vertical > 0) -1 else 1).coerceIn(0, (options.size - visibleRows).coerceAtLeast(0))
             selected = selected.coerceIn(first, minOf(first + visibleRows - 1, options.lastIndex))
             updateCompletionRows()
-            scheduleNarration()
+            triggerImmediateNarration(true)
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
@@ -250,7 +250,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
             if (event.modifiers() == 0) {
                 if (event.key() == InputConstants.KEY_TAB) {
                     if (listOpen) acceptCompletion(selected)
-                    else { listOpen = true; updateCompletionRows(); scheduleNarration() }
+                    else { listOpen = true; updateCompletionRows(); triggerImmediateNarration(true) }
                     return true
                 }
                 if (listOpen && event.isConfirmation) { acceptCompletion(selected); return true }
@@ -265,7 +265,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
                     selected = (selected + step).coerceIn(0, completion!!.options.lastIndex)
                     first = first.coerceIn((selected - visibleRows + 1).coerceAtLeast(0), selected)
                     updateCompletionRows()
-                    scheduleNarration()
+                    triggerImmediateNarration(true)
                     return true
                 }
             }

@@ -14,7 +14,7 @@ object CreativeBannerCheck {
     @JvmStatic fun main(args: Array<String>) {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
-        val registries = net.minecraft.data.registries.VanillaRegistries.createWorldLookup()
+        val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
                 BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val pattern = registries.lookupOrThrow(net.minecraft.core.registries.Registries.BANNER_PATTERN).listElements().findFirst().orElseThrow()
         val layers = BannerPatternLayers(listOf(BannerPatternLayers.Layer(pattern, DyeColor.BLUE)))

@@ -97,7 +97,7 @@ object CommandSuggestionTreeCheck {
         completion.register(literal<Boolean>("quote").then(argument("message", StringArgumentType.string())))
         completion.register(literal<Boolean>("message").then(argument("message", net.minecraft.commands.arguments.MessageArgument.message())))
         completion.register(literal<Boolean>("component").then(argument("value", net.minecraft.commands.arguments.ComponentArgument.textComponent(
-            CommandBuildContext.simple(VanillaRegistries.createWorldLookup(), FeatureFlags.DEFAULT_FLAGS)))))
+            CommandBuildContext.simple(VanillaRegistries.createLookup(), FeatureFlags.DEFAULT_FLAGS)))))
         completion.register(literal<Boolean>("mode").then(literal<Boolean>("creative")))
         completion.register(literal<Boolean>("bool").then(argument("value", BoolArgumentType.bool())))
         completion.register(literal<Boolean>("number").then(argument("value", IntegerArgumentType.integer())))
@@ -159,7 +159,7 @@ object CommandSuggestionTreeCheck {
         serialize(info, type)
         check(commandRegistryId(json) == "minecraft:recipe")
         val rules = CommandDispatcher<CommandSourceStack>()
-        GameRuleCommand.register(rules, CommandBuildContext.simple(VanillaRegistries.createWorldLookup(), FeatureFlags.DEFAULT_FLAGS))
+        GameRuleCommand.register(rules, CommandBuildContext.simple(VanillaRegistries.createLookup(), FeatureFlags.DEFAULT_FLAGS))
         val types = rules.root.getChild("gamerule").children.flatMap { it.children }.mapNotNull {
             (it as? com.mojang.brigadier.tree.ArgumentCommandNode<*, *>)?.type
         }

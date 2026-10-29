@@ -34,15 +34,15 @@ A: idk
 
 ## Build and install
 
-Requires Minecraft Java **26.3**, **Java 25**, Fabric Loader, Fabric API and Fabric Language Kotlin. Exact dependency versions are pinned in `gradle.properties`.
+This branch targets **Minecraft Java 26.2**. Requires **Java 25**, Fabric Loader, Fabric API **0.161.0+26.2**, and Fabric Language Kotlin. Exact versions are pinned in `gradle.properties`. 
 
 ```sh
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-0.1.0.jar`. Install this JAR with required dependencies in your instance's `mods` directory. No server installation required. Some actions require Creative or server command permissions.
+Production artifact: `build/libs/spotlight-mc26.2-0.1.0.jar`.
 
-Build runs 31 verification programs and checks release contents. Verification sources live in `src/test`; production JAR excludes them, includes license notices, and uses reproducible archive ordering/timestamps. No risky bytecode shrinking or obfuscation. Runtime multiplayer/UI/audio acceptance remains separate from automated checks.
+Development client uses `run/26.2/` to avoid opening 26.3 worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port uses native 26.2 GLFW input and APIs; binary compatibility with 26.3 is not claimed.
 
 ## Attributions
 When I don't have inspiration, I just steal from other mods.

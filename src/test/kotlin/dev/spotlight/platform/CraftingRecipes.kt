@@ -11,8 +11,8 @@ object RecipeIndexCheck {
     @JvmStatic fun main(args: Array<String>) {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
-        val registries = net.minecraft.data.registries.VanillaRegistries.createWorldLookup()
-        
+        val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
+
         BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val globalBindings = BuiltInRegistries.REGISTRY.flatMap { registry ->
             registry.listElements().toList().map { holder ->
@@ -76,6 +76,8 @@ object RecipeIndexCheck {
             val loaded = LocalRecipeIndex.load(listOf(first, second))
             checkGlobalBindings()
             val localItems = loaded.registries.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
+                        check(loaded.lookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM) === localItems)
+                        check(loaded.lookup.lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).listElements().findAny().isPresent)
             val stoneKey = BuiltInRegistries.ITEM.getResourceKey(net.minecraft.world.item.Items.STONE).orElseThrow()
             val localStone = localItems.get(stoneKey).orElseThrow()
             val globalStone = BuiltInRegistries.ITEM.get(stoneKey).orElseThrow()
@@ -86,7 +88,7 @@ object RecipeIndexCheck {
             check(loaded.unsupported.keys.containsAll(listOf("[C] test:bad", "[C] test:large")))
             check(loaded.entries.any { it.id == "test:nested/local" })
             val recipe = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:same" }, loaded)
-            val context = ContextMap.builder().set(SlotDisplayContext.REGISTRIES, loaded.registries).build()
+            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.registries).create(SlotDisplayContext.CONTEXT)
             check(recipe.display().single().result().resolveForStacks(context).single().item === net.minecraft.world.item.Items.DIRT)
             val tagged = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:tagged" }, loaded)
             check((tagged.display().single() as ShapelessCraftingRecipeDisplay).ingredients().single()
@@ -95,7 +97,7 @@ object RecipeIndexCheck {
             check(loaded.registries.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM) !== BuiltInRegistries.ITEM)
             val vanillaPack = net.minecraft.server.packs.VanillaPackResourcesBuilder().pushJarResources().exposeNamespace("minecraft")
                 .build(net.minecraft.server.packs.PackLocationInfo("vanilla", net.minecraft.network.chat.Component.literal("vanilla"),
-                    net.minecraft.server.packs.repository.PackSource.BUILT_IN, java.util.Optional.empty())).fullResources()
+                    net.minecraft.server.packs.repository.PackSource.BUILT_IN, java.util.Optional.empty()))
             val shipped = LocalRecipeIndex.load(listOf(vanillaPack))
             check(shipped.entries.any { it.id == "minecraft:crafting_table" })
             check(LocalRecipeIndex.decode(shipped.entries.single { it.id == "minecraft:crafting_table" }, shipped) is CraftingRecipe)

@@ -1,5 +1,6 @@
 package dev.spotlight.ui
 
+import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.platform.CreativeBanner
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractContainerWidget
@@ -18,7 +19,6 @@ import net.minecraft.world.item.DyeColor
 
 import net.minecraft.world.level.block.entity.BannerPattern
 import net.minecraft.world.level.block.entity.BannerPatternLayers
-import org.lwjgl.sdl.SDLKeycode
 
 internal fun bannerGridRows(count: Int) = (count.coerceAtLeast(0) + 3) / 4
 
@@ -78,10 +78,10 @@ internal class BannerPatternGrid(
 
     override fun keyPressed(event: KeyEvent): Boolean {
         val offset = when (event.key()) {
-            SDLKeycode.SDLK_LEFT -> -1
-            SDLKeycode.SDLK_RIGHT -> 1
-            SDLKeycode.SDLK_UP -> -4
-            SDLKeycode.SDLK_DOWN -> 4
+            InputConstants.KEY_LEFT -> -1
+            InputConstants.KEY_RIGHT -> 1
+            InputConstants.KEY_UP -> -4
+            InputConstants.KEY_DOWN -> 4
             else -> return super.keyPressed(event)
         }
         if (tiles.isEmpty()) return false
@@ -93,7 +93,7 @@ internal class BannerPatternGrid(
 
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         layoutTiles()
-        return event.button() == 1 && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+        return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
@@ -120,7 +120,7 @@ internal class BannerPatternGrid(
         private fun add() { selected = pattern; if (canAdd) choose(pattern) }
         override fun onClick(event: MouseButtonEvent, doubleClick: Boolean) { add() }
         override fun keyPressed(event: KeyEvent): Boolean {
-            if (event.key() != SDLKeycode.SDLK_RETURN && event.key() != SDLKeycode.SDLK_SPACE) return false
+            if (event.key() != InputConstants.KEY_RETURN && event.key() != InputConstants.KEY_SPACE) return false
             add()
             return true
         }
