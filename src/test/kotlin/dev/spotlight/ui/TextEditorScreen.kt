@@ -12,6 +12,7 @@ internal object TextEditorScreenCheck {
         check(textEditorScroll(400, 20, 0, 200, 600) == 220)
         check(textEditorScroll(0, 80, 220, 200, 600) == 0)
         check(textEditorScroll(0, 80, 0, 800, 600) == 0)
+        Preview1214Check.main(emptyArray())
         GradientTimelineCheck.main(emptyArray())
         val styled = TextFormatter.format("A\nB", TextMode.GRADIENT,
             TextFormatter.parseColors("#FF0000, #0000FF"), TextStyle(bold = true, underlined = true))

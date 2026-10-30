@@ -35,7 +35,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     private var validation: String? = null
     private var notice = "Tab / Shift+Tab: navigate · Enter: activate · Esc: close"
     private lateinit var editor: SpotlightMultiLineEditBox
-    private lateinit var preview: FittingMultiLineTextWidget
+    private lateinit var preview: StyledTextPreview
     private lateinit var status: FittingMultiLineTextWidget
     private lateinit var form: Form
     private lateinit var close: Button
@@ -60,6 +60,9 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         editor.value = text
         editor.setValueListener { text = it; changed() }
         rows += Row("Text · multiline · up to 4096 code points / 8192 UTF-16 units", listOf(editor), 80)
+
+        preview = StyledTextPreview(0, 0, 100, 72, font)
+        rows += Row("Live preview · actual Minecraft colors and styles", listOf(preview), 72)
 
         val cycle = macroButton("Mode: ${mode.name}", 0, 0, 100) {
             mode = TextMode.entries[(mode.ordinal + 1) % TextMode.entries.size]
@@ -118,8 +121,6 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         formatField.setTooltip(Tooltip.create(catalogText("Per colored run: {text}, {color} = RRGGBB, {hex} = #RRGGBB. Custom output does not include style toggles.")))
         rows += Row("Custom format · {color} has no # · styles omitted", listOf(formatField), 20)
 
-        preview = FittingMultiLineTextWidget(0, 0, 100, 72, Component.empty(), font)
-        rows += Row("Live preview · actual Minecraft colors and styles", listOf(preview), 72)
         status = catalogDetails(0, 0, 100, 60, Component.empty(), font)
         rows += Row("Status / item availability", listOf(status), 60)
         copies += macroButton("Copy JSON", 0, 0, 100) { copy("JSON") }
@@ -177,7 +178,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             null
         }
         preview.message = formatted?.let(CreativeText::component) ?: Component.empty()
-        rows[1].widgets[0].message = catalogText("Mode: ${mode.name}")
+        rows[2].widgets[0].message = catalogText("Mode: ${mode.name}")
         val flags = listOf(style.bold, style.italic, style.underlined, style.strikethrough, style.obfuscated)
         styleRow.widgets.forEachIndexed { index, widget ->
             val label = listOf("Bold", "Italic", "Underline", "Strike", "Obfuscated")[index]
@@ -294,7 +295,9 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         }
 
         override fun setFocused(listener: GuiEventListener?) {
+            val changed = focused !== listener
             super.setFocused(listener)
+            if (!changed) return
             val widget = listener as? AbstractWidget ?: return
             val top = offsets[widget] ?: return
             setScrollAmount(textEditorScroll(top, widget.height, scrollAmount().toInt(), height, totalHeight).toDouble())

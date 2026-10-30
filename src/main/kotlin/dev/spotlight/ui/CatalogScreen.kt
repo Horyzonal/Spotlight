@@ -62,6 +62,24 @@ internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Co
             if (catalogCustomFrame()) catalogFrame(graphics, this) else super.renderBackground(graphics)
         }
 
+        override fun getInnerHeight() = font.split(this.message, (this.width - totalInnerPadding()).coerceAtLeast(1)).size * font.lineHeight
+
+        override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            font.split(this.message, (this.width - totalInnerPadding()).coerceAtLeast(1)).forEachIndexed { index, line ->
+                graphics.drawString(font, line, innerLeft, innerTop + index * font.lineHeight, -1)
+            }
+        }
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            setScrollAmount(scrollAmount())
+            if (showingScrollBar()) {
+                super.renderWidget(graphics, mouseX, mouseY, delta)
+            } else if (visible) {
+                renderBackground(graphics)
+                renderContents(graphics, mouseX, mouseY, delta)
+            }
+        }
+
         override fun setMessage(message: Component) {
             super.setMessage(catalogText(message).withStyle {
                 if (it.color == null) it.withColor(catalogNativeColor(-1, 0xFFF2F5FC)) else it
