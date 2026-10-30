@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.core.ColorPicker
 import dev.spotlight.core.GradientStop
 import net.minecraft.client.gui.Font
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.input.CharacterEvent
@@ -122,23 +122,23 @@ internal class GradientTimeline(
         return true
     }
 
-    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val ink = SpotlightTheme.color(0xFFF2F5FC)
         val muted = SpotlightTheme.color(0xFF9DADC3)
         val background = SpotlightTheme.color(0xFF161D29)
         graphics.fill(x, y, right, bottom, background)
-        graphics.outline(x, y, width, height, SpotlightTheme.color(if (isFocused) 0xFFF2F5FC else 0xFF415877))
+        graphics.renderOutline(x, y, width, height, SpotlightTheme.color(if (isFocused) 0xFFF2F5FC else 0xFF415877))
         stops.forEachIndexed { index, stop ->
             val left = edge(index)
             val end = edge(index + 1)
             val tileWidth = end - left
             if (captured == index && moved) {
                 graphics.fill(left + 1, y + 3, end - 1, bottom - 3, SpotlightTheme.color(0xFF22334B))
-                graphics.outline(left, y + 2, tileWidth, height - 4, SpotlightTheme.color(0xFF81B8FF))
+                graphics.renderOutline(left, y + 2, tileWidth, height - 4, SpotlightTheme.color(0xFF81B8FF))
                 return@forEachIndexed
             }
             graphics.fill(left + 1, y + 18, end - 1, bottom - 3, stop.color or 0xFF000000.toInt())
-            graphics.outline(left, y + 2, tileWidth, height - 4, if (index == selected) ink else muted)
+            graphics.renderOutline(left, y + 2, tileWidth, height - 4, if (index == selected) ink else muted)
             if (tileWidth >= font.width(catalogText("×")) + 2) {
                 graphics.themeCenteredText(font, catalogText("×"), (left + end) / 2, y + 5, if (stops.size > minimum) ink else muted)
             }
@@ -148,7 +148,7 @@ internal class GradientTimeline(
                 graphics.themeCenteredText(font, hex, (left + end) / 2, bottom - 14, ink)
             }
         }
-        graphics.outline(right - 22, y + 2, 20, height - 4, muted)
+        graphics.renderOutline(right - 22, y + 2, 20, height - 4, muted)
         graphics.themeCenteredText(font, catalogText("+"), right - 12, y + (height - font.lineHeight) / 2, if (stops.size < 16) ink else muted)
         val hovered = hit(mouseX.toDouble(), mouseY.toDouble())
         val tip = when {
@@ -161,7 +161,7 @@ internal class GradientTimeline(
     }
 
     
-    fun extractDragGhost(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+    fun extractDragGhost(graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
         if (captured !in stops.indices || !moved) return
         val color = stops[captured].color
         val ghostWidth = (edge(captured + 1) - edge(captured)).coerceIn(24, 120)
@@ -171,7 +171,7 @@ internal class GradientTimeline(
         graphics.fill(left + 3, top + 3, left + ghostWidth + 3, top + ghostHeight + 3,
             SpotlightTheme.color(0x99060A12))
         graphics.fill(left, top, left + ghostWidth, top + ghostHeight, color or 0xCC000000.toInt())
-        graphics.outline(left, top, ghostWidth, ghostHeight, SpotlightTheme.color(0xFF81B8FF))
+        graphics.renderOutline(left, top, ghostWidth, ghostHeight, SpotlightTheme.color(0xFF81B8FF))
         val text = catalogText(ColorPicker.hex(color))
         if (ghostWidth >= font.width(text) + 4) {
             graphics.fill(left, top + ghostHeight - 14, left + ghostWidth, top + ghostHeight,

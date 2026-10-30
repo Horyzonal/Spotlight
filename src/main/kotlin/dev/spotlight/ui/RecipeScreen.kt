@@ -3,7 +3,7 @@ package dev.spotlight.ui
 import dev.spotlight.platform.CraftingRecipeView
 import dev.spotlight.platform.CraftingRecipes
 import dev.spotlight.platform.commandMatch
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -160,14 +160,14 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    private fun text(graphics: GuiGraphicsExtractor, value: String, x: Int, y: Int, available: Int, color: Long = 0xFFF2F5FC) {
+    private fun text(graphics: GuiGraphics, value: String, x: Int, y: Int, available: Int, color: Long = 0xFFF2F5FC) {
         graphics.themeText(font, catalogClip(font, value, available), x, y, SpotlightTheme.color(color))
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.disableScissor()
         val contentBottom = (footerY - 28).coerceAtLeast(0)
         graphics.enableScissor(detailX, minOf(detailY, contentBottom), detailX + detailWidth, contentBottom)
@@ -181,8 +181,8 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
             val gridY = detailY + 26
             fun item(stack: ItemStack, x: Int, y: Int, absent: Boolean) {
                 graphics.fill(x, y, x + slot - 1, y + slot - 1, SpotlightTheme.color(0xFF161D29))
-                graphics.outline(x, y, slot - 1, slot - 1, SpotlightTheme.color(0xFF415877))
-                if (!stack.isEmpty) graphics.item(stack, x + (slot - 16) / 2, y + (slot - 16) / 2)
+                graphics.renderOutline(x, y, slot - 1, slot - 1, SpotlightTheme.color(0xFF415877))
+                if (!stack.isEmpty) graphics.renderItem(stack, x + (slot - 16) / 2, y + (slot - 16) / 2)
                 if (absent) graphics.fill(x + 1, y + 1, x + slot - 2, y + slot - 2,
                     (SpotlightTheme.color(0xFFFFB4A9) and 0x00FFFFFF) or 0x55000000)
                 if (!stack.isEmpty && mouseX in x until x + slot - 1 && mouseY in y until y + slot - 1 &&

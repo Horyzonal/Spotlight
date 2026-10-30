@@ -5,7 +5,7 @@ import dev.spotlight.core.ThemeColor
 import dev.spotlight.core.ThemeConfig
 import dev.spotlight.core.ThemeEntry
 import dev.spotlight.core.ThemeMetric
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
@@ -164,14 +164,14 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
         }
         return super.keyPressed(event)
     }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, catalogText("Theme editor · Name"), left, 14, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, validation ?: notice, panelWidth), left, height - 50, SpotlightTheme.color(if (validation != null || failed) 0xFFFFB4A9 else 0xFF9DADC3))
     }
 
-    private inner class Form : AbstractContainerWidget(0, 0, 100, 100, catalogText("Theme fields"), defaultSettings(6)) {
+    private inner class Form : AbstractContainerWidget(0, 0, 100, 100, catalogText("Theme fields")) {
         private val offsets = linkedMapOf<AbstractWidget, Int>()
         private var keys = emptyList<String>()
         override fun children(): List<AbstractWidget> = offsets.keys.toList()
@@ -211,7 +211,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
             isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
             isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             graphics.enableScissor(x, y, right, bottom)
             keys.forEachIndexed { index, key ->
                 val top = y + index * 46 - scrollAmount().toInt()
@@ -224,9 +224,9 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
                     color?.let { graphics.fill(x + field.width + 4, top + 20, x + field.width + 18, top + 32, it) }
                 }
             }
-            children().forEach { it.extractRenderState(graphics, mouseX, mouseY, delta) }
+            children().forEach { it.render(graphics, mouseX, mouseY, delta) }
             graphics.disableScissor()
-            extractScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics, mouseX, mouseY)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { children().firstOrNull { it.isFocused }?.updateNarration(output) }
     }

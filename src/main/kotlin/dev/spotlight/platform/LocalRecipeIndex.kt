@@ -50,17 +50,14 @@ internal object LocalRecipeIndex {
         fun <T : Any> copyRegistry(source: Registry<T>): MappedRegistry<T> {
             val copy = MappedRegistry<T>(source.key(), Lifecycle.stable())
             for ((key, value) in source.entrySet()) {
-                val holder = copy.register(key, value, RegistrationInfo.BUILT_IN)
-                val original = source.get(key).orElseThrow()
-
-                if (original.areComponentsBound()) holder.bindComponents(original.components())
+                copy.register(key, value, RegistrationInfo.BUILT_IN)
             }
             val loader = TagLoader(TagLoader.ElementLookup.fromFrozenRegistry(copy),
                 net.minecraft.core.registries.Registries.tagsDirPath(copy.key()))
             val definitions = loader.load(resources)
             val tags = loader.build(definitions)
             for (id in definitions.keys - tags.keys) unsupported["[C] tag $id"] = "Local tag has missing entries or a cycle"
-            copy.bindTags(tags.mapKeys { net.minecraft.tags.TagKey.create(copy.key(), it.key) })
+            tags.forEach { (id, holders) -> copy.bindTag(net.minecraft.tags.TagKey.create(copy.key(), id), holders) }
             copy.freeze()
             return copy
         }

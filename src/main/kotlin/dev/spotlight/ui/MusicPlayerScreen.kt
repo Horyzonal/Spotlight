@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.core.MusicTrack
 import dev.spotlight.platform.SoundControls
 import dev.spotlight.platform.notifySpotlight
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
@@ -85,9 +85,9 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         return super.keyPressed(event)
     }
     override fun onClose() { minecraft.setScreen(parent) }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         fun text(value: String, y: Int, color: Int) = graphics.themeText(font, catalogClip(font, value, panelWidth), left, y, color)
         text(current, bottom - 78, foreground)
         text("Client-only · Selected track loops · ↑↓ Select", bottom - 64, muted)

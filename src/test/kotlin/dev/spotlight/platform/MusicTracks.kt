@@ -10,6 +10,8 @@ import net.minecraft.util.valueproviders.ConstantFloat
 object MusicTracksCheck {
     @JvmStatic
     fun main(args: Array<String>) {
+        net.minecraft.SharedConstants.tryDetectVersion()
+        net.minecraft.server.Bootstrap.bootStrap()
         val definitions = linkedMapOf<Identifier, List<Sound>>()
         fun merge(json: String) = mergeMusicDefinitions(definitions, "test", json.reader().use(::readMusicDefinitions))
         merge("""{"music.root":{"sounds":[{"name":"test:nested","type":"event"},"test:music/old"]},"nested":{"sounds":["minecraft:music/game/infinite_amethyst",{"name":"test:music.root","type":"event"}]},"music.other":{"sounds":["minecraft:music/game/infinite_amethyst","mod:music/new_song"]}}""")

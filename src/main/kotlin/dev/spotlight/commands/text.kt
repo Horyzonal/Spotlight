@@ -13,14 +13,14 @@ internal fun registerText() {
     registerCommand("copy_item_data", "Copy held item JSON", "Copy main-hand item components and count") {
         val client = Minecraft.getInstance()
         client.keyboardHandler.clipboard = CreativeText.copyItemData()
-        client.gui.chat.addClientSystemMessage(Component.literal("Held item JSON copied"))
+        client.gui.chat.addMessage(Component.literal("Held item JSON copied"))
     }
     registerCommand("clear_item_name", "Clear held item name", "Requires Creative; preserve other item data") {
         CreativeText.clearName()
-        Minecraft.getInstance().gui.chat.addClientSystemMessage(Component.literal("Item name clear requested"))
+        Minecraft.getInstance().gui.chat.addMessage(Component.literal("Item name clear requested"))
     }
     registerCommand("clear_item_lore", "Clear held item lore", "Requires Creative; preserve other item data") {
         CreativeText.clearLore()
-        Minecraft.getInstance().gui.chat.addClientSystemMessage(Component.literal("Item lore clear requested"))
+        Minecraft.getInstance().gui.chat.addMessage(Component.literal("Item lore clear requested"))
     }
 }

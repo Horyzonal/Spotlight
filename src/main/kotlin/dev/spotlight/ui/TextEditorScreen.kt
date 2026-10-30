@@ -7,7 +7,7 @@ import dev.spotlight.core.TextFormatter
 import dev.spotlight.core.TextMode
 import dev.spotlight.core.TextStyle
 import dev.spotlight.platform.CreativeText
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
@@ -258,14 +258,14 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         return super.keyPressed(event)
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, title, form.x, 10, SpotlightTheme.color(0xFFF2F5FC))
         timeline.extractDragGhost(graphics, mouseX, mouseY)
     }
 
-    private inner class Form : AbstractContainerWidget(0, 28, 100, 100, catalogText("Text editor form"), defaultSettings(6)) {
+    private inner class Form : AbstractContainerWidget(0, 28, 100, 100, catalogText("Text editor form")) {
         private val offsets = mutableMapOf<AbstractWidget, Int>()
         private val labels = mutableListOf<Pair<String, Int>>()
         private var totalHeight = 0
@@ -330,7 +330,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             return super.mouseDragged(event, dx, dy)
         }
 
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             graphics.enableScissor(x, y, right, bottom)
             labels.forEach { (label, offset) ->
                 graphics.themeText(font, catalogClip(font, label, width - 12), x, y + offset - scrollAmount().toInt(), SpotlightTheme.color(0xFF9DADC3))
@@ -338,10 +338,10 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
             children().filter { it.bottom > y && it.y < bottom }.forEach {
                 if (it === editor && catalogCustomFrame()) catalogFrame(graphics, it)
-                it.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
+                it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
             }
             graphics.disableScissor()
-            extractScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics, mouseX, mouseY)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) {

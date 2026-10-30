@@ -5,7 +5,7 @@ import dev.spotlight.core.Macro
 import dev.spotlight.core.MacroCompletion
 import dev.spotlight.core.MacroTemplates
 import dev.spotlight.platform.MacroRuntime
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.MultilineTextField
 import net.minecraft.client.gui.components.MultiLineEditBox
@@ -306,14 +306,14 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
     }
 
     override fun onClose() { minecraft.setScreen(parent) }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Macro name"), left, 17, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, error ?: "Command template · one command; line breaks rejected", panelWidth), left, 54,
                     if (error != null) SpotlightTheme.color(0xFFFFB4A9) else SpotlightTheme.color(0xFF9DADC3))
 
         if (catalogCustomFrame()) catalogFrame(graphics, editor)
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         refreshCompletion()
         if (!listOpen) {
             val option = ghostOption()
@@ -328,11 +328,11 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         if (listOpen && visibleRows > 0) {
             val bottom = popupY + 32 + visibleRows * rowHeight
             graphics.fill(popupX, popupY, popupX + popupWidth, bottom, SpotlightTheme.color(0xFA101722))
-            graphics.outline(popupX, popupY, popupWidth, bottom - popupY, SpotlightTheme.color(0xFF415877))
+            graphics.renderOutline(popupX, popupY, popupWidth, bottom - popupY, SpotlightTheme.color(0xFF415877))
             graphics.enableScissor(popupX + 2, popupY + 2, popupX + popupWidth - 2, bottom - 2)
             graphics.themeText(font, catalogClip(font, "Placeholders · ${selected + 1}/${completion!!.options.size}", popupWidth - 12),
                 popupX + 6, popupY + 5, SpotlightTheme.color(0xFFF2F5FC))
-            completionRows.filter { it.visible }.forEach { it.extractRenderState(graphics, mouseX, mouseY, delta) }
+            completionRows.filter { it.visible }.forEach { it.render(graphics, mouseX, mouseY, delta) }
             graphics.themeText(font, catalogClip(font, "↑/↓ · PgUp/PgDn · Tab/Enter insert · Esc close", popupWidth - 12),
                 popupX + 6, bottom - 12, SpotlightTheme.color(0xFF9DADC3))
             graphics.disableScissor()

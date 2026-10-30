@@ -1,7 +1,7 @@
 package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
@@ -48,14 +48,14 @@ internal class CommandMenuScreen(
             val narration = listOf(action.group, action.label, action.shortcut).filter { it.isNotEmpty() }.joinToString(". ")
             val button = object : Button(left + 4, top + 17 + index * 22, (menuWidth - 8).coerceAtLeast(1), 20,
                 Component.literal(narration), OnPress { choose(row.actionIndex) }, CreateNarration { it.get() }) {
-                override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+                override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                     val highlighted = active && (isHovered || isFocused)
                     graphics.fill(x, y, right, bottom, SpotlightTheme.color(when {
                         !active -> 0xFF19202B
                         highlighted -> 0xFF293F5B
                         else -> 0xFF161D29
                     }))
-                    graphics.outline(x, y, this.width, this.height,
+                    graphics.renderOutline(x, y, this.width, this.height,
                         SpotlightTheme.color(if (highlighted) 0xFF81B8FF else 0xFF415877))
                     val shortcut = font.plainSubstrByWidth(action.shortcut, ((this.width - 18) * 2 / 3).coerceAtLeast(0))
                     val shortcutX = right - 6 - font.width(shortcut)
@@ -105,20 +105,20 @@ internal class CommandMenuScreen(
         return true
     }
 
-    override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(left, top, left + menuWidth, top + menuHeight, SpotlightTheme.color(0xFA101722))
-        graphics.outline(left, top, menuWidth, menuHeight, SpotlightTheme.color(0xFF415877))
+        graphics.renderOutline(left, top, menuWidth, menuHeight, SpotlightTheme.color(0xFF415877))
         graphics.enableScissor(left + 2, top, left + menuWidth - 2, top + menuHeight)
         graphics.themeText(font, "Actions", left + 5, top + 5, SpotlightTheme.color(0xFFF2F5FC))
         entries.drop(offset).take(count).forEachIndexed { index, row ->
             if (row.actionIndex < 0) graphics.themeText(font, row.heading, left + 10, top + 23 + index * 22,
                 SpotlightTheme.color(0xFF9DADC3))
         }
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, "↑↓ / Tab Navigate · Enter Run · Esc Back", left + 5, top + menuHeight - 12, SpotlightTheme.color(0xFF9DADC3))
         graphics.disableScissor()
     }

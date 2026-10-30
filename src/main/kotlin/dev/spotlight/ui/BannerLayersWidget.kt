@@ -2,7 +2,7 @@ package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
@@ -24,7 +24,7 @@ internal class BannerLayersWidget(
     private val flag: BannerFlagModel,
     private val layers: MutableList<BannerPatternLayers.Layer>,
     private val changed: () -> Unit,
-) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder."), defaultSettings(6)) {
+) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder.")) {
     private var base = DyeColor.WHITE
     private var snapshot = emptyList<BannerPatternLayers.Layer>()
     private val rows = mutableListOf<Row>()
@@ -106,14 +106,14 @@ internal class BannerLayersWidget(
     }
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double) =
         isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
-    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         layoutRows()
         graphics.enableScissor(x, y, right, bottom)
         if (rows.isEmpty()) graphics.themeText(Minecraft.getInstance().font, "No layers · click a pattern", x + 4, y + 6, SpotlightTheme.color(0xFFF2F5FC))
         val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
-        rows.filter { it.bottom > y && it.y < bottom }.forEach { it.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta) }
+        rows.filter { it.bottom > y && it.y < bottom }.forEach { it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta) }
         graphics.disableScissor()
-        extractScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics, mouseX, mouseY)
     }
     override fun updateWidgetNarration(output: NarrationElementOutput) {
         if (focused is AbstractWidget) (focused as AbstractWidget).updateNarration(output) else defaultButtonNarrationText(output)
@@ -121,11 +121,11 @@ internal class BannerLayersWidget(
     private inner class Row(val index: Int, val cumulative: BannerPatternLayers, label: String) :
         AbstractWidget(0, 0, 100, 32, catalogText("Layer ${index + 1}: $label. $primaryModifierLabel+Up/Down moves; Delete removes.")) {
         init { setTooltip(Tooltip.create(message)) }
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             val font = Minecraft.getInstance().font
-            if (selected == index) graphics.outline(x, y, width, height, SpotlightTheme.color(0xFF81B8FF))
+            if (selected == index) graphics.renderOutline(x, y, width, height, SpotlightTheme.color(0xFF81B8FF))
             graphics.themeText(font, "↕", x + 3, y + 11, SpotlightTheme.color(0xFFF2F5FC))
-            graphics.bannerPattern(flag, base, cumulative, x + 16, y + 2, x + 30, y + 30)
+            graphics.submitBannerPatternRenderState(flag, base, cumulative, x + 16, y + 2, x + 30, y + 30)
             graphics.themeText(font, catalogClip(font, "${index + 1}. ${layers[index].description().string}", (width - 58).coerceAtLeast(1)), x + 34, y + 11, SpotlightTheme.color(0xFFF2F5FC))
             graphics.themeText(font, "×", right - 14, y + 11, SpotlightTheme.color(0xFFF2F5FC))
             if (isHovered && mouseX >= right - 20) graphics.setTooltipForNextFrame(catalogText("Remove layer ${index + 1}"), mouseX, mouseY)

@@ -1,7 +1,7 @@
 package dev.spotlight.platform
 
 import dev.spotlight.core.Entry
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
@@ -42,9 +42,9 @@ internal object FindTargets {
     private var expires = 0L
 
     fun initialize() {
-        LevelRenderEvents.BEFORE_GIZMOS.register { context ->
+        WorldRenderEvents.END_EXTRACTION.register { context ->
             if (Minecraft.getInstance().level === highlightLevel && System.nanoTime() < expires) {
-                context.levelRenderer().collectPerFrameGizmos().use {
+                context.worldRenderer().collectPerFrameGizmos().use {
                     highlights.forEach { Gizmos.cuboid(it, GizmoStyle.stroke(0xff55ffff.toInt(), 2f)).setAlwaysOnTop() }
                 }
             }
@@ -136,7 +136,7 @@ internal object FindTargets {
                 "Nearest loaded block at ${hit.x}, ${hit.y}, ${hit.z}; " +
                     "${String.format(java.util.Locale.ROOT, "%.1f", sqrt(hit.distanceSquared))} blocks from search start; highlighting for 15s"
             }
-            client.player?.sendSystemMessage(if (hit == null) Component.literal(message)
+            client.gui.chat.addMessage(if (hit == null) Component.literal(message)
                 else BlockHitActions.message(message, BlockPos(hit.x, hit.y, hit.z)))
             scan = null
         }
@@ -145,7 +145,7 @@ internal object FindTargets {
     private fun feedback(count: Int, distance: Double?, kind: String) {
         val message = "$count loaded $kind within $RADIUS blocks" +
             (distance?.let { "; nearest ${String.format(java.util.Locale.ROOT, "%.1f", it)} blocks; highlighting up to $MAX_MARKERS for 15s" } ?: "")
-        Minecraft.getInstance().player?.sendSystemMessage(Component.literal(message))
+        Minecraft.getInstance().gui.chat.addMessage(Component.literal(message))
     }
 
     

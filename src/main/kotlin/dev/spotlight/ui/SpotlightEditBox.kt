@@ -1,7 +1,7 @@
 package dev.spotlight.ui
 
 import net.minecraft.client.gui.Font
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.network.chat.Component
 
@@ -26,19 +26,19 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
     override fun isBordered(): Boolean = !extractingText && super.isBordered()
     override fun getInnerWidth(): Int = if (super.isBordered()) width - 8 else width
 
-    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (SpotlightTheme.isDefault()) {
-            super.extractWidgetRenderState(graphics, mouseX, mouseY, delta)
+            super.renderWidget(graphics, mouseX, mouseY, delta)
             return
         }
         if (!isVisible) return
         graphics.fill(x, y, right, bottom, SpotlightTheme.color(0xFF161D29))
-        graphics.outline(x, y, width, height,
+        graphics.renderOutline(x, y, width, height,
             SpotlightTheme.color(if (isFocused && active) 0xFF81B8FF else 0xFF415877))
         
         extractingText = true
         try {
-            super.extractWidgetRenderState(graphics, mouseX, mouseY, delta)
+            super.renderWidget(graphics, mouseX, mouseY, delta)
         } finally {
             extractingText = false
         }

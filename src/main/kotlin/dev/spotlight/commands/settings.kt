@@ -14,6 +14,6 @@ internal fun registerSettings() {
     registerCommand("minecraft_settings", "Minecraft settings") {
         val client = Minecraft.getInstance()
         val parent = client.screen ?: if (client.level == null) TitleScreen() else PauseScreen(false)
-        client.setScreen(OptionsScreen(parent, client.options, client.level != null))
+        client.setScreen(OptionsScreen(parent, client.options))
     }
 }

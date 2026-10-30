@@ -5,7 +5,7 @@ import dev.spotlight.core.Entry
 import dev.spotlight.core.Fuzzy
 import dev.spotlight.platform.RegionSelection
 import dev.spotlight.platform.Spotlight
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -213,13 +213,13 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("fill · choose block and mode"), left, 12, SpotlightTheme.color(0xFFF2F5FC))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         results.drop(offset).take(count).forEachIndexed { index, entry ->
             val stack = fillBlockIcon(entry.detail)
-            if (!stack.isEmpty) graphics.item(stack, left + 3, 86 + index * rowStep)
+            if (!stack.isEmpty) graphics.renderItem(stack, left + 3, 86 + index * rowStep)
         }
         val help = listOf(
             error ?: results.getOrNull(selected)?.detail ?: "No matching blocks",

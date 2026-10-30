@@ -98,7 +98,7 @@ internal fun commandMatch(query: String, value: String): Int {
 internal fun validCommandIp(value: String): Boolean {
     if (':' in value) {
         if (value.any { it !in "0123456789abcdefABCDEF:." }) return false
-        return try { java.net.InetAddress.ofLiteral(value); true } catch (_: IllegalArgumentException) { false }
+        return try { java.net.InetAddress.getByName(value); true } catch (_: java.net.UnknownHostException) { false }
     }
     val parts = value.split('.')
     return parts.size == 4 && parts.all { part ->

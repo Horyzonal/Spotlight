@@ -5,7 +5,7 @@ import dev.spotlight.core.SavedLocation
 import dev.spotlight.ui.LocationEditScreen
 import dev.spotlight.ui.SpotlightTheme
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
@@ -25,10 +25,10 @@ internal object BlockHitActions {
     fun initialize() {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> hits.clear() }
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            val root = ClientCommands.literal("spotlight:hit")
+            val root = ClientCommandManager.literal("spotlight:hit")
             listOf("highlight", "location").forEach { action ->
-                root.then(ClientCommands.literal(action).then(
-                    ClientCommands.argument("token", StringArgumentType.word()).executes { context ->
+                root.then(ClientCommandManager.literal(action).then(
+                    ClientCommandManager.argument("token", StringArgumentType.word()).executes { context ->
                         run(context.source, action, StringArgumentType.getString(context, "token"))
                     }))
             }

@@ -11,14 +11,14 @@ import com.mojang.brigadier.StringReader
 import dev.spotlight.platform.CommandSuggestion
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
-import net.minecraft.client.gui.components.PlayerFaceExtractor
+import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 import dev.spotlight.platform.CommandContext
 import dev.spotlight.platform.CommandInput
 import dev.spotlight.platform.Spotlight
 import dev.spotlight.platform.SpotlightCommand
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.Tooltip
@@ -314,12 +314,12 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         setFocused(input)
     }
 
-    private fun renderSuggestionIcon(graphics: GuiGraphicsExtractor, suggestion: CommandSuggestion, x: Int, y: Int): Boolean {
+    private fun renderSuggestionIcon(graphics: GuiGraphics, suggestion: CommandSuggestion, x: Int, y: Int): Boolean {
         return try {
             when (suggestion.kind) {
                 SelectionKind.PLAYERS -> {
                     val player = minecraft.connection?.onlinePlayers?.firstOrNull { it.profile.id().toString() == suggestion.iconId } ?: return false
-                    PlayerFaceExtractor.extractRenderState(graphics, player.skin, x, y, 16)
+                    PlayerFaceRenderer.draw(graphics, player.skin, x, y, 16)
                     true
                 }
                 SelectionKind.EFFECTS -> {
@@ -360,7 +360,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             val narration = Component.literal("$caption. ${detail(entry)}" + if (entry.id in preferences?.favorites.orEmpty()) ". Favorite" else "")
             val button = object : Button(left + 10, listTop + index * rowHeight, (panelWidth - 24).coerceAtLeast(1), rowHeight - 2,
                 narration, OnPress { activateRow(entry.id) }, CreateNarration { supplier -> supplier.get() }) {
-                override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+                override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                     val chosen = absolute == selected
                     graphics.fill(x, y, right, bottom, when {
                         isHoveredOrFocused -> SpotlightTheme.color(0xFF2B3F59)
@@ -375,7 +375,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
                     if (itemId != null) {
                         try {
                             val stack = stacks.getOrPut(itemId) { Spotlight.stack(itemId) }
-                            graphics.item(stack, x + 6, y + (height - 16) / 2)
+                            graphics.renderItem(stack, x + 6, y + (height - 16) / 2)
                         } catch (failure: Exception) {
                             error = "Cannot render item: ${failure.message ?: failure.javaClass.simpleName}"
                         }
@@ -810,13 +810,13 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     override fun getNarrationMessage(): Component = Component.literal("Spotlight. " +
         if (::input.isInitialized) input.message.string else "Search commands and items")
 
-    override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(left, top, left + panelWidth, bottom, SpotlightTheme.color(0xFA101722))
-        graphics.outline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
+        graphics.renderOutline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
         graphics.enableScissor(left + 4, top, left + panelWidth - 4, bottom)
         val heading = when (flow.state.stage) {
             PaletteStage.ROOT -> "Spotlight"
@@ -830,7 +830,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteStage.LOCATIONS -> "Locations"
         }
         graphics.themeText(font, clipped(heading, (panelWidth - 24).coerceAtLeast(0)), left + 12, top + 12, SpotlightTheme.color(0xFFF2F5FC))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         if (results.isEmpty() && listTop + 20 < footerTop) graphics.themeText(font, argumentHint() ?: if (input.value.trim() == "/seed") "Custom seed copies known full seed · singleplayer only" else if (input.value.startsWith('/')) "Enter runs valid command · Tab completes · ${primaryModifierLabel}+E edits target" else "No matches. Try an item ID or shorter query.", left + 15, listTop + 8, SpotlightTheme.color(0xFF9DADC3))
         val status = error ?: themeWarning ?: argumentHint() ?: (if (flow.state.stage == PaletteStage.LOCATIONS) Spotlight.locationSyncStatus() else null) ?: currentEntry()?.let(::detail) ?: "Search commands and every loaded item"
         graphics.fill(left + 8, footerTop - 3, left + panelWidth - 8, footerTop - 2, SpotlightTheme.color(0xFF243146))

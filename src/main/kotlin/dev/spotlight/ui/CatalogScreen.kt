@@ -4,7 +4,7 @@ import dev.spotlight.platform.CommandSuggestion
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
 import dev.spotlight.platform.commandMatch
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -20,7 +20,7 @@ import net.minecraft.client.gui.components.FittingMultiLineTextWidget
 internal fun catalogButton(label: String, x: Int, y: Int, width: Int, height: Int = 20, onPress: () -> Unit): Button =
     spotlightButton(label, x, y, width, height, onPress).also { it.message = catalogText(it.message) }
 
-internal fun catalogHints(graphics: GuiGraphicsExtractor, font: Font, width: Int, height: Int, text: String) {
+internal fun catalogHints(graphics: GuiGraphics, font: Font, width: Int, height: Int, text: String) {
     val lines = font.split(catalogText(text), (width - 16).coerceAtLeast(1))
     graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
     lines.forEachIndexed { index, line ->
@@ -50,18 +50,18 @@ internal fun catalogCustomFrame(): Boolean =
         SpotlightTheme.color(0xFF81B8FF) != 0xFF81B8FF.toInt() ||
         SpotlightTheme.metric("borderThickness", 1, 1, 4) != 1
 
-internal fun catalogFrame(graphics: GuiGraphicsExtractor, widget: AbstractWidget) {
+internal fun catalogFrame(graphics: GuiGraphics, widget: AbstractWidget) {
     graphics.fill(widget.x, widget.y, widget.right, widget.bottom, SpotlightTheme.color(0xFF161D29))
     repeat(SpotlightTheme.metric("borderThickness", 1, 1, 4).coerceAtMost(minOf(widget.width, widget.height) / 2)) { inset ->
-        graphics.outline(widget.x + inset, widget.y + inset, widget.width - inset * 2, widget.height - inset * 2,
+        graphics.renderOutline(widget.x + inset, widget.y + inset, widget.width - inset * 2, widget.height - inset * 2,
             SpotlightTheme.color(if (widget.isFocused) 0xFF81B8FF else 0xFF415877))
     }
 }
 
 internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Component, font: Font): FittingMultiLineTextWidget =
     object : FittingMultiLineTextWidget(x, y, width, height, message, font) {
-        override fun extractBackground(graphics: GuiGraphicsExtractor) {
-            if (catalogCustomFrame()) catalogFrame(graphics, this) else super.extractBackground(graphics)
+        override fun renderBackground(graphics: GuiGraphics) {
+            if (catalogCustomFrame()) catalogFrame(graphics, this) else super.renderBackground(graphics)
         }
 
         override fun setMessage(message: Component) {
@@ -156,9 +156,9 @@ class CatalogScreen(private val parent: Screen) : Screen(catalogText("Selection 
     }
 
     override fun onClose() { minecraft.setScreen(parent) }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "↑↓ Select · Enter Copy ID · Tab Next · Esc Back")
     }
 }

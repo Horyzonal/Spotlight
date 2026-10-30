@@ -2,7 +2,7 @@ package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.platform.CreativeBanner
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
@@ -37,8 +37,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     private val baseIcons by lazy { DyeColor.entries.associateWith { CreativeBanner.createBanner(it, emptyList()) } }
 
     private val dyeIcons by lazy {
-        BuiltInRegistries.ITEM.filter { it.components().has(DataComponents.DYE) }
-            .associate { it.components().get(DataComponents.DYE)!! to ItemStack(it) }
+        DyeColor.entries.associateWith { ItemStack(net.minecraft.world.item.DyeItem.byColor(it)) }
     }
     private val rows = mutableListOf<List<AbstractWidget>>()
     private lateinit var patternGrid: BannerPatternGrid
@@ -81,11 +80,11 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             }
         }
         val preview = object : AbstractWidget(0, 0, 100, 180, catalogText("Current banner draft")) {
-            override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+            override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                 graphics.enableScissor(x, y, right, bottom)
                 graphics.themeText(font, catalogClip(font, "Current draft", width), x + 4, y + 4, SpotlightTheme.color(0xFFF2F5FC))
                 val bannerWidth = minOf(64, (width - 12).coerceAtLeast(0), ((height - 24) / 2).coerceAtLeast(0))
-                if (bannerWidth > 0) graphics.bannerPattern(flag, base, BannerPatternLayers(layers.toList()),
+                if (bannerWidth > 0) graphics.submitBannerPatternRenderState(flag, base, BannerPatternLayers(layers.toList()),
                     x + (width - bannerWidth) / 2, y + 20, x + (width + bannerWidth) / 2, y + 20 + bannerWidth * 2)
                 graphics.disableScissor()
             }
@@ -156,9 +155,9 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     }
 
     override fun tick() { refresh() }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, catalogClip(font, failure ?: title.string, (width - 24).coerceAtLeast(1)), 12, 12, SpotlightTheme.color(0xFFF2F5FC))
     }
 
@@ -167,7 +166,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         icons: Map<DyeColor, ItemStack>,
         private val current: () -> DyeColor,
         private val choose: (DyeColor) -> Unit,
-    ) : AbstractContainerWidget(0, 0, 100, 56, catalogText("$label; arrows choose color"), defaultSettings(6)) {
+    ) : AbstractContainerWidget(0, 0, 100, 56, catalogText("$label; arrows choose color")) {
         private val swatches = DyeColor.entries.map { color -> Swatch(color, icons.getValue(color)) }
         private fun columns() = if (width >= 16 * 20) 16 else 8
         private fun layoutSwatches() {
@@ -194,11 +193,11 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             layoutSwatches()
             return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
         }
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             layoutSwatches()
             graphics.enableScissor(x, y, right, bottom)
             graphics.themeText(font, message.string.substringBefore(';'), x, y + 2, SpotlightTheme.color(0xFFF2F5FC))
-            swatches.forEach { it.extractRenderState(graphics, mouseX, mouseY, delta) }
+            swatches.forEach { it.render(graphics, mouseX, mouseY, delta) }
             graphics.disableScissor()
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -212,16 +211,16 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
                 choose(color)
                 return true
             }
-            override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-                graphics.item(stack, x + 2, y + 2)
-                if (current() == color || isHoveredOrFocused) graphics.outline(x, y, width, height,
+            override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+                graphics.renderItem(stack, x + 2, y + 2)
+                if (current() == color || isHoveredOrFocused) graphics.renderOutline(x, y, width, height,
                     SpotlightTheme.color(if (current() == color) 0xFF81B8FF else 0xFFF2F5FC))
             }
             override fun updateWidgetNarration(output: NarrationElementOutput) { defaultButtonNarrationText(output) }
         }
     }
 
-    private inner class Form : AbstractContainerWidget(0, 34, 100, 100, catalogText("Banner editor controls"), defaultSettings(6)) {
+    private inner class Form : AbstractContainerWidget(0, 34, 100, 100, catalogText("Banner editor controls")) {
         private val offsets = mutableMapOf<AbstractWidget, Int>()
         private var totalHeight = 0
         override fun children(): List<AbstractWidget> = rows.flatten()
@@ -263,14 +262,14 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             if (layerList.isMouseOver(mouseX, mouseY) && layerList.mouseScrolled(mouseX, mouseY, horizontal, vertical)) return true
             return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
         }
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             graphics.enableScissor(x, y, right, bottom)
             val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
             children().filter { it.bottom > y && it.y < bottom }.forEach {
-                it.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
+                it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
             }
             graphics.disableScissor()
-            extractScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics, mouseX, mouseY)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { (focused as? AbstractWidget)?.updateNarration(output) }
     }

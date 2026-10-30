@@ -5,7 +5,7 @@ import dev.spotlight.core.Entry
 import dev.spotlight.core.Fuzzy
 import dev.spotlight.platform.notifySpotlight
 import dev.spotlight.platform.worldUnavailable
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -118,9 +118,9 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
         graphics.themeText(font, catalogClip(font, "Ping · ${results.size}/${entries.size} online players · Player / Latency", panelWidth), left, 38, SpotlightTheme.color(0xFF9DADC3))
         if (results.isEmpty() && count > 0) graphics.themeText(font, catalogClip(font, worldUnavailable() ?: "No matching online players", panelWidth), left, 52, SpotlightTheme.color(0xFF9DADC3))

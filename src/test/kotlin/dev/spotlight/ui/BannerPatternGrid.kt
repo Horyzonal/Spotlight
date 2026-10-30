@@ -18,16 +18,14 @@ object BannerPatternGridCheck {
         check(Minecraft::class.java.getMethod("getToastManager").returnType == ToastManager::class.java)
         AbstractContainerWidget::class.java.getConstructor(
             Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType, Component::class.java, AbstractScrollArea.ScrollbarSettings::class.java,
+            Int::class.javaPrimitiveType, Component::class.java,
         )
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
         val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
-        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
-        val dyes = BuiltInRegistries.ITEM.filter { it.components().has(DataComponents.DYE) }
-            .associate { it.components().get(DataComponents.DYE)!! to ItemStack(it) }
+        val dyes = DyeColor.entries.associateWith { ItemStack(net.minecraft.world.item.DyeItem.byColor(it)) }
         check(dyes.keys == DyeColor.entries.toSet())
-        dyes.forEach { (color, stack) -> check(stack.get(DataComponents.DYE) == color && !stack.isEmpty) }
+        dyes.forEach { (color, stack) -> check((stack.item as net.minecraft.world.item.DyeItem).dyeColor == color && !stack.isEmpty) }
         check(bannerGridRows(-1) == 0)
         check(bannerGridRows(0) == 0)
         check(bannerGridRows(1) == 1)

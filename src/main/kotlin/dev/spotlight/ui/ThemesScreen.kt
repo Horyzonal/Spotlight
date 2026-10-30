@@ -3,7 +3,7 @@ package dev.spotlight.ui
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.core.ThemeColor
 import dev.spotlight.core.ThemeEntry
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
@@ -119,9 +119,9 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
         }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, title, left, 12, SpotlightTheme.color(0xFFF2F5FC))
         rows.forEachIndexed { index, row ->
             results.getOrNull(offset + index)?.let { entry ->
@@ -137,7 +137,7 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
             val previewY = detailY + 16
             graphics.fill(left, previewY, left + panelWidth, previewY + 26, entry.config.color(ThemeColor.PANEL_BACKGROUND.defaultArgb))
             graphics.fill(left + 4, previewY + 4, left + 8, previewY + 22, entry.config.color(ThemeColor.ACCENT.defaultArgb))
-            graphics.text(font, catalogClip(font, "Selected preview · Text / accent / background", panelWidth - 20, entry.config.textShadow()),
+            graphics.drawString(font, catalogClip(font, "Selected preview · Text / accent / background", panelWidth - 20, entry.config.textShadow()),
                 left + 14, previewY + 9, entry.config.color(ThemeColor.TEXT.defaultArgb), entry.config.textShadow())
         }
         graphics.themeText(font, catalogClip(font, if (results.isEmpty() && !failed) "No matching themes" else notice, panelWidth), left, height - 65, SpotlightTheme.color(if (failed) 0xFFFFB4A9 else 0xFF9DADC3))

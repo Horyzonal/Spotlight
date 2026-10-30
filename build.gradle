@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom'
+    id 'net.fabricmc.fabric-loom-remap'
     id 'org.jetbrains.kotlin.jvm'
 }
 
@@ -9,9 +9,10 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${loader_version}"
-    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    implementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
 }
 
 base {
@@ -19,7 +20,9 @@ base {
 }
 
 kotlin {
-    jvmToolchain(java_version.toInteger())
+    jvmToolchain(25)
+        compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    compilerOptions.freeCompilerArgs.add("-Xjdk-release=21")
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -330,10 +333,10 @@ tasks.named('jar') {
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Validate release contents, licenses, entrypoints and Mixin classes.'
-    dependsOn tasks.named('jar'), tasks.named('testClasses')
-    inputs.file(tasks.named('jar').flatMap { it.archiveFile })
+    dependsOn tasks.named('remapJar'), tasks.named('testClasses')
+    inputs.file(tasks.named('remapJar').flatMap { it.archiveFile })
     doLast {
-        def archive = tasks.named('jar').get().archiveFile.get().asFile
+        def archive = tasks.named('remapJar').get().archiveFile.get().asFile
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
             def names = zip.entries().collect { it.name }.toSet()
             def requireEntry = { String name ->

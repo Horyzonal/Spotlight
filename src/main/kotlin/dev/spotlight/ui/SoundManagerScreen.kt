@@ -6,7 +6,7 @@ import dev.spotlight.platform.SoundControls
 import dev.spotlight.platform.commandMatch
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.ObjectSelectionList
 import net.minecraft.client.gui.screens.Screen
@@ -60,7 +60,7 @@ internal class SoundMenuList(
             setSelected(this)
             return true
         }
-        override fun extractContent(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, hovered: Boolean, delta: Float) {
+        override fun renderContent(graphics: GuiGraphics, mouseX: Int, mouseY: Int, hovered: Boolean, delta: Float) {
             graphics.themeText(textFont, catalogClip(textFont, label, contentWidth), contentX, contentY + 3, foreground)
             if (hovered) graphics.setTooltipForNextFrame(catalogText(label), mouseX, mouseY)
         }
@@ -173,9 +173,9 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         return super.keyPressed(event)
     }
     override fun onClose() { minecraft.setScreen(parent) }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         if (manual) {
             graphics.themeText(font, catalogClip(font, "Volume 0–1", panelWidth / 2), left, bottom - 74, foreground)
             graphics.themeText(font, catalogClip(font, "Pitch 0.5–2", panelWidth / 2), left + panelWidth / 2, bottom - 74, foreground)

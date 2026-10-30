@@ -39,9 +39,9 @@ A: idk
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc26.1-0.1.0.jar`.
+Production artifact: `build/libs/spotlight-mc1.21.11-0.1.0.jar`.
 
-Development client uses `run/26.1/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port uses native 26.1 GLFW input, rendering and screen APIs; binary compatibility with 26.2/26.3 or 26.1 patch releases is not claimed.
+Development client uses `run/1.21.11/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port targets Minecraft 1.21.11 with Fabric Loader 0.20.1 and Fabric API 0.141.6+1.21.11. Build uses JDK 25; Java and Kotlin target Java 21 bytecode. Other Minecraft versions require separate builds.
 
 ## Attributions
 When I don't have inspiration, I just steal from other mods.

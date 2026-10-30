@@ -17,7 +17,7 @@ internal fun registerInventory() {
         val slots = (0 until inventory.containerSize).filter { inventory.getItem(it).item == item && !inventory.getItem(it).isEmpty }
         check(slots.isNotEmpty()) { "Item not found in inventory" }
         slots.firstOrNull { it < 9 }?.let { inventory.selectedSlot = it }
-        player.sendSystemMessage(Component.literal("${BuiltInRegistries.ITEM.getKey(item)}: " + slots.joinToString { slot ->
+        client.gui.chat.addMessage(Component.literal("${BuiltInRegistries.ITEM.getKey(item)}: " + slots.joinToString { slot ->
             when {
                 slot < 9 -> "hotbar ${slot + 1}"
                 slot < 36 -> "inventory ${slot - 8}"

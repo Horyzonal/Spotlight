@@ -2,7 +2,7 @@ package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.platform.CreativeBanner
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
@@ -25,7 +25,7 @@ internal fun bannerGridRows(count: Int) = (count.coerceAtLeast(0) + 3) / 4
 internal class BannerPatternGrid(
     private val flag: BannerFlagModel,
     private val choose: (Holder.Reference<BannerPattern>) -> Unit,
-) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Banner patterns; arrows navigate, click / Enter / Space adds layer"), defaultSettings(6)) {
+) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Banner patterns; arrows navigate, click / Enter / Space adds layer")) {
     private val tiles = mutableListOf<Tile>()
     private var cachedPatterns = emptyList<Holder.Reference<BannerPattern>>()
     private var cachedBase: DyeColor? = null
@@ -99,15 +99,15 @@ internal class BannerPatternGrid(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
         isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
 
-    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         layoutTiles()
         graphics.enableScissor(x, y, right, bottom)
         val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
         tiles.filter { it.bottom > y && it.y < bottom }.forEach {
-            it.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
+            it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
         }
         graphics.disableScissor()
-        extractScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics, mouseX, mouseY)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -124,11 +124,11 @@ internal class BannerPatternGrid(
             add()
             return true
         }
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             val state = if (selected == pattern) "pattern_selected" else if (isHoveredOrFocused) "pattern_highlighted" else "pattern"
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("container/loom/$state"), x, y, width, height)
             val bannerWidth = minOf(16, (width - 4).coerceAtLeast(0))
-            if (bannerWidth > 0) graphics.bannerPattern(flag, requireNotNull(cachedBase), preview,
+            if (bannerWidth > 0) graphics.submitBannerPatternRenderState(flag, requireNotNull(cachedBase), preview,
                 x + (width - bannerWidth) / 2, y + 4, x + (width + bannerWidth) / 2, y + 36)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { defaultButtonNarrationText(output) }

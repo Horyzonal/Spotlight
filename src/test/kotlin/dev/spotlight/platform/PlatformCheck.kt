@@ -38,7 +38,6 @@ internal object PlatformCheck {
         dev.spotlight.ui.SoundMenuCheck.main(emptyArray())
         dev.spotlight.ui.CurrentSongCheck.run()
         val registries = VanillaRegistries.createLookup()
-        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val formatted = StyledText(listOf(ColoredRun("red\n", 0xFF0000), ColoredRun("blue\n\n", 0x0000FF)),
             TextStyle(bold = true, italic = false, underlined = true, strikethrough = true, obfuscated = true))
         val component = CreativeText.component(formatted)

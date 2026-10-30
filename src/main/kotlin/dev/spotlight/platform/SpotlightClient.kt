@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.ui.SpotlightScreen
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.KeyMapping
 import net.minecraft.resources.Identifier
@@ -26,7 +26,7 @@ class SpotlightClient : ClientModInitializer {
         RegionSelection.initialize()
         FabricLoader.getInstance().getEntrypoints("spotlight", SpotlightExtension::class.java)
             .forEach { it.registerCommands() }
-        val key = KeyMappingHelper.registerKeyMapping(KeyMapping(
+        val key = KeyBindingHelper.registerKeyBinding(KeyMapping(
             "key.spotlight.open", InputConstants.Type.KEYSYM, InputConstants.KEY_GRAVE,
             KeyMapping.Category.register(Identifier.parse("spotlight:controls")),
         ))

@@ -2,7 +2,7 @@ package dev.spotlight.ui
 
 import dev.spotlight.commands.regionCommandUnavailable
 import dev.spotlight.platform.RegionSelection
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
@@ -58,9 +58,9 @@ class CloneScreen(private val parent: Screen?) : Screen(catalogText("clone")) {
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         val lines = listOf(
             4 to "clone · choose mask and behavior",
             48 to if (mask == "masked") "Copy non-air blocks only." else "Copy all blocks, including air.",

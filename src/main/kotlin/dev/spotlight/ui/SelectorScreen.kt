@@ -4,7 +4,7 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -169,12 +169,12 @@ class SelectorScreen(
         return super.keyPressed(event)
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Entity selector · edit flags, then apply"), left, top + 5, SpotlightTheme.color(0xFFF2F5FC))
         val message = error ?: "Preserves other flags · type, distance, limit, sort, name, team, tag…"
         graphics.themeText(font, catalogClip(font, message, panelWidth), left, height - 80, SpotlightTheme.color(0xFFFFC0A0))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "↑↓ Choices · Enter Choose / Set · ${primaryModifierLabel}+Enter Apply · Tab Next · Esc Back")
     }
 }

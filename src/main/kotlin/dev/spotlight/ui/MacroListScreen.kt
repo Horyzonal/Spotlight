@@ -5,7 +5,7 @@ import dev.spotlight.core.Fuzzy
 import dev.spotlight.core.Entry
 import dev.spotlight.core.Macro
 import dev.spotlight.platform.MacroRuntime
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -108,9 +108,9 @@ class MacroListScreen(private val parent: SpotlightScreen) : Screen(catalogText(
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
     override fun onClose() { minecraft.setScreen(parent) }
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         if (results.isEmpty()) graphics.themeText(font, catalogText("No macros. ${primaryModifierLabel}+N creates one."), left, 76, SpotlightTheme.color(0xFF9DADC3))
         error?.let { graphics.themeText(font, catalogClip(font, it, panelWidth), left, height - 110, SpotlightTheme.color(0xFFFFB4A9)) }
 

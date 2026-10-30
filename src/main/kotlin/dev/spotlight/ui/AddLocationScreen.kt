@@ -3,7 +3,7 @@ package dev.spotlight.ui
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.core.SavedLocation
 import dev.spotlight.platform.LocationActions
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
@@ -60,12 +60,12 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))
         val y = maxOf(28, (height - 152) / 2)
         graphics.themeText(font, catalogText(title), maxOf(10, (width - font.width(catalogText(title))) / 2), y - 20, SpotlightTheme.color(0xFFF2F5FC))
         error?.let { graphics.themeText(font, catalogClip(font, it, (width - 20).coerceAtLeast(0)), 10, y + 132, SpotlightTheme.color(0xFFFFB4A9)) }
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
     }
 }
 

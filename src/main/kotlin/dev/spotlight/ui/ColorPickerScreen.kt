@@ -1,7 +1,7 @@
 package dev.spotlight.ui
 
 import dev.spotlight.core.ColorPicker
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.narration.NarrationElementOutput
@@ -135,9 +135,9 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
         return super.mouseReleased(event)
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         val ink = SpotlightTheme.color(0xFFF2F5FC)
         graphics.themeText(font, title, left, 10, ink)
         graphics.themeText(font, catalogText("Hex RGB"), left, fieldY - 11, ink)
@@ -177,7 +177,7 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
             return true
         }
 
-        override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             val opaque = 0xFF000000.toInt()
             if (isHue) {
                 for (row in 0 until height) graphics.fill(x, y + row, right, y + row + 1,
@@ -188,11 +188,11 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
                     opaque or ColorPicker.rgb(hsv.hue, column.toDouble() / (columns - 1).coerceAtLeast(1), 1.0), opaque)
             }
             val ink = SpotlightTheme.color(if (isFocused) 0xFFF2F5FC else 0xFF9DADC3)
-            graphics.outline(x - 1, y - 1, width + 2, height + 2, ink)
+            graphics.renderOutline(x - 1, y - 1, width + 2, height + 2, ink)
             val markerX = if (isHue) x + width / 2 else x + (hsv.saturation * (width - 1)).roundToInt()
             val markerY = y + ((if (isHue) hsv.hue / 360 else 1 - hsv.value) * (height - 1)).roundToInt()
-            graphics.outline(markerX - 3, markerY - 3, 7, 7, SpotlightTheme.color(0xFF101722))
-            graphics.outline(markerX - 2, markerY - 2, 5, 5, ink)
+            graphics.renderOutline(markerX - 3, markerY - 3, 7, 7, SpotlightTheme.color(0xFF101722))
+            graphics.renderOutline(markerX - 2, markerY - 2, 5, 5, ink)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) { defaultButtonNarrationText(output) }

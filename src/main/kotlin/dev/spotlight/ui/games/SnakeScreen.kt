@@ -6,7 +6,7 @@ import dev.spotlight.ui.themeText
 import dev.spotlight.ui.SpotlightTheme
 import dev.spotlight.ui.catalogText
 import dev.spotlight.ui.spotlightButton
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 
@@ -40,9 +40,9 @@ class SnakeScreen(private val parent: Screen?) : Screen(catalogText("Snake")) {
         return true
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), (height - 32).coerceAtLeast(1))
         val status = when {
             game.won -> "Board filled · You win! · R: restart"

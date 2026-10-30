@@ -7,7 +7,7 @@ import dev.spotlight.core.ThemeReport
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.resources.Identifier
 import net.minecraft.client.gui.Font
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 import org.slf4j.LoggerFactory
@@ -59,17 +59,17 @@ object SpotlightTheme {
     }
 }
 
-internal fun GuiGraphicsExtractor.themeText(font: Font, text: String, x: Int, y: Int, color: Int) =
-    text(font, text, x, y, color, SpotlightTheme.textShadow())
+internal fun GuiGraphics.themeText(font: Font, text: String, x: Int, y: Int, color: Int) =
+    drawString(font, text, x, y, color, SpotlightTheme.textShadow())
 
-internal fun GuiGraphicsExtractor.themeText(font: Font, text: Component, x: Int, y: Int, color: Int) =
-    text(font, text, x, y, color, SpotlightTheme.textShadow())
+internal fun GuiGraphics.themeText(font: Font, text: Component, x: Int, y: Int, color: Int) =
+    drawString(font, text, x, y, color, SpotlightTheme.textShadow())
 
-internal fun GuiGraphicsExtractor.themeText(font: Font, text: FormattedCharSequence, x: Int, y: Int, color: Int) =
-    text(font, text, x, y, color, SpotlightTheme.textShadow())
+internal fun GuiGraphics.themeText(font: Font, text: FormattedCharSequence, x: Int, y: Int, color: Int) =
+    drawString(font, text, x, y, color, SpotlightTheme.textShadow())
 
-internal fun GuiGraphicsExtractor.themeCenteredText(font: Font, text: Component, x: Int, y: Int, color: Int) =
+internal fun GuiGraphics.themeCenteredText(font: Font, text: Component, x: Int, y: Int, color: Int) =
     themeText(font, text, x - font.width(text) / 2, y, color)
 
-internal fun GuiGraphicsExtractor.themeCenteredText(font: Font, text: FormattedCharSequence, x: Int, y: Int, color: Int) =
+internal fun GuiGraphics.themeCenteredText(font: Font, text: FormattedCharSequence, x: Int, y: Int, color: Int) =
     themeText(font, text, x - font.width(text) / 2, y, color)

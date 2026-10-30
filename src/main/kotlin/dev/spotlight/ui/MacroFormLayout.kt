@@ -1,7 +1,7 @@
 package dev.spotlight.ui
 
 import net.minecraft.client.gui.Font
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.events.GuiEventListener
@@ -24,7 +24,7 @@ internal class MacroFormLayout(
     val fields: List<EditBox>,
     private val labels: List<String>,
     private val onFocus: (Int) -> Unit,
-) : AbstractContainerWidget(x, y, width, height, catalogText("Macro arguments"), defaultSettings(6)) {
+) : AbstractContainerWidget(x, y, width, height, catalogText("Macro arguments")) {
     override fun children(): List<EditBox> = fields
     override fun contentHeight() = fields.size * macroFieldStep
     override fun scrollRate() = macroFieldStep.toDouble()
@@ -63,7 +63,7 @@ internal class MacroFormLayout(
         return super.mouseDragged(event, dx, dy)
     }
 
-    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         positionFields()
         graphics.enableScissor(x, y, right, bottom)
         val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
@@ -71,11 +71,11 @@ internal class MacroFormLayout(
             if (field.bottom > y && field.y - 14 < bottom) {
                 graphics.themeText(font, catalogClip(font, labels[index], field.width), field.x, field.y - 12,
                     SpotlightTheme.color(0xFFF2F5FC))
-                field.extractRenderState(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
+                field.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
             }
         }
         graphics.disableScissor()
-        extractScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics, mouseX, mouseY)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {

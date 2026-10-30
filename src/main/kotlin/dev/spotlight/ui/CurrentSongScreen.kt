@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import com.mojang.blaze3d.platform.NativeImage
 import dev.spotlight.platform.CurrentMusic
 import dev.spotlight.platform.CurrentSong
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
@@ -43,10 +43,10 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         val controlsY = top + panelHeight - 72
         play = addRenderableWidget(object : Button(center - 26, controlsY, 52, 30, catalogText("Pause playback"),
             OnPress { control { CurrentMusic.togglePause() } }, CreateNarration { it.get() }) {
-            override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+            override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                 val highlighted = active && (isHovered || isFocused)
                 graphics.fill(x, y, right, bottom, SpotlightTheme.color(if (highlighted) 0xFF293F5B else 0xFF161D29))
-                graphics.outline(x, y, this.width, this.height, SpotlightTheme.color(if (highlighted) 0xFF81B8FF else 0xFF415877))
+                graphics.renderOutline(x, y, this.width, this.height, SpotlightTheme.color(if (highlighted) 0xFF81B8FF else 0xFF415877))
                 val ink = SpotlightTheme.color(if (active) 0xFFF2F5FC else 0xFF91A0B5)
                 val cx = x + this.width / 2
                 val cy = y + this.height / 2
@@ -145,12 +145,12 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val foreground = SpotlightTheme.color(0xFFF2F5FC)
         val muted = SpotlightTheme.color(0xFF9DADC3)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.fill(left, top, left + panelWidth, top + panelHeight, SpotlightTheme.color(0xFF161D29))
-        graphics.outline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
+        graphics.renderOutline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
         graphics.themeCenteredText(font, catalogText("NOW PLAYING"), width / 2, top + 12, muted)
         val cx = width / 2
         val cy = top + 34 + discSize / 2
@@ -185,7 +185,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         graphics.themeCenteredText(font, catalogText(state), cx, titleY + 37, muted)
         if (mouseX in left + 12 until left + panelWidth - 12 && mouseY in titleY until titleY + 34 && song != null)
             graphics.setTooltipForNextFrame(catalogText("${song!!.title}\n${song!!.artist ?: "Unknown artist"}"), mouseX, mouseY)
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         if (status.isNotEmpty()) {
             graphics.themeCenteredText(font, catalogClip(font, status, (panelWidth - 16).coerceAtLeast(1)), cx, top + panelHeight - 12, foreground)
             if (mouseY in top + panelHeight - 14 until top + panelHeight)

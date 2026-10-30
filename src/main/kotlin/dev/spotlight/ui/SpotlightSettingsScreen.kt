@@ -2,7 +2,7 @@ package dev.spotlight.ui
 
 import dev.spotlight.platform.Spotlight
 import dev.spotlight.platform.notifySpotlight
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
 
@@ -35,12 +35,12 @@ class SpotlightSettingsScreen(private val parent: Screen?) : Screen(catalogText(
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))
         val y = maxOf(36, (height - 100) / 2)
         graphics.themeText(font, catalogText(title), maxOf(10, (width - font.width(title)) / 2), y - 24, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, "ON: command key opens Spotlight with /", (width - 20).coerceAtLeast(0)), 10, y + 30, SpotlightTheme.color(0xFFF2F5FC))
         error?.let { graphics.themeText(font, catalogClip(font, it, (width - 20).coerceAtLeast(0)), 10, y + 80, SpotlightTheme.color(0xFFFFB4A9)) }
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
     }
 }

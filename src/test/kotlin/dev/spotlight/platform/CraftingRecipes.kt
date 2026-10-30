@@ -13,16 +13,13 @@ object RecipeIndexCheck {
         net.minecraft.server.Bootstrap.bootStrap()
         val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
 
-        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val globalBindings = BuiltInRegistries.REGISTRY.flatMap { registry ->
             registry.listElements().toList().map { holder ->
-                Triple(holder, if (holder.areComponentsBound()) holder.components() else null, holder.tags().toList().toSet())
+                holder to holder.tags().toList().toSet()
             }
         }
         fun checkGlobalBindings() {
-            for ((holder, components, tags) in globalBindings) {
-                check(holder.areComponentsBound() == (components != null))
-                if (components != null) check(holder.components() === components)
+            for ((holder, tags) in globalBindings) {
                 check(holder.tags().toList().toSet() == tags)
             }
         }
@@ -82,7 +79,7 @@ object RecipeIndexCheck {
             val localStone = localItems.get(stoneKey).orElseThrow()
             val globalStone = BuiltInRegistries.ITEM.get(stoneKey).orElseThrow()
             check(localStone !== globalStone && localStone.value() === globalStone.value())
-            check(localStone.components() === globalStone.components())
+            check(localStone.value().components() === globalStone.value().components())
             check(localStone.tags().toList().any { it.location().toString() == "test:local" })
             check(globalStone.tags().toList().none { it.location().toString() == "test:local" })
             check(loaded.unsupported.keys.containsAll(listOf("[C] test:bad", "[C] test:large")))

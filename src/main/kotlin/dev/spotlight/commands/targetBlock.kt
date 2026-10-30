@@ -19,7 +19,7 @@ internal fun registerTargetBlock() {
         } else {
             val chunk = requireNotNull(level.chunkSource.getChunk(pos.x shr 4, pos.z shr 4, ChunkStatus.FULL, false)) { "Target chunk is no longer loaded" }
             val state = chunk.getBlockState(pos)
-            val properties = state.values.toList().sortedBy { it.property().name }.joinToString(", ") { "${it.property().name}=${it.valueName()}" }.ifEmpty { "none" }
+            val properties = state.values.toList().sortedBy { it.first.name }.joinToString(", ") { "${it.first.name}=${it.second.toString()}" }.ifEmpty { "none" }
             val distance = (client.cameraEntity ?: player).eyePosition.distanceTo(Vec3.atCenterOf(pos))
             reportDebug("Targeted block", "${BuiltInRegistries.BLOCK.getKey(state.block)}; block=${pos.x}, ${pos.y}, ${pos.z}; distance to block center=${debugNumber(distance)} blocks; properties=$properties")
         }

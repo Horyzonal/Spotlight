@@ -3,7 +3,7 @@ package dev.spotlight.ui
 import dev.spotlight.core.Theme
 import dev.spotlight.core.ThemeColor
 import dev.spotlight.core.ThemeReport
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
 import net.minecraft.client.gui.components.MultiLineEditBox
@@ -163,9 +163,9 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
         return super.keyPressed(event)
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, title, left, 10, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, if (fileMode) "Name (optional; uses file header)" else "Name (required)", panelWidth), left, 51, SpotlightTheme.color(0xFF9DADC3))
         graphics.themeText(font, catalogClip(font, if (fileMode) "Local .properties path · no URLs" else "Theme properties · scroll to edit", panelWidth), left, 94, SpotlightTheme.color(0xFF9DADC3))

@@ -5,7 +5,7 @@ import dev.spotlight.core.Entry
 import dev.spotlight.core.Fuzzy
 import dev.spotlight.platform.notifySpotlight
 import dev.spotlight.platform.worldUnavailable
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -122,9 +122,9 @@ class UuidScreen(private val parent: Screen?) : Screen(catalogText("uuid")) {
 
     override fun onClose() { minecraft.setScreen(parent) }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
         results.drop(offset).take(count).forEachIndexed { index, entry ->
             graphics.themeText(font, catalogClip(font, entry.id, panelWidth), left, 60 + index * rowStep, SpotlightTheme.color(0xFF9DADC3))

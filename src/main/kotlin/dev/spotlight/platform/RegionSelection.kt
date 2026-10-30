@@ -2,7 +2,7 @@ package dev.spotlight.platform
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.ui.SpotlightTheme
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
@@ -120,7 +120,7 @@ object RegionSelection {
     }
 
     private fun message(text: String) {
-        Minecraft.getInstance().player?.sendOverlayMessage(Component.literal(text))
+        Minecraft.getInstance().player?.displayClientMessage(Component.literal(text), true)
     }
 
     private fun hint() {
@@ -137,7 +137,7 @@ object RegionSelection {
     }
 
     fun initialize() {
-        LevelRenderEvents.BEFORE_GIZMOS.register { context ->
+        WorldRenderEvents.END_EXTRACTION.register { context ->
             if (active()) {
                 val state = session!!.state
                 val color = SpotlightTheme.color(0xFF81B8FF)
@@ -147,7 +147,7 @@ object RegionSelection {
                         b.x.toDouble() + 1, b.y.toDouble() + 1, b.z.toDouble() + 1).inflate(0.01),
                         GizmoStyle.stroke(color, width)).setAlwaysOnTop()
                 }
-                context.levelRenderer().collectPerFrameGizmos().use {
+                context.worldRenderer().collectPerFrameGizmos().use {
                     state.first?.let { draw(it to it, 3f) }
                     state.second?.let { draw(it to it, 3f) }
                     state.bounds()?.let { draw(it, 2f) }
