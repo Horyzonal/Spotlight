@@ -102,18 +102,18 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
             minOf(commandMatch(query, recipe.title), commandMatch(query, recipe.id),
                 recipe.recipeIds.minOfOrNull { commandMatch(query, it) } ?: Int.MAX_VALUE) to recipe
         }.filter { it.first != Int.MAX_VALUE }.sortedBy { it.first }.map { it.second }
-        selected = matches.indexOfFirst { it.id == previous?.id && ItemStack.isSameItemSameComponents(it.result, previous.result) }
+        selected = matches.indexOfFirst { it.id == previous?.id && ItemStack.isSameItemSameTags(it.result, previous.result) }
             .takeIf { it >= 0 } ?: matches.indexOfFirst { recipe ->
                 previous != null && recipe.recipeIds.any { it in previous.recipeIds } &&
-                    ItemStack.isSameItemSameComponents(recipe.result, previous.result)
+                    ItemStack.isSameItemSameTags(recipe.result, previous.result)
             }.takeIf { it >= 0 } ?: matches.indexOfFirst { recipe ->
                 previous != null && recipe.width == previous.width && recipe.height == previous.height &&
                     recipe.shapeless == previous.shapeless && recipe.result.count == previous.result.count &&
-                    ItemStack.isSameItemSameComponents(recipe.result, previous.result) &&
+                    ItemStack.isSameItemSameTags(recipe.result, previous.result) &&
                     recipe.ingredients.size == previous.ingredients.size && recipe.ingredients.indices.all { index ->
                         val before = previous.ingredients[index]
                         val after = recipe.ingredients[index]
-                        before.size == after.size && before.all { stack -> after.any { ItemStack.isSameItemSameComponents(stack, it) } }
+                        before.size == after.size && before.all { stack -> after.any { ItemStack.isSameItemSameTags(stack, it) } }
                     }
             }.coerceAtLeast(0)
         updateRows()

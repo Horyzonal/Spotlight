@@ -111,9 +111,9 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (vertical != 0.0) { move(if (vertical > 0) -1 else 1); return true }
-        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        return super.mouseScrolled(mouseX, mouseY, vertical)
     }
 
     override fun onClose() { minecraft!!.setScreen(parent) }

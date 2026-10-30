@@ -38,7 +38,7 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         search.setResponder { query = it; filter() }
         list = addRenderableWidget(SoundMenuList(minecraft!!, font, panelWidth, (bottom - top - 110).coerceAtLeast(1), top + 24) {
             selectedId = it
-        }.also { it.x = left })
+        }.also { it.setLeftPos(left) })
         val third = panelWidth / 3
         addRenderableWidget(catalogButton("Play / loop (Enter)", left, bottom - 22, third) { play() })
         addRenderableWidget(catalogButton("Stop current ($primaryModifierLabel+S)", left + third, bottom - 22, third) { stop() })

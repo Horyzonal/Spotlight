@@ -5,7 +5,7 @@ import dev.spotlight.platform.reportDebug
 import dev.spotlight.platform.worldUnavailable
 import net.minecraft.client.Minecraft
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import net.minecraft.world.level.chunk.ChunkStatus
 import net.minecraft.world.phys.Vec3
 
 internal fun registerTargetBlock() {

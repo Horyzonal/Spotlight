@@ -3,7 +3,7 @@ package dev.spotlight.commands
 import dev.spotlight.platform.reportDebug
 import dev.spotlight.platform.worldUnavailable
 import net.minecraft.client.Minecraft
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import net.minecraft.world.level.chunk.ChunkStatus
 import net.minecraft.world.level.levelgen.Heightmap
 
 internal fun registerHeightmap() {

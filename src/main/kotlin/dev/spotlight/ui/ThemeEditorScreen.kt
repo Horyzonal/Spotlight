@@ -207,8 +207,8 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
         }
         override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean =
             isMouseOver(mouseX, mouseY) && super.mouseClicked(mouseX, mouseY, button)
-        override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
-            isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean =
+            isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, vertical)
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             graphics.enableScissor(x, y, right, bottom)
             keys.forEachIndexed { index, key ->

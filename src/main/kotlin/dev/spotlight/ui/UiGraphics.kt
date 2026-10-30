@@ -12,11 +12,30 @@ import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.level.block.entity.BannerPatternLayers
+import dev.spotlight.platform.BannerLayer
+import com.mojang.datafixers.util.Pair
+import net.minecraft.core.Holder
+import net.minecraft.world.level.block.entity.BannerPattern
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.level.block.entity.BannerPatterns
+import net.minecraft.client.gui.components.AbstractWidget
+
+internal val AbstractWidget.right get() = x + width
+internal val AbstractWidget.bottom get() = y + height
+
+internal fun AbstractWidget.setRectangle(width: Int, height: Int, x: Int, y: Int) {
+    require(height == this.height) { "1.20.1 widget height fixed at construction" }
+    this.width = width
+    this.x = x
+    this.y = y
+}
+
+internal fun BannerLayer.description(): Component = Component.translatable(
+    "block.minecraft.banner.${pattern().unwrapKey().orElseThrow().location().path}.${color().name.lowercase(java.util.Locale.ROOT)}")
 
 internal fun GuiGraphics.setTooltipForNextFrame(text: Component, x: Int, y: Int) {
     val client = Minecraft.getInstance()
-    client.screen?.setTooltipForNextRenderPass(text) ?: renderTooltip(client.font, text, x, y)
+    client.screen?.setTooltipForNextRenderPass(client.font.split(text, 240)) ?: renderTooltip(client.font, text, x, y)
 }
 
 internal fun GuiGraphics.setTooltipForNextFrame(font: Font, text: Component, x: Int, y: Int) =
@@ -25,7 +44,7 @@ internal fun GuiGraphics.setTooltipForNextFrame(font: Font, text: Component, x: 
 internal fun GuiGraphics.setTooltipForNextFrame(font: Font, stack: ItemStack, x: Int, y: Int) =
     renderTooltip(font, stack, x, y)
 
-internal fun GuiGraphics.renderBanner(flag: ModelPart, base: DyeColor, layers: BannerPatternLayers,
+internal fun GuiGraphics.renderBanner(flag: ModelPart, base: DyeColor, layers: List<BannerLayer>,
     left: Int, top: Int, right: Int, bottom: Int) {
     if (right <= left || bottom <= top) return
     flush()
@@ -40,7 +59,9 @@ internal fun GuiGraphics.renderBanner(flag: ModelPart, base: DyeColor, layers: B
         flag.xRot = 0f
         flag.y = 0f
         BannerRenderer.renderPatterns(pose, bufferSource(), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
-            flag, ModelBakery.BANNER_BASE, true, base, layers)
+            flag, ModelBakery.BANNER_BASE, true,
+            listOf(Pair.of<Holder<BannerPattern>, DyeColor>(BuiltInRegistries.BANNER_PATTERN.getHolderOrThrow(BannerPatterns.BASE), base)) +
+                layers.map { Pair.of(it.pattern(), it.color()) })
         flush()
     } finally {
         flag.xRot = oldXRot

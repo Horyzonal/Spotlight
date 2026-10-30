@@ -113,11 +113,11 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
         selectedId = results[(results.indexOfFirst { it.id == selectedId } + delta).coerceIn(0, results.lastIndex)].id
         refresh()
     }
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (vertical != 0.0 && mouseX >= left && mouseX <= left + panelWidth && mouseY in 58.0..(58 + count * 26).toDouble()) {
             move(if (vertical > 0) -1 else 1); return true
         }
-        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        return super.mouseScrolled(mouseX, mouseY, vertical)
     }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))

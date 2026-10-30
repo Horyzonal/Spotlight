@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.DyeColor
 
 import net.minecraft.world.level.block.entity.BannerPattern
-import net.minecraft.world.level.block.entity.BannerPatternLayers
+import dev.spotlight.platform.BannerLayer
 
 internal fun bannerGridRows(count: Int) = (count.coerceAtLeast(0) + 3) / 4
 
@@ -42,8 +42,8 @@ internal class BannerPatternGrid(
         tiles.clear()
 
         patterns.forEach { pattern ->
-            val layer = BannerPatternLayers.Layer(pattern, dye)
-            tiles += Tile(pattern, BannerPatternLayers(listOf(layer)), layer.description().string)
+            val layer = BannerLayer(pattern, dye)
+            tiles += Tile(pattern, listOf(layer), layer.description().string)
         }
         setScrollAmount(0.0)
     }
@@ -95,8 +95,8 @@ internal class BannerPatternGrid(
         return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event.x(), event.y(), event.button())
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
-        isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean =
+        isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, vertical)
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         layoutTiles()
@@ -113,7 +113,7 @@ internal class BannerPatternGrid(
         (focused as? AbstractWidget)?.updateNarration(output)
     }
 
-    private inner class Tile(val pattern: Holder.Reference<BannerPattern>, val preview: BannerPatternLayers, label: String) :
+    private inner class Tile(val pattern: Holder.Reference<BannerPattern>, val preview: List<BannerLayer>, label: String) :
         AbstractWidget(0, 0, 24, 40, catalogText("$label · ${pattern.key().location()}")) {
         init { setTooltip(Tooltip.create(if (canAdd) message else catalogText("Cannot add: layer limit ${CreativeBanner.MAX_LAYERS} or registry unavailable"))) }
         private fun add() { selected = pattern; if (canAdd) choose(pattern) }
@@ -125,8 +125,9 @@ internal class BannerPatternGrid(
             return true
         }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-            val state = if (selected == pattern) "pattern_selected" else if (isHoveredOrFocused) "pattern_highlighted" else "pattern"
-            graphics.blitSprite(ResourceLocation.withDefaultNamespace("container/loom/$state"), x, y, width, height)
+            val state = if (selected == pattern) 1 else if (isHoveredOrFocused) 2 else 0
+            graphics.blit(ResourceLocation("textures/gui/container/loom.png"), x, y, width, height,
+                (state * 14).toFloat(), 166f, 14, 14, 256, 256)
             val bannerWidth = minOf(16, (width - 4).coerceAtLeast(0))
             if (bannerWidth > 0) graphics.renderBanner(flag, requireNotNull(cachedBase), preview,
                 x + (width - bannerWidth) / 2, y + 4, x + (width + bannerWidth) / 2, y + 36)

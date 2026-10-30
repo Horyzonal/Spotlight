@@ -315,14 +315,14 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             when (suggestion.kind) {
                 SelectionKind.PLAYERS -> {
                     val player = minecraft!!.connection?.onlinePlayers?.firstOrNull { it.profile.id.toString() == suggestion.iconId } ?: return false
-                    PlayerFaceRenderer.draw(graphics, player.skin, x, y, 16)
+                    PlayerFaceRenderer.draw(graphics, player.skinLocation, x, y, 16)
                     true
                 }
                 SelectionKind.EFFECTS -> {
                     val id = ResourceLocation.tryParse(suggestion.iconId ?: suggestion.value) ?: return false
-                    val sprite = ResourceLocation.fromNamespaceAndPath(id.namespace, "mob_effect/${id.path}")
-                    if (minecraft!!.resourceManager.getResource(ResourceLocation.fromNamespaceAndPath(id.namespace, "textures/gui/sprites/mob_effect/${id.path}.png")).isEmpty) return false
-                    graphics.blitSprite(sprite, x, y, 16, 16)
+                    val effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getOptional(id).orElse(null) ?: return false
+                    val sprite = minecraft!!.mobEffectTextures.get(effect)
+                    graphics.blit(x, y, 0, 16, 16, sprite)
                     true
                 }
                 else -> false
@@ -517,7 +517,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         } catch (failure: Exception) {
             error = "Action completed; history not saved: ${failure.message ?: failure.javaClass.simpleName}"
 
-            SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastId(),
+            SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
                 Component.literal("Spotlight: history not saved"), Component.literal(error!!))
         }
     }
@@ -572,7 +572,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteMenuAction("Edit location", shortcut = "${primaryModifierLabel}+E", group = "Location") { editLocation(entry) },
             PaletteMenuAction("Copy coordinates", group = "More") {
                 minecraft!!.keyboardHandler.clipboard = "${location.x} ${location.y} ${location.z}"
-                SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastId(),
+                SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
                     Component.literal("Spotlight: coordinates copied"), Component.literal(location.name))
             },
             PaletteMenuAction("Delete location (confirm)", shortcut = "${primaryModifierLabel}+Shift+D", group = "More") {
@@ -789,7 +789,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         return super.charTyped(event.codepoint().toChar(), event.modifiers())
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (mouseX >= left && mouseX < left + panelWidth && mouseY >= listTop && mouseY < listTop + visibleRows * rowHeight) {
             val next = (offset - if (vertical > 0) 1 else if (vertical < 0) -1 else 0)
                 .coerceIn(0, (results.size - visibleRows).coerceAtLeast(0))
@@ -801,7 +801,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             }
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        return super.mouseScrolled(mouseX, mouseY, vertical)
     }
 
     private fun clipped(text: String, maxWidth: Int): String =
@@ -810,7 +810,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     override fun getNarrationMessage(): Component = Component.literal("Spotlight. " +
         if (::input.isInitialized) input.message.string else "Search commands and items")
 
-    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
     }
 

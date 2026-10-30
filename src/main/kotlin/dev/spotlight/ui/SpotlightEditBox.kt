@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component
 
 class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, label: Component) :
     EditBox(catalogFont(font), x, y, width.coerceAtLeast(1), height.coerceAtLeast(1), label) {
-    private var extractingText = false
+    private var bordered = true
 
     init {
         setFormatter { text, _ -> catalogText(text).visualOrderText }
@@ -23,8 +23,8 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
     }
 
 
-    override fun isBordered(): Boolean = !extractingText && super.isBordered()
-    override fun getInnerWidth(): Int = if (super.isBordered()) width - 8 else width
+    override fun setBordered(bordered: Boolean) { this.bordered = bordered; super.setBordered(bordered) }
+    override fun getInnerWidth(): Int = if (bordered) width - 8 else width
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (SpotlightTheme.isDefault()) {
@@ -36,11 +36,18 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
         graphics.renderOutline(x, y, width, height,
             SpotlightTheme.color(if (isFocused && active) 0xFF81B8FF else 0xFF415877))
 
-        extractingText = true
+        val wasBordered = bordered
+        super.setBordered(false)
+        val oldX = x
+        val oldY = y
+        if (wasBordered) { x += 4; y += (height - 8) / 2 }
         try {
             super.renderWidget(graphics, mouseX, mouseY, delta)
         } finally {
-            extractingText = false
+            x = oldX
+            y = oldY
+
+            super.setBordered(wasBordered)
         }
     }
 }

@@ -117,7 +117,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         formatField.setTooltip(Tooltip.create(catalogText("Per colored run: {text}, {color} = RRGGBB, {hex} = #RRGGBB. Custom output does not include style toggles.")))
         rows += Row("Custom format · {color} has no # · styles omitted", listOf(formatField), 20)
 
-        preview = FittingMultiLineTextWidget(0, 0, 100, 72, Component.empty(), font)
+        preview = catalogDetails(0, 0, 100, 72, Component.empty(), font, themed = false)
         rows += Row("Live preview · actual Minecraft colors and styles", listOf(preview), 72)
         status = catalogDetails(0, 0, 100, 60, Component.empty(), font)
         rows += Row("Status / item availability", listOf(status), 60)
@@ -278,7 +278,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
                 row.widgets.forEachIndexed { index, widget ->
                     widget.x = x + (index % columns) * (cell + 4)
                     widget.width = cell
-                    widget.height = row.height
+                    check(widget.height == row.height) { "Row height must match widget construction height" }
                     offsets[widget] = top + (index / columns) * (row.height + 4)
                 }
                 top += ((row.widgets.size + columns - 1) / columns) * (row.height + 4) + 6
@@ -306,15 +306,15 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             return super.mouseClicked(event.x(), event.y(), event.button())
         }
 
-        override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+        override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
             if (!isMouseOver(mouseX, mouseY)) return false
             val child = children().firstOrNull { it.isMouseOver(mouseX, mouseY) }
             if (child is SpotlightMultiLineEditBox && child.maxScrollAmount > 0) {
                 val before = child.scrollAmount()
-                child.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+                child.mouseScrolled(mouseX, mouseY, vertical)
                 if (before != child.scrollAmount()) return true
             }
-            return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+            return super.mouseScrolled(mouseX, mouseY, vertical)
         }
 
         override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {

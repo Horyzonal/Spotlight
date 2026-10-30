@@ -9,7 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.Entity
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import net.minecraft.world.level.chunk.ChunkStatus
 import net.minecraft.world.phys.AABB
 
 import java.util.UUID

@@ -4,7 +4,7 @@ import dev.spotlight.platform.reportDebug
 import dev.spotlight.platform.worldUnavailable
 import net.minecraft.client.Minecraft
 import net.minecraft.world.level.LightLayer
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import net.minecraft.world.level.chunk.ChunkStatus
 
 internal fun registerLight() {
     registerCommand("light_level", "Light level", "Current block sky, block and raw combined light (not gamma brightness)", unavailable = ::worldUnavailable) {

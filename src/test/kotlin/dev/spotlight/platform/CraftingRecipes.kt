@@ -8,7 +8,7 @@ object RecipeIndexCheck {
     @JvmStatic fun main(args: Array<String>) {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
-        val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
+
 
         val globalBindings = BuiltInRegistries.REGISTRY.flatMap { registry ->
             registry.holders().toList().map { holder ->
@@ -36,9 +36,9 @@ object RecipeIndexCheck {
         check(mergeRecipeViews(listOf(client.copy(shapeless = true), reversed.copy(shapeless = true))).size == 1)
         check(mergeRecipeViews(listOf(view(listOf(listOf(a))), view(listOf(listOf(b))))).size == 2)
         check(mergeRecipeViews(listOf(client, client.copy(result = output.copyWithCount(2)))).size == 2)
-        val named = output.copy().also { it.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Different")) }
+        val named = output.copy().also { it.setHoverName(net.minecraft.network.chat.Component.literal("Different")) }
         check(mergeRecipeViews(listOf(client, client.copy(result = named))).size == 2)
-        val namedIngredient = a.copy().also { it.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Different")) }
+        val namedIngredient = a.copy().also { it.setHoverName(net.minecraft.network.chat.Component.literal("Different")) }
         check(mergeRecipeViews(listOf(view(listOf(listOf(a))), view(listOf(listOf(namedIngredient))))).size == 2)
         check(mergeRecipeViews(listOf(view(listOf(listOf(a)), true), view(listOf(listOf(a), listOf(a)), true))).size == 2)
         check(mergeRecipeViews(listOf(client, client.copy(shapeless = true))).size == 2)
@@ -50,72 +50,74 @@ object RecipeIndexCheck {
             fun pack(name: String, recipes: Map<String, String>): net.minecraft.server.packs.PackResources {
                 val path = root.resolve(name)
                 for ((id, json) in recipes) {
-                    val file = path.resolve("data/test/recipe/$id.json")
+                    val file = path.resolve("data/test/recipes/$id.json")
                     java.nio.file.Files.createDirectories(file.parent)
                     java.nio.file.Files.writeString(file, json)
                 }
-                return net.minecraft.server.packs.PathPackResources(net.minecraft.server.packs.PackLocationInfo(
-                    name, net.minecraft.network.chat.Component.literal(name),
-                    net.minecraft.server.packs.repository.PackSource.BUILT_IN, java.util.Optional.empty()), path)
+                return net.minecraft.server.packs.PathPackResources(name, path, false)
             }
-            val vanilla = """{"type":"minecraft:crafting_shapeless","ingredients":[{"item":"minecraft:stone"}],"result":{"id":"minecraft:cobblestone"}}"""
+            val vanilla = """{"type":"minecraft:crafting_shapeless","ingredients":[{"item":"minecraft:stone"}],"result":{"item":"minecraft:cobblestone"}}"""
             val mod = vanilla.replace("minecraft:cobblestone", "minecraft:dirt")
             val first = pack("vanilla", mapOf("same" to vanilla, "nested/local" to vanilla))
             val second = pack("mod", mapOf("same" to mod, "bad" to "{", "large" to " ".repeat(512 * 1024 + 1),
                 "missing_tag" to vanilla.replace("\"item\":\"minecraft:stone\"", "\"tag\":\"test:missing\""),
                                 "trailing" to "$vanilla {}", "lenient" to "{type:'minecraft:crafting_shapeless'}", "null" to "null"))
-            val tags = root.resolve("mod/data/test/tags/item/local.json")
+            val tags = root.resolve("mod/data/test/tags/items/local.json")
             java.nio.file.Files.createDirectories(tags.parent)
-            java.nio.file.Files.writeString(tags, """{"values":["minecraft:stone"]}""")
-            java.nio.file.Files.writeString(root.resolve("mod/data/test/recipe/tagged.json"), vanilla.replace("\"item\":\"minecraft:stone\"", "\"tag\":\"test:local\""))
+            java.nio.file.Files.writeString(tags, """{"values":["#test:nested",{"id":"test:absent","required":false}]}""")
+            java.nio.file.Files.writeString(tags.resolveSibling("nested.json"), """{"values":["minecraft:stone"]}""")
+            java.nio.file.Files.writeString(tags.resolveSibling("cycle.json"), """{"values":["#test:cycle"]}""")
+            java.nio.file.Files.writeString(root.resolve("mod/data/test/recipes/tagged.json"), vanilla.replace("\"item\":\"minecraft:stone\"", "\"tag\":\"test:local\""))
+            val custom = LocalRecipeIndex.Entry("test:custom", com.google.gson.JsonParser.parseString(
+                vanilla.replace("minecraft:crafting_shapeless", "test:custom")))
             val loaded = LocalRecipeIndex.load(listOf(first, second))
+            check(runCatching { LocalRecipeIndex.decode(custom, loaded) }.exceptionOrNull()?.message ==
+                "Unknown recipe serializer: test:custom")
+            check("[C] tag test:cycle" in loaded.unsupported)
             checkGlobalBindings()
-            val localItems = loaded.registries.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
-            check(loaded.lookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM) === localItems)
-            check(loaded.lookup.lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).listElements().findAny().isPresent)
-            val stoneKey = BuiltInRegistries.ITEM.getResourceKey(net.minecraft.world.item.Items.STONE).orElseThrow()
-            val localStone = localItems.get(stoneKey).orElseThrow()
-            val globalStone = BuiltInRegistries.ITEM.getHolder(stoneKey).orElseThrow()
-            check(localStone !== globalStone && localStone.value() === globalStone.value())
-            check(localStone.value().components() === globalStone.value().components())
-            check(localStone.tags().toList().any { it.location().toString() == "test:local" })
-            check(globalStone.tags().toList().none { it.location().toString() == "test:local" })
+            check(loaded.itemTags[net.minecraft.resources.ResourceLocation("test:local")]?.toList() == listOf(a.item))
             check(loaded.unsupported.keys.containsAll(listOf("[C] test:bad", "[C] test:large", "[C] test:trailing", "[C] test:lenient", "[C] test:null")))
             check(loaded.entries.any { it.id == "test:nested/local" })
             val recipe = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:same" }, loaded)
-            check(recipe.getResultItem(loaded.lookup).item === net.minecraft.world.item.Items.DIRT)
+            check(recipe.getResultItem(loaded.registries).item === net.minecraft.world.item.Items.DIRT)
             val tagged = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:tagged" }, loaded)
             check(tagged.ingredients.single().items.single().item === net.minecraft.world.item.Items.STONE)
             check(runCatching { LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:missing_tag" }, loaded) }.isFailure)
-            check(loaded.registries.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM) !== BuiltInRegistries.ITEM)
+
             val vanillaPack = net.minecraft.server.packs.VanillaPackResourcesBuilder().pushJarResources().exposeNamespace("minecraft")
-                .build(net.minecraft.server.packs.PackLocationInfo("vanilla", net.minecraft.network.chat.Component.literal("vanilla"),
-                    net.minecraft.server.packs.repository.PackSource.BUILT_IN, java.util.Optional.empty()))
+                .build()
             val shipped = LocalRecipeIndex.load(listOf(vanillaPack))
             check(shipped.entries.any { it.id == "minecraft:crafting_table" })
             for (entry in shipped.entries) LocalRecipeIndex.decode(entry, shipped)
             val book = net.minecraft.client.ClientRecipeBook()
-            val holder = net.minecraft.world.item.crafting.RecipeHolder(net.minecraft.resources.ResourceLocation.parse("test:same"), recipe)
-            book.setupCollections(listOf(holder), loaded.registries)
-            check(book.collections.flatMap { it.recipes }.single() == holder)
-            check(book.collections.single().recipes.single().value().getResultItem(loaded.lookup).item === net.minecraft.world.item.Items.DIRT)
+            book.setupCollections(listOf(recipe), loaded.registries)
+            check(book.collections.flatMap { it.recipes }.single() === recipe)
+            check(book.collections.single().recipes.single().getResultItem(loaded.registries).item === net.minecraft.world.item.Items.DIRT)
             val unsupported = linkedMapOf<String, String>()
             var crafting = 0
             var resolved = 0
+            val allViews = mutableListOf<CraftingRecipeView>()
             for (entry in shipped.entries) {
                 val native = LocalRecipeIndex.decode(entry, shipped)
                 if (native !is CraftingRecipe) continue
                 crafting++
-                val views = CraftingRecipes.resolve(entry.id, native, RecipeSource.C, shipped.lookup, unsupported)
+                val views = CraftingRecipes.resolve(entry.id, native, RecipeSource.C, shipped.registries, unsupported)
                 check(views.size == 1 || "[C] ${entry.id}" in unsupported)
                 for (view in views) {
                     val serverView = view.copy(sources = setOf(RecipeSource.S), recipeIds = setOf(entry.id))
                     val mergedView = mergeRecipeViews(listOf(view, serverView, view)).single()
                     check(mergedView.sourceTag == "[C] [S]" && mergedView.recipeIds == setOf(entry.id))
                 }
+                allViews += views
                 resolved += views.size
             }
-            check(resolved > 500 && crafting == resolved + unsupported.size)
+            check(shipped.entries.size == 1174 && crafting == 836 && resolved == 822 && unsupported.size == 14)
+            check(crafting == resolved + unsupported.size)
+            val serverViews = allViews.map { it.copy(sources = setOf(RecipeSource.S), recipeIds = setOf(it.id)) }
+            val allMerged = mergeRecipeViews(allViews + serverViews)
+            check(allMerged.size == mergeRecipeViews(allViews).size)
+            check(allMerged.all { it.sourceTag == "[C] [S]" })
+            check(allMerged.flatMap { it.recipeIds }.toSet() == allViews.map { it.id }.toSet())
             check(unsupported.containsKey("[C] minecraft:map_extending"))
             println("Vanilla recipes: ${shipped.entries.size}; crafting: $crafting; static views: $resolved; unsupported: ${unsupported.size}")
             println("Unsupported vanilla crafting: ${unsupported.keys.joinToString()}")

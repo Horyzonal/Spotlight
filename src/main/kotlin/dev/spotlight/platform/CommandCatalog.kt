@@ -49,7 +49,7 @@ internal object CommandCatalog {
                 is EntityType<*> -> value.description.string
                 is MobEffect -> value.displayName.string
                 is Attribute -> Component.translatable(value.descriptionId).string
-                is Enchantment -> value.description().string
+                is Enchantment -> Component.translatable(value.descriptionId).string
                 else -> id
             }
             val detail = id
@@ -85,11 +85,11 @@ internal object CommandCatalog {
                     })
                     for (kind in listOf(SelectionKind.LOOT_TABLES, SelectionKind.PREDICATES, SelectionKind.ITEM_MODIFIERS)) {
                         val key = when (kind) {
-                            SelectionKind.LOOT_TABLES -> net.minecraft.core.registries.Registries.LOOT_TABLE
-                            SelectionKind.PREDICATES -> net.minecraft.core.registries.Registries.PREDICATE
-                            else -> net.minecraft.core.registries.Registries.ITEM_MODIFIER
+                            SelectionKind.LOOT_TABLES -> net.minecraft.world.level.storage.loot.LootDataType.TABLE
+                            SelectionKind.PREDICATES -> net.minecraft.world.level.storage.loot.LootDataType.PREDICATE
+                            else -> net.minecraft.world.level.storage.loot.LootDataType.MODIFIER
                         }
-                        put(kind, server.reloadableRegistries().getKeys(key).map {
+                        put(kind, server.lootData.getKeys(key).map {
                             entry(it.toString(), it.toString(), "Integrated-server data", kind)
                         })
                     }
@@ -121,10 +121,9 @@ internal object CommandCatalog {
                 entry("@p", "Nearest player", "Nearest player", kind), entry("@r", "Random player", "Random player", kind),
                 entry("@e", "All entities", "Entity selector", kind)
             )
-            SelectionKind.ADVANCEMENTS -> client.connection?.advancements?.tree?.nodes()?.map {
-                val holder = it.holder()
-                entry(holder.id().toString(), net.minecraft.advancements.Advancement.name(holder).string,
-                    "Client-known advancement · ${holder.id()}", kind)
+            SelectionKind.ADVANCEMENTS -> client.connection?.advancements?.advancements?.allAdvancements?.map {
+                entry(it.id.toString(), it.chatComponent.string,
+                    "Client-known advancement · ${it.id}", kind)
             }.orEmpty()
             SelectionKind.SOUNDS -> client.soundManager.availableSounds.map {
                 entry(it.toString(), it.toString(), "Loaded sound resource", kind)

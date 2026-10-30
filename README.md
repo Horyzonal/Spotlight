@@ -39,9 +39,11 @@ A: idk
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc1.21.1-0.1.0.jar`.
+Production artifact: `build/libs/spotlight-mc1.20.1-0.1.0.jar`.
 
-Development client uses `run/1.21.1/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port targets Minecraft 1.21.1 with Fabric Loader 0.20.1 and Fabric API 0.116.17+1.21.1. Build uses JDK 25; Java and Kotlin target Java 21 bytecode. Checks and client startup were exercised on Java 21. Other Minecraft versions require separate builds.
+Targets **Minecraft 1.20.1 / Java 17**, Fabric Loader, Fabric API **0.92.11+1.20.1**, and Fabric Language Kotlin. Gradle/build tools use JDK 25; mod bytecode and verification programs target Java 17. Development runtime is isolated under `run/1.20.1/`; never downgrade newer worlds without backups.
+
+This port uses legacy item NBT for names, lore, banners, shields and Unbreakable while preserving unrelated data. Local crafting index reads shipped vanilla/mod recipes; custom serializers requiring newer/native reload contexts remain explicitly unsupported instead of being guessed. Integrated-server recipe index remains available separately. Build checks and bounded Java 17 startup passed; full UI/multiplayer acceptance remains manual.
 
 ## Attributions
 When I don't have inspiration, I just steal from other mods.

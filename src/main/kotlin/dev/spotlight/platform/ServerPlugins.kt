@@ -1,9 +1,9 @@
 package dev.spotlight.platform
 
 import com.mojang.brigadier.suggestion.Suggestions
+import dev.spotlight.mixin.ClientSuggestionProviderAccessor
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientPacketListener
-import net.minecraft.client.multiplayer.ClientSuggestionProvider
 import java.util.Collections
 import java.util.IdentityHashMap
 import java.util.concurrent.CompletableFuture
@@ -24,10 +24,7 @@ internal fun boundedPluginSuggestions(future: CompletableFuture<Suggestions>, ti
 
 internal object ServerPlugins {
     private val inFlight = Collections.newSetFromMap(IdentityHashMap<ClientPacketListener, Boolean>())
-    
-    private val pending = runCatching {
-        ClientSuggestionProvider::class.java.getDeclaredField("pendingSuggestionsFuture").apply { isAccessible = true }
-    }.getOrNull()
+
 
     fun query() {
         val client = Minecraft.getInstance()
@@ -47,9 +44,9 @@ internal object ServerPlugins {
             reportDebug("Possible server plugin namespaces (inferred)", "$result. $status. Not authoritative; server may hide commands or plugins, and namespaces need not identify plugins. No permission bypass.")
         }
         val provider = connection.suggestionsProvider
-        val idle = runCatching { pending != null && pending.get(provider) == null }.getOrDefault(false)
+        val idle = (provider as ClientSuggestionProviderAccessor).`spotlight$pendingSuggestionsFuture`() == null
         if (!idle) {
-            finish(null, "Server completion unavailable (busy or busy check unavailable); dispatcher only; no request sent")
+            finish(null, "Server completion unavailable (busy); dispatcher only; no request sent")
             return
         }
         try {

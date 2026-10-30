@@ -76,7 +76,7 @@ object LocationActions {
 
                 val level = client.level!!
                 if (confirmedLevel === level && confirmedConnection === client.connection) {
-                    saveSpawn(Spotlight.locations(), spawnDraft(level.levelData.spawnPos, level.dimension(), Spotlight.scope()))
+                    saveSpawn(Spotlight.locations(), spawnDraft(BlockPos(level.levelData.xSpawn, level.levelData.ySpawn, level.levelData.zSpawn), level.dimension(), Spotlight.scope()))
                     pendingTicks = 0
                     return
                 }

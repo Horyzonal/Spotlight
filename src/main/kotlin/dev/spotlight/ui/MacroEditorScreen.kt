@@ -56,8 +56,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         listOpen = false
         completionRows.clear()
         repeat(8) { row ->
-            completionRows += addWidget(macroButton("", left, 0, panelWidth) { acceptCompletion(first + row) }).also {
-                it.height = rowHeight
+            completionRows += addWidget(catalogButton("", left, 0, panelWidth, rowHeight) { acceptCompletion(first + row) }).also {
                 it.visible = false
                 it.active = false
             }
@@ -189,7 +188,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         return handled
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (listOpen && visibleRows > 0 && mouseX >= popupX && mouseX < popupX + popupWidth &&
             mouseY >= popupY && mouseY < popupY + 32 + visibleRows * rowHeight && vertical != 0.0) {
             val options = completion?.options.orEmpty()
@@ -199,7 +198,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
             triggerImmediateNarration(true)
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        return super.mouseScrolled(mouseX, mouseY, vertical)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {

@@ -6,7 +6,7 @@ import com.mojang.serialization.JsonOps
 import dev.spotlight.core.ColoredRun
 import dev.spotlight.core.StyledText
 import dev.spotlight.core.TextStyle
-import net.minecraft.network.chat.ComponentSerialization
+import net.minecraft.network.chat.Component
 import dev.spotlight.core.Entry
 import dev.spotlight.core.Fuzzy
 import dev.spotlight.core.LocationStore
@@ -45,9 +45,13 @@ internal object PlatformCheck {
         check(component.style.isBold && !component.style.isItalic && component.style.isUnderlined &&
             component.style.isStrikethrough && component.style.isObfuscated)
         check(component.siblings.map { it.style.color!!.value } == listOf(0xFF0000, 0x0000FF))
-        val ops = registries.createSerializationContext(JsonOps.INSTANCE)
-        val encoded = ComponentSerialization.CODEC.encodeStart(ops, component).getOrThrow()
-        check(ComponentSerialization.CODEC.parse(ops, encoded).getOrThrow() == component)
+        val encoded = Component.Serializer.toJson(component)
+        val decoded = requireNotNull(Component.Serializer.fromJson(encoded))
+        check(decoded.string == component.string)
+        check(decoded.style == component.style)
+        check(Component.Serializer.toJson(decoded) == encoded)
+        CreativeTextNbtCheck.checkAll()
+        Runtime1201Check.checkAll()
         val lines = CreativeText.loreLines(formatted)
         check(lines.map { it.string } == listOf("red", "blue", "", ""))
         check(lines.all { it.style == component.style })
@@ -59,9 +63,9 @@ internal object PlatformCheck {
         check(CreativeText.loreLines(StyledText(emptyList())).single().string.isEmpty())
         check(CreativeText.loreLines(StyledText(listOf(ColoredRun("\n".repeat(255), 0)))).size == 256)
         check(runCatching { CreativeText.loreLines(StyledText(listOf(ColoredRun("\n".repeat(256), 0)))) }.isFailure)
-        CreativeText.validateTextSize(lines, registries)
+        CreativeText.validateTextSize(lines)
         val oversized = StyledText(List(4096) { ColoredRun("x", it) })
-        check(runCatching { CreativeText.validateTextSize(listOf(CreativeText.component(oversized)), registries) }.isFailure)
+        check(runCatching { CreativeText.validateTextSize(listOf(CreativeText.component(oversized))) }.isFailure)
         val command = SpotlightCommand("check:registry", "Registry check") {}
         Spotlight.register(command)
         check(Spotlight.commands == listOf(command))

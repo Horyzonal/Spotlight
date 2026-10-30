@@ -5,17 +5,20 @@ import com.mojang.serialization.JsonOps
 import dev.spotlight.core.ColoredRun
 import dev.spotlight.core.StyledText
 import net.minecraft.client.Minecraft
-import net.minecraft.core.HolderLookup
-import net.minecraft.core.component.DataComponents
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.NbtOps
+import net.minecraft.nbt.StringTag
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.ComponentSerialization
+
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.component.ItemLore
+
 import net.minecraft.world.level.GameType
 
 object CreativeText {
+    const val MAX_LORE_LINES = 256
     fun component(text: StyledText): Component {
         val style = text.style
         val root = Component.literal("").setStyle(Style.EMPTY
@@ -35,7 +38,7 @@ object CreativeText {
             for ((index, part) in parts.withIndex()) {
                 if (index > 0) {
                     lines += component(StyledText(runs.toList(), text.style))
-                    require(lines.size < ItemLore.MAX_LINES) { "Lore exceeds ${ItemLore.MAX_LINES} lines" }
+                    require(lines.size < MAX_LORE_LINES) { "Lore exceeds $MAX_LORE_LINES lines" }
                     runs.clear()
                 }
                 if (part.isNotEmpty()) runs += ColoredRun(part, run.color)
@@ -47,32 +50,57 @@ object CreativeText {
 
     fun applyName(text: StyledText) {
         val name = component(text)
-        edit(listOf(name)) { it.set(DataComponents.CUSTOM_NAME, name) }
+        edit(listOf(name)) { setName(it, name) }
     }
 
     fun applyLore(text: StyledText) {
         val lines = loreLines(text)
-        edit(lines) { it.set(DataComponents.LORE, ItemLore(lines)) }
+        edit(lines) { setLore(it, lines) }
     }
 
-    fun makeUnbreakable() { edit(emptyList()) { it.set(DataComponents.UNBREAKABLE, net.minecraft.world.item.component.Unbreakable(true)) } }
+    fun makeUnbreakable() { edit(emptyList(), ::setUnbreakable) }
 
-    fun clearName() { edit(emptyList()) { it.remove(DataComponents.CUSTOM_NAME) } }
+    fun clearName() { edit(emptyList()) { clearDisplayKey(it, "Name") } }
 
-    fun clearLore() { edit(emptyList()) { it.remove(DataComponents.LORE) } }
+    fun clearLore() { edit(emptyList()) { clearDisplayKey(it, "Lore") } }
+
+    internal fun setName(stack: ItemStack, name: Component) {
+        validateTextSize(listOf(name))
+        stack.getOrCreateTagElement("display").putString("Name", Component.Serializer.toJson(name))
+    }
+
+    internal fun setLore(stack: ItemStack, lines: List<Component>) {
+        require(lines.size <= MAX_LORE_LINES) { "Lore exceeds $MAX_LORE_LINES lines" }
+        validateTextSize(lines)
+        stack.getOrCreateTagElement("display").put("Lore", ListTag().also { lore ->
+            lines.forEach { lore.add(StringTag.valueOf(Component.Serializer.toJson(it))) }
+        })
+    }
+
+    internal fun setUnbreakable(stack: ItemStack) { stack.orCreateTag.putBoolean("Unbreakable", true) }
+
+    internal fun clearDisplayKey(stack: ItemStack, key: String) {
+        require(key == "Name" || key == "Lore")
+        val display = stack.getTagElement("display") ?: return
+        display.remove(key)
+        if (display.isEmpty) stack.removeTagKey("display")
+    }
+
+    internal fun itemDataJson(stack: ItemStack): String {
+        require(!stack.isEmpty) { "Hold an item in your main hand" }
+        return Gson().toJson(NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, stack.save(CompoundTag())))
+    }
 
     fun copyItemData(): String {
         val client = Minecraft.getInstance()
-        val level = requireNotNull(client.level) { "Join a world first" }
+        requireNotNull(client.level) { "Join a world first" }
         val stack = requireNotNull(client.player) { "Player unavailable" }.mainHandItem.copy()
         require(!stack.isEmpty) { "Hold an item in your main hand" }
-        val ops = level.registryAccess().createSerializationContext(JsonOps.INSTANCE)
-        return Gson().toJson(ItemStack.CODEC.encodeStart(ops, stack).getOrThrow())
+        return itemDataJson(stack)
     }
 
-    internal fun validateTextSize(lines: List<Component>, registries: HolderLookup.Provider) {
-        val ops = registries.createSerializationContext(JsonOps.INSTANCE)
-        val json = ComponentSerialization.CODEC.listOf().encodeStart(ops, lines).getOrThrow()
+    internal fun validateTextSize(lines: List<Component>) {
+        val json = lines.map(Component.Serializer::toJsonTree)
         require(Gson().toJson(json).toByteArray(Charsets.UTF_8).size <= 32 * 1024) {
             "Formatted text exceeds 32 KiB serialized UTF-8"
         }
@@ -99,12 +127,12 @@ object CreativeText {
         require(!original.isEmpty) { "Hold an item in your main hand" }
         val changed = original.copy()
         change(changed)
-        validateTextSize(lines, level.registryAccess())
+        validateTextSize(lines)
 
         require(changed.count in 1..changed.maxStackSize && changed.isItemEnabled(level.enabledFeatures())) {
             "Held item is not valid for this server"
         }
-        ItemStack.STRICT_CODEC.encodeStart(level.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
+        changed.save(CompoundTag())
         validateState()
         check(inventory.selected == slot && ItemStack.matches(inventory.getItem(slot), original)) {
             "Held item changed; try again"

@@ -11,9 +11,9 @@ internal fun debugEffectDuration(ticks: Int, infinite: Boolean): String =
 internal fun registerEffects() {
     registerCommand("effects", "Active status effects", "Player potion effects: localized names, IDs, amplifier, level and duration ticks/seconds", unavailable = ::worldUnavailable) {
         val player = requireNotNull(Minecraft.getInstance().player) { "Join a world first" }
-        val effects = player.activeEffects.sortedBy { BuiltInRegistries.MOB_EFFECT.getKey(it.effect.value()).toString() }
+        val effects = player.activeEffects.sortedBy { BuiltInRegistries.MOB_EFFECT.getKey(it.effect).toString() }
         reportDebug("Active status effects", effects.joinToString("; ") {
-            val effect = it.effect.value()
+            val effect = it.effect
             "${effect.displayName.string} (${BuiltInRegistries.MOB_EFFECT.getKey(effect)}); amplifier=${it.amplifier}, level=${it.amplifier.toLong() + 1}; duration=${debugEffectDuration(it.duration, it.isInfiniteDuration)}"
         }.ifEmpty { "No active status effects" })
     }

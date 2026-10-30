@@ -9,7 +9,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.world.item.DyeColor
-import net.minecraft.world.level.block.entity.BannerPatternLayers
+import dev.spotlight.platform.BannerLayer
 
 internal fun <T> moveBannerLayer(layers: MutableList<T>, index: Int, target: Int): Int {
     if (index !in layers.indices || target !in layers.indices) return index
@@ -19,11 +19,11 @@ internal fun <T> moveBannerLayer(layers: MutableList<T>, index: Int, target: Int
 
 internal class BannerLayersWidget(
     private val flag: ModelPart,
-    private val layers: MutableList<BannerPatternLayers.Layer>,
+    private val layers: MutableList<BannerLayer>,
     private val changed: () -> Unit,
 ) : UiScrollContainer(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder.")) {
     private var base = DyeColor.WHITE
-    private var snapshot = emptyList<BannerPatternLayers.Layer>()
+    private var snapshot = emptyList<BannerLayer>()
     private val rows = mutableListOf<Row>()
     private var selected = -1
     private var draggingHandle = false
@@ -33,7 +33,7 @@ internal class BannerLayersWidget(
         if (snapshot == layers) return
         snapshot = layers.toList()
         rows.clear()
-        layers.forEachIndexed { index, layer -> rows += Row(index, BannerPatternLayers(layers.take(index + 1)), layer.description().string) }
+        layers.forEachIndexed { index, layer -> rows += Row(index, layers.take(index + 1), layer.description().string) }
         selected = selected.coerceAtMost(layers.lastIndex)
         super.setFocused(rows.getOrNull(selected))
         setScrollAmount(scrollAmount())
@@ -106,8 +106,8 @@ internal class BannerLayersWidget(
         draggingHandle = false
         return super.mouseReleased(event.x(), event.y(), event.button())
     }
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double) =
-        isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double) =
+        isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, vertical)
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         layoutRows()
         graphics.enableScissor(x, y, right, bottom)
@@ -120,7 +120,7 @@ internal class BannerLayersWidget(
     override fun updateWidgetNarration(output: NarrationElementOutput) {
         if (focused is AbstractWidget) (focused as AbstractWidget).updateNarration(output) else defaultButtonNarrationText(output)
     }
-    private inner class Row(val index: Int, val cumulative: BannerPatternLayers, label: String) :
+    private inner class Row(val index: Int, val cumulative: List<BannerLayer>, label: String) :
         AbstractWidget(0, 0, 100, 32, catalogText("Layer ${index + 1}: $label. $primaryModifierLabel+Up/Down moves; Delete removes.")) {
         init { setTooltip(Tooltip.create(message)) }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

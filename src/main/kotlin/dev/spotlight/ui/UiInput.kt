@@ -2,10 +2,9 @@ package dev.spotlight.ui
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.util.StringUtil
 import org.lwjgl.glfw.GLFW
 
-// ponytail: 1.21.4 callbacks use primitives; remove these value helpers when native events return.
+// ponytail: 1.20.1 callbacks use primitives; remove these value helpers when native events return.
 internal data class KeyEvent(private val key: Int, private val scanCode: Int, private val modifiers: Int) {
     fun key() = key
     fun input() = key
@@ -35,5 +34,5 @@ internal data class CharacterEvent(private val codepoint: Int, private val modif
     fun codepoint() = codepoint
     fun modifiers() = modifiers
     fun codepointAsString() = Character.toString(codepoint)
-    val isAllowedChatCharacter get() = StringUtil.isAllowedChatCharacter(codepoint.toChar())
+    val isAllowedChatCharacter get() = net.minecraft.SharedConstants.isAllowedChatCharacter(codepoint.toChar())
 }

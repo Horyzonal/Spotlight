@@ -58,7 +58,7 @@ internal class ConfirmSpotlightScreen(
 
     override fun getNarrationMessage(): Component = Component.literal("${title.string}. $explanation. Cancel selected by default. ${primaryModifierLabel}+Enter confirms deletion. Escape cancels.")
 
-    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
     }
 

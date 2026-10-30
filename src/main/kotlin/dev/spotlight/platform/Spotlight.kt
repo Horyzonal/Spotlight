@@ -167,7 +167,7 @@ object Spotlight {
 
 internal fun notifySpotlight(message: String) {
     val client = Minecraft.getInstance()
-    SystemToast.add(client.toasts, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+    SystemToast.add(client.toasts, SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
         Component.literal("Spotlight"), Component.literal(message))
 }
 

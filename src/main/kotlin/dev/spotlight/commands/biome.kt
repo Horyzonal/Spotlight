@@ -3,7 +3,7 @@ package dev.spotlight.commands
 import dev.spotlight.platform.reportDebug
 import dev.spotlight.platform.worldUnavailable
 import net.minecraft.client.Minecraft
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import net.minecraft.world.level.chunk.ChunkStatus
 
 internal fun registerBiome() {
     registerCommand("biome", "Biome", "Current biome registry ID at player block position", unavailable = ::worldUnavailable) {

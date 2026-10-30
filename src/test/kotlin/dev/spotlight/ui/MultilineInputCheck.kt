@@ -18,7 +18,7 @@ internal object MultilineInputCheck {
             override fun getAdvance() = 6f
             override fun bake(factory: Function<SheetGlyphInfo, BakedGlyph>): BakedGlyph = error("Cursor check must not render")
         }
-        val source = object : FontSet(null, ResourceLocation.withDefaultNamespace("test")) {
+        val source = object : FontSet(null, ResourceLocation("test")) {
             override fun getGlyphInfo(codepoint: Int, filterFishyGlyphs: Boolean) = glyph
         }
         val font = Font({ source }, false)

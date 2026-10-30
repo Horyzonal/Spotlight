@@ -1,37 +1,34 @@
 package dev.spotlight.platform
 
 import com.google.gson.JsonElement
-import com.mojang.serialization.JsonOps
-import com.mojang.serialization.Lifecycle
+
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
-import net.minecraft.core.HolderLookup
-import net.minecraft.core.MappedRegistry
-import net.minecraft.core.RegistrationInfo
-import net.minecraft.core.Registry
+
 import net.minecraft.core.RegistryAccess
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.data.registries.VanillaRegistries
-import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.Item
+
 import net.minecraft.resources.FileToIdConverter
-import net.minecraft.server.packs.PackLocationInfo
+
 import net.minecraft.server.packs.PackResources
 import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.PathPackResources
-import net.minecraft.server.packs.repository.PackSource
+
 import net.minecraft.server.packs.resources.MultiPackResourceManager
 import net.minecraft.tags.TagLoader
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
-import java.util.Optional
+
 
 
 internal object LocalRecipeIndex {
     data class Entry(val id: String, val json: JsonElement)
-    data class Loaded(val entries: List<Entry>, val registries: RegistryAccess, val lookup: HolderLookup.Provider,
-                      val unsupported: Map<String, String>)
+    data class Loaded(val entries: List<Entry>, val registries: RegistryAccess,
+                      val itemTags: Map<ResourceLocation, Collection<Item>>, val unsupported: Map<String, String>)
 
     fun packs(client: Minecraft): List<PackResources> = buildList {
         add(client.vanillaPackResources)
@@ -41,7 +38,7 @@ internal object LocalRecipeIndex {
             for ((index, root) in mod.rootPaths.withIndex()) {
 
                 val id = "spotlight-local:${mod.metadata.id}:$index"
-                add(PathPackResources(PackLocationInfo(id, Component.literal(id), PackSource.BUILT_IN, Optional.empty()), root))
+                add(PathPackResources(id, root, false))
             }
         }
     }
@@ -50,30 +47,13 @@ internal object LocalRecipeIndex {
 
         val resources = MultiPackResourceManager(PackType.SERVER_DATA, packs)
         val unsupported = linkedMapOf<String, String>()
-        fun <T : Any> copyRegistry(source: Registry<T>): MappedRegistry<T> {
-            val copy = MappedRegistry<T>(source.key(), Lifecycle.stable())
-            for ((key, value) in source.entrySet()) {
-                copy.register(key, value, RegistrationInfo.BUILT_IN)
-            }
-            val loader = TagLoader<net.minecraft.core.Holder<T>>({ id -> copy.getHolder(id) },
-                net.minecraft.core.registries.Registries.tagsDirPath(copy.key()))
-            val definitions = loader.load(resources)
-            val tags = loader.build(definitions)
-            for (id in definitions.keys - tags.keys) unsupported["[C] tag $id"] = "Local tag has missing entries or a cycle"
-            copy.bindTags(tags.mapKeys { (id, _) -> net.minecraft.tags.TagKey.create(copy.key(), id) }
-                            .mapValues { (_, holders) -> holders.toList() })
-            copy.freeze()
-            return copy
-        }
-        val copies = BuiltInRegistries.REGISTRY.map { copyRegistry(it) }
-        val registries = RegistryAccess.ImmutableRegistryAccess(copies).freeze()
-
-        val defaults = VanillaRegistries.createLookup()
-        val lookup = HolderLookup.Provider.create(java.util.stream.Stream.concat(
-            registries.registries().map { it.value().asLookup() },
-                        defaults.listRegistries().filter { registries.lookup(it).isEmpty }.map { defaults.lookupOrThrow(it) }))
-
-        val converter = FileToIdConverter.json("recipe")
+        // Keep tag membership detached: Ingredient tag values otherwise read live global bindings.
+        val loader = TagLoader<Item>({ id -> BuiltInRegistries.ITEM.getOptional(id) }, "tags/items")
+        val definitions = loader.load(resources)
+        val tags = loader.build(definitions)
+        for (id in definitions.keys - tags.keys) unsupported["[C] tag $id"] = "Local tag has missing entries or a cycle"
+        val registries = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)
+        val converter = FileToIdConverter.json("recipes")
         val entries = mutableListOf<Entry>()
         val files = converter.listMatchingResources(resources).entries.sortedBy { it.key.toString() }
         if (files.size > 50_000) unsupported["[C] limit"] = "Local recipe limit 50000; remaining files skipped"
@@ -95,13 +75,20 @@ internal object LocalRecipeIndex {
                 unsupported["[C] $id"] = "Local JSON rejected (${resource.sourcePackId()}): ${exception.message}"
             }
         }
-        return Loaded(entries, registries, lookup, unsupported)
+        return Loaded(entries, registries, tags, unsupported)
     }
 
     fun decode(entry: Entry, loaded: Loaded): net.minecraft.world.item.crafting.Recipe<*> {
         val json = entry.json.deepCopy().asJsonObject
-        // 1.21.1 native Ingredient tags resolve against global items, not RegistryOps.
-        // Expand only ingredient fields so detached local tags never change live bindings or result NBT.
+        val type = ResourceLocation(json.get("type").asString)
+        val serializer = BuiltInRegistries.RECIPE_SERIALIZER.getOptional(type).orElseThrow {
+            IllegalArgumentException("Unknown recipe serializer: $type")
+        }
+        // ponytail: custom serializers may read live tags; add explicit detached adapters before allowing them.
+        require(type.namespace == "minecraft" && serializer.javaClass.name.startsWith("net.minecraft.world.item.crafting.")) {
+            "Unsupported local custom serializer: $type; detached tag adapter required"
+        }
+        // Expand only ingredient fields; native vanilla decoders receive no global tag references.
         fun ingredient(value: JsonElement): JsonElement {
             if (value.isJsonArray) return JsonArray().also { array ->
                 for (part in value.asJsonArray) {
@@ -109,14 +96,21 @@ internal object LocalRecipeIndex {
                     if (expanded.isJsonArray) expanded.asJsonArray.forEach { array.add(it) } else array.add(expanded)
                 }
             }
-            if (!value.isJsonObject || !value.asJsonObject.has("tag")) return value
-            val id = net.minecraft.resources.ResourceLocation.parse(value.asJsonObject.get("tag").asString)
-            val key = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, id)
-            val holders = loaded.lookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM).get(key)
-                .orElseThrow { IllegalArgumentException("Missing local item tag: $id") }
-            require(holders.size() > 0) { "Empty local item tag: $id" }
-            return JsonArray().also { array -> holders.forEach { holder ->
-                array.add(JsonObject().also { it.addProperty("item", BuiltInRegistries.ITEM.getKey(holder.value()).toString()) })
+            require(value.isJsonObject) { "Ingredient must be an object or array" }
+            val objectValue = value.asJsonObject
+            require(objectValue.keySet() == setOf("item") || objectValue.keySet() == setOf("tag")) {
+                "Unsupported local ingredient fields: ${objectValue.keySet()}"
+            }
+            if (objectValue.has("item")) {
+                val id = ResourceLocation(objectValue.get("item").asString)
+                require(BuiltInRegistries.ITEM.containsKey(id)) { "Unknown ingredient item: $id" }
+                return value
+            }
+            val id = ResourceLocation(objectValue.get("tag").asString)
+            val items = loaded.itemTags[id] ?: throw IllegalArgumentException("Missing local item tag: $id")
+            require(items.isNotEmpty()) { "Empty local item tag: $id" }
+            return JsonArray().also { array -> items.forEach { item ->
+                array.add(JsonObject().also { it.addProperty("item", BuiltInRegistries.ITEM.getKey(item).toString()) })
             } }
         }
         for (field in listOf("ingredient", "base", "addition", "template"))
@@ -125,7 +119,6 @@ internal object LocalRecipeIndex {
             json.getAsJsonArray("ingredients").forEach { array.add(ingredient(it)) }
         })
         if (json.has("key")) json.getAsJsonObject("key").entrySet().forEach { it.setValue(ingredient(it.value)) }
-        return net.minecraft.world.item.crafting.Recipe.CODEC
-            .parse(loaded.lookup.createSerializationContext(JsonOps.INSTANCE), json).getOrThrow()
+        return serializer.fromJson(ResourceLocation(entry.id), json)
     }
 }

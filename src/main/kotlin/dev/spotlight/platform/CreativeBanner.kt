@@ -1,16 +1,23 @@
 package dev.spotlight.platform
 
-import com.mojang.serialization.JsonOps
+import net.minecraft.core.Holder
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
 import dev.spotlight.commands.creativePlan
 import net.minecraft.client.Minecraft
-import net.minecraft.core.component.DataComponents
+
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.item.BannerItem
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.GameType
-import net.minecraft.world.level.block.entity.BannerPatternLayers
+import net.minecraft.world.level.block.entity.BannerPattern
+
+data class BannerLayer(val pattern: Holder<BannerPattern>, val color: DyeColor) {
+    fun pattern(): Holder<BannerPattern> = pattern
+    fun color(): DyeColor = color
+}
 
 object CreativeBanner {
 
@@ -20,23 +27,38 @@ object CreativeBanner {
         BuiltInRegistries.ITEM.firstOrNull { it is BannerItem && it.color == base } as? BannerItem
             ?: error("Banner item unavailable for ${base.name}")
 
-    fun createBanner(base: DyeColor, layers: List<BannerPatternLayers.Layer>): ItemStack =
+    fun createBanner(base: DyeColor, layers: List<BannerLayer>): ItemStack =
         withLayers(ItemStack(bannerItem(base)), layers)
 
-    fun createShield(base: DyeColor, layers: List<BannerPatternLayers.Layer>): ItemStack =
-        withLayers(ItemStack(Items.SHIELD).also { it.set(DataComponents.BASE_COLOR, base) }, layers)
+    fun createShield(base: DyeColor, layers: List<BannerLayer>): ItemStack =
+        withLayers(ItemStack(Items.SHIELD).also { it.getOrCreateTagElement("BlockEntityTag").putInt("Base", base.id) }, layers)
 
-    private fun withLayers(stack: ItemStack, layers: List<BannerPatternLayers.Layer>): ItemStack {
+    private fun withLayers(stack: ItemStack, layers: List<BannerLayer>): ItemStack {
         require(layers.size <= MAX_LAYERS) { "Editor limit: $MAX_LAYERS layers; remove layers first" }
-        stack.set(DataComponents.BANNER_PATTERNS, BannerPatternLayers(layers.toList()))
+        stack.getOrCreateTagElement("BlockEntityTag").put("Patterns", ListTag().also { patterns ->
+            layers.forEach { layer ->
+                patterns.add(CompoundTag().also {
+                    it.putString("Pattern", layer.pattern.value().hashname)
+                    it.putInt("Color", layer.color.id)
+                })
+            }
+        })
         return stack
     }
 
-    fun giveBanner(base: DyeColor, layers: List<BannerPatternLayers.Layer>) {
+    fun layers(stack: ItemStack): List<BannerLayer> {
+        val patterns = stack.getTagElement("BlockEntityTag")?.getList("Patterns", 10) ?: return emptyList()
+        return (0 until patterns.size).mapNotNull { index ->
+            val tag = patterns.getCompound(index)
+            BannerPattern.byHash(tag.getString("Pattern"))?.let { BannerLayer(it, DyeColor.byId(tag.getInt("Color"))) }
+        }
+    }
+
+    fun giveBanner(base: DyeColor, layers: List<BannerLayer>) {
         give(createBanner(base, layers))
     }
 
-    fun giveShield(base: DyeColor, layers: List<BannerPatternLayers.Layer>) {
+    fun giveShield(base: DyeColor, layers: List<BannerLayer>) {
         give(createShield(base, layers))
     }
 
@@ -67,12 +89,12 @@ object CreativeBanner {
             require(stack.count in 1..stack.maxStackSize && stack.isItemEnabled(level.enabledFeatures())) {
                 "Created item is not valid for this server"
             }
-            ItemStack.STRICT_CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), stack).getOrThrow()
+            stack.save(CompoundTag())
         }
         checkState()
         val incoming = draft.copyWithCount(1)
         validate(incoming)
-        val changes = creativePlan(existing, incoming, 1) { inventory.getMaxStackSize(it) }
+        val changes = creativePlan(existing, incoming, 1) { inventory.maxStackSize }
         changes.forEach { (_, stack) -> validate(stack) }
         checkState()
         for ((slot, stack) in changes) {
@@ -86,17 +108,17 @@ object CreativeBanner {
         require(!stack.isEmpty && (stack.item is BannerItem || stack.item === Items.SHIELD)) {
             "Hold a banner or shield in your main hand"
         }
-        return (stack.item as? BannerItem)?.color ?: stack.get(DataComponents.BASE_COLOR) ?: DyeColor.WHITE
+        return (stack.item as? BannerItem)?.color ?: stack.getTagElement("BlockEntityTag")?.let {
+                    if (it.contains("Base", 99)) DyeColor.byId(it.getInt("Base")) else DyeColor.WHITE
+                } ?: DyeColor.WHITE
     }
 
-    fun buildBanner(stack: ItemStack, base: DyeColor, patterns: BannerPatternLayers): ItemStack {
+    fun buildBanner(stack: ItemStack, base: DyeColor, patterns: List<BannerLayer>): ItemStack {
         baseColor(stack)
-        require(patterns.layers().size <= MAX_LAYERS) { "Editor limit: $MAX_LAYERS layers; remove layers first" }
         val result = if (stack.item is BannerItem) {
-            stack.transmuteCopy(bannerItem(base))
-        } else stack.copy().also { it.set(DataComponents.BASE_COLOR, base) }
-        result.set(DataComponents.BANNER_PATTERNS, BannerPatternLayers(patterns.layers().toList()))
-        return result
+            ItemStack(bannerItem(base), stack.count).also { it.tag = stack.tag?.copy() }
+        } else stack.copy().also { it.getOrCreateTagElement("BlockEntityTag").putInt("Base", base.id) }
+        return withLayers(result, patterns)
     }
 
     class Session {
@@ -124,7 +146,7 @@ object CreativeBanner {
             else -> null
         }
 
-        fun apply(base: DyeColor, patterns: BannerPatternLayers) {
+        fun apply(base: DyeColor, patterns: List<BannerLayer>) {
             check(client.isSameThread) { "Banner editing requires the client thread" }
             check(unavailableReason() == null) { unavailableReason().orEmpty() }
             val changed = buildBanner(original, base, patterns)
@@ -132,7 +154,7 @@ object CreativeBanner {
             require(changed.count in 1..changed.maxStackSize && changed.isItemEnabled(level.enabledFeatures())) {
                 "Held item is not valid for this server"
             }
-            ItemStack.STRICT_CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
+            changed.save(CompoundTag())
             check(unavailableReason() == null) { unavailableReason().orEmpty() }
             gameMode.handleCreativeModeItemAdd(changed, slot + 36)
             player.inventory.setItem(slot, changed)

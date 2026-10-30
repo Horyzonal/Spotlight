@@ -14,7 +14,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Current song")) {
-    private val textureId = ResourceLocation.fromNamespaceAndPath("spotlight", "current_song_artwork")
+    private val textureId = ResourceLocation("spotlight", "current_song_artwork")
     private val rotation = SongRotation()
     private var artworkId: String? = null
     private var hasTexture = false

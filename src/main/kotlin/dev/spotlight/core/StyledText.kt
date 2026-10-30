@@ -1,6 +1,6 @@
 package dev.spotlight.core
 
-import java.text.BreakIterator
+import java.util.regex.Pattern
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -31,7 +31,7 @@ data class StyledText(val runs: List<ColoredRun>, val style: TextStyle = TextSty
         }
     }
 
-    
+
     fun toJson(): String = buildString {
         append("{\"text\":\"\",\"bold\":${style.bold},\"italic\":${style.italic},")
         append("\"underlined\":${style.underlined},\"strikethrough\":${style.strikethrough},")
@@ -49,7 +49,7 @@ data class StyledText(val runs: List<ColoredRun>, val style: TextStyle = TextSty
         append('}')
     }
 
-    
+
     fun toCustom(format: String): String = buildString {
         runs.forEach { run ->
             var end = 0
@@ -66,7 +66,7 @@ data class StyledText(val runs: List<ColoredRun>, val style: TextStyle = TextSty
         }
     }
 
-    
+
     fun toLegacy(): String = buildString {
         runs.forEach { run ->
             append("§x")
@@ -83,11 +83,11 @@ data class StyledText(val runs: List<ColoredRun>, val style: TextStyle = TextSty
 }
 
 object TextFormatter {
-    
+
     fun format(text: String, mode: TextMode, colors: List<Int>, style: TextStyle = TextStyle()): StyledText =
         formatWithStops(text, mode, ColorPicker.positionedStops(colors), style)
 
-    
+
     fun formatWithStops(text: String, mode: TextMode, stops: List<GradientStop>, style: TextStyle = TextStyle()): StyledText {
         validateStyledText(text)
         require(stops.size in 1..16) { "Expected 1..16 stops" }
@@ -95,18 +95,11 @@ object TextFormatter {
         require(stops.all { it.position.isFinite() && it.position in 0.0..1.0 }) { "Stop positions must be finite and in 0..1" }
         val sorted = stops.sortedBy { it.position }
         val colors = sorted.map { it.color }
-        
+
         val evenlySpaced = sorted.indices.all { sorted[it].position == if (sorted.size == 1) 0.0 else it.toDouble() / (sorted.size - 1) }
-        val iterator = BreakIterator.getCharacterInstance(Locale.ROOT)
-        iterator.setText(text)
         val glyphs = mutableListOf<String>()
-        var start = iterator.first()
-        var end = iterator.next()
-        while (end != BreakIterator.DONE) {
-            glyphs += text.substring(start, end)
-            start = end
-            end = iterator.next()
-        }
+        val matcher = Pattern.compile("\\X").matcher(text)
+        while (matcher.find()) glyphs += matcher.group()
         val runs = mutableListOf<ColoredRun>()
         val pending = StringBuilder()
         var previous = -1
@@ -131,7 +124,7 @@ object TextFormatter {
         return StyledText(runs, style)
     }
 
-    
+
     fun parseColors(value: String): List<Int> {
         val tokens = value.trim().split(Regex("[,\\s]+"))
         require(tokens.size in 1..16 && tokens.all { it.matches(Regex("#?[0-9a-fA-F]{6}")) }) {

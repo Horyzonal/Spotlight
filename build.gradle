@@ -21,8 +21,8 @@ base {
 
 kotlin {
     jvmToolchain(25)
-        compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
-    compilerOptions.freeCompilerArgs.add("-Xjdk-release=21")
+    compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    compilerOptions.freeCompilerArgs.add("-Xjdk-release=17")
 }
 
 tasks.withType(JavaCompile).configureEach {

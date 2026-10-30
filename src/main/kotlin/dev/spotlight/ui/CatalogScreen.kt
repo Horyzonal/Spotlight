@@ -55,12 +55,13 @@ internal fun catalogFrame(graphics: GuiGraphics, widget: AbstractWidget) {
     }
 }
 
-internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Component, font: Font): FittingMultiLineTextWidget =
+internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Component, font: Font,
+    themed: Boolean = true): FittingMultiLineTextWidget =
     object : FittingMultiLineTextWidget(x, y, width, height, message, font) {
         override fun getInnerHeight(): Int = font.wordWrapHeight(this.message, (this.width - 8).coerceAtLeast(1))
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-            if (showingScrollBar()) super.renderWidget(graphics, mouseX, mouseY, delta)
+            if (scrollbarVisible()) super.renderWidget(graphics, mouseX, mouseY, delta)
             else {
                 renderBackground(graphics)
                 renderContents(graphics, mouseX, mouseY, delta)
@@ -78,9 +79,9 @@ internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Co
         }
 
         override fun setMessage(message: Component) {
-            super.setMessage(catalogText(message).withStyle {
+            super.setMessage(if (themed) catalogText(message).withStyle {
                 if (it.color == null) it.withColor(catalogNativeColor(-1, 0xFFF2F5FC)) else it
-            })
+            } else message)
         }
     }.also { it.message = message }
 

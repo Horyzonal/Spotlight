@@ -31,7 +31,7 @@ internal fun soundMatches(query: String, entries: List<Pair<String, String>>): L
 internal class SoundMenuList(
     client: Minecraft, private val textFont: Font, width: Int, height: Int, top: Int,
     private val changed: (String?) -> Unit,
-) : ObjectSelectionList<SoundMenuList.Row>(client, width, height, top, 24) {
+) : ObjectSelectionList<SoundMenuList.Row>(client, width, top + height, top, top + height, 24) {
     private val foreground = SpotlightTheme.color(0xFFF2F5FC)
     override fun getRowWidth() = (width - 16).coerceAtLeast(1)
     fun show(entries: List<Pair<String, String>>, previous: String?) {
@@ -109,7 +109,7 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         search.setResponder { query = it; filter() }
         list = addRenderableWidget(SoundMenuList(minecraft!!, font, panelWidth, (bottom - top - 138).coerceAtLeast(1), top + 48) {
             if (manual) selectedSound = it else selectedToken = it
-        }.also { it.x = left })
+        }.also { it.setLeftPos(left) })
         val fieldWidth = (panelWidth / 2 - 4).coerceAtLeast(1)
         volume = addRenderableWidget(SpotlightEditBox(font, left, bottom - 62, fieldWidth, 20, catalogText("Volume (0–1)")))
         volume.value = volumeText

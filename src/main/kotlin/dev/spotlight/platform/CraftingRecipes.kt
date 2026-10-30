@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.crafting.CraftingRecipe
-import net.minecraft.core.HolderLookup
+import net.minecraft.core.RegistryAccess
 import net.minecraft.world.item.crafting.ShapedRecipe
 import net.minecraft.world.item.crafting.ShapelessRecipe
 import net.minecraft.world.item.crafting.Ingredient
@@ -30,9 +30,9 @@ data class CraftingRecipeView(
 enum class RecipeSource { C, S }
 
 
-private data class StackKey(val item: net.minecraft.world.item.Item, val components: Set<net.minecraft.core.component.TypedDataComponent<*>>, val count: Int)
+private data class StackKey(val item: net.minecraft.world.item.Item, val tag: net.minecraft.nbt.CompoundTag?, val count: Int)
 private fun stackKey(stack: ItemStack, output: Boolean = false) =
-    StackKey(stack.item, stack.components.toSet(), if (output) stack.count else 1)
+    StackKey(stack.item, stack.tag?.copy(), if (output) stack.count else 1)
 private data class RecipeKey(val shapeless: Boolean, val width: Int, val height: Int, val slots: Any, val result: StackKey)
 private fun recipeKey(view: CraftingRecipeView): RecipeKey {
     val slots = view.ingredients.map { alternatives -> alternatives.filterNot { it.isEmpty }.map { stackKey(it) }.toSet() }
@@ -136,17 +136,17 @@ object CraftingRecipes {
                 try {
                     val views = mutableListOf<CraftingRecipeView>()
                     val unsupported = linkedMapOf<String, String>()
-                    for (holder in server.recipeManager.recipes) {
-                        if (holder.value() !is CraftingRecipe) continue
-                        val id = holder.id().toString()
+                    for (recipe in server.recipeManager.recipes) {
+                        if (recipe !is CraftingRecipe) continue
+                        val id = recipe.id.toString()
                         try {
-                            views += resolve(id, holder.value() as CraftingRecipe, RecipeSource.S, server.registryAccess(), unsupported)
+                            views += resolve(id, recipe, RecipeSource.S, server.registryAccess(), unsupported)
                         } catch (exception: RuntimeException) {
                             unsupported["[S] $id"] = "Recipe resolution failed: ${exception.message ?: exception.javaClass.name}"
                         }
                     }
                     future.complete(ServerSnapshot(views.toList(), unsupported.toMap(),
-                        server.recipeManager.recipes.mapTo(linkedSetOf()) { it.id().toString() }))
+                        server.recipeManager.recipes.mapTo(linkedSetOf()) { it.id.toString() }))
                 } catch (exception: Exception) {
                     future.completeExceptionally(exception)
                 }
@@ -186,7 +186,7 @@ object CraftingRecipes {
                     try {
                         val recipe = LocalRecipeIndex.decode(entry, loaded)
                         if (recipe is CraftingRecipe) {
-                            views += resolve(entry.id, recipe, RecipeSource.C, loaded.lookup, unsupported)
+                            views += resolve(entry.id, recipe, RecipeSource.C, loaded.registries, unsupported)
                         }
                     } catch (exception: Exception) {
                         unsupported["[C] ${entry.id}"] = "Local decode/resolution failed: ${exception.message}"
@@ -198,7 +198,7 @@ object CraftingRecipes {
                         .execute { client.execute { chunk() } }
                 } else {
                     localSnapshot = ServerSnapshot(views.toList(), unsupported.toMap(), loaded.entries.mapTo(linkedSetOf()) { it.id })
-                    localStatus = "[C] ready: ${views.size} local views, ${unsupported.size} skipped; local tags/default registries; " +
+                    localStatus = "[C] ready: ${views.size} local views, ${unsupported.size} skipped; detached local item tags; " +
                         "vanilla then mod ID order, not server pack order; no world packs or generated recipes"
                     onUpdate()
                 }
@@ -231,7 +231,7 @@ object CraftingRecipes {
         return mergeRecipeViews(views)
     }
 
-    internal fun resolve(id: String, recipe: CraftingRecipe, source: RecipeSource, registries: HolderLookup.Provider,
+    internal fun resolve(id: String, recipe: CraftingRecipe, source: RecipeSource, registries: RegistryAccess,
                          unsupported: MutableMap<String, String>): List<CraftingRecipeView> {
         fun reject(reason: String): List<CraftingRecipeView> {
             unsupported["[$source] $id"] = reason
@@ -286,7 +286,7 @@ object CraftingRecipes {
         val candidates = occupied.map { slot ->
             stacks.indices.filterTo(linkedSetOf()) { index ->
                 !stacks[index].isEmpty && recipe.ingredients[slot].any { alternative ->
-                    !alternative.isEmpty && ItemStack.isSameItemSameComponents(alternative, stacks[index])
+                    !alternative.isEmpty && ItemStack.isSameItemSameTags(alternative, stacks[index])
                 }
             }
         }

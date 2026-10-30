@@ -12,7 +12,7 @@ internal fun registerConnection() {
         val info = connection.getPlayerInfo(player.uuid)
         val latency = info?.let { "${it.latency} ms (server-supplied player-list latency, not a live probe)" } ?: "unavailable (local player absent from player list)"
         val kind = if (client.isLocalServer) "integrated server" else "remote server"
-        val brand = connection.serverBrand()?.takeIf { it.isNotBlank() } ?: "unavailable (not supplied)"
+        val brand = player.serverBrand?.takeIf { it.isNotBlank() } ?: "unavailable (not supplied)"
         reportDebug("Connection information", "kind=$kind; local player=${info?.profile?.name ?: player.name.string}; latency=$latency; server brand=$brand; server address omitted")
     }
 }

@@ -103,9 +103,9 @@ class MacroListScreen(private val parent: SpotlightScreen) : Screen(catalogText(
         }
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (vertical != 0.0) { selected += if (vertical > 0) -1 else 1; refresh(); return true }
-        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+        return super.mouseScrolled(mouseX, mouseY, vertical)
     }
     override fun onClose() { minecraft!!.setScreen(parent) }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

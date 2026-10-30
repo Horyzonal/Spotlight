@@ -47,7 +47,7 @@ internal fun mergeMusicDefinitions(
     definitions: Map<String, SoundEventRegistration>,
 ) {
     definitions.forEach { (name, registration) ->
-        val id = ResourceLocation.fromNamespaceAndPath(namespace, name)
+        val id = ResourceLocation(namespace, name)
         target[id] = (if (registration.isReplace) emptyList() else target[id].orEmpty()) + registration.sounds
     }
 }
@@ -56,7 +56,7 @@ internal fun loadedMusicTracks(resources: ResourceManager, manager: SoundManager
     val definitions = linkedMapOf<ResourceLocation, List<Sound>>()
     for (namespace in resources.namespaces) {
 
-        for (resource in resources.getResourceStack(ResourceLocation.fromNamespaceAndPath(namespace, "sounds.json"))) {
+        for (resource in resources.getResourceStack(ResourceLocation(namespace, "sounds.json"))) {
             try {
                 val parsed = resource.openAsReader().use(::readMusicDefinitions)
                 mergeMusicDefinitions(definitions, namespace, parsed)
@@ -108,7 +108,7 @@ internal class TrackSoundInstance(file: ResourceLocation) : AbstractSoundInstanc
         looping = true
         relative = true
         attenuation = SoundInstance.Attenuation.NONE
-        sound = Sound(file, ConstantFloat.of(1f), ConstantFloat.of(1f), 1, Sound.Type.FILE, true, false, 16)
+        sound = Sound(file.toString(), ConstantFloat.of(1f), ConstantFloat.of(1f), 1, Sound.Type.FILE, true, false, 16)
         trackEvent = WeighedSoundEvents(file, null).also { it.addSound(requireNotNull(sound)) }
     }
 

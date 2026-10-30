@@ -4,7 +4,7 @@ import dev.spotlight.ui.SpotlightSettingsScreen
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.PauseScreen
 import net.minecraft.client.gui.screens.TitleScreen
-import net.minecraft.client.gui.screens.options.OptionsScreen
+import net.minecraft.client.gui.screens.OptionsScreen
 
 internal fun registerSettings() {
     registerCommand("settings", "Spotlight settings") {

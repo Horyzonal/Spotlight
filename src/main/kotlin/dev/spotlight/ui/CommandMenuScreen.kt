@@ -100,12 +100,12 @@ internal class CommandMenuScreen(
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
         if (vertical != 0.0) moveSelection(if (vertical > 0) -1 else 1)
         return true
     }
 
-    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
     }
 

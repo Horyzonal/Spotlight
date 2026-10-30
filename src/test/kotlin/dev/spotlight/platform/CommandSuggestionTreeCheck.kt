@@ -13,15 +13,15 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.GameProfileArgument
 import net.minecraft.SharedConstants
-import net.minecraft.commands.CommandBuildContext
+
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.ResourceKeyArgument
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
 import net.minecraft.core.registries.Registries
-import net.minecraft.data.registries.VanillaRegistries
+
 import net.minecraft.server.Bootstrap
 import net.minecraft.server.commands.GameRuleCommand
-import net.minecraft.world.flag.FeatureFlags
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -96,8 +96,7 @@ object CommandSuggestionTreeCheck {
         completion.register(literal<Boolean>("say").then(argument("message", StringArgumentType.greedyString())))
         completion.register(literal<Boolean>("quote").then(argument("message", StringArgumentType.string())))
         completion.register(literal<Boolean>("message").then(argument("message", net.minecraft.commands.arguments.MessageArgument.message())))
-        completion.register(literal<Boolean>("component").then(argument("value", net.minecraft.commands.arguments.ComponentArgument.textComponent(
-            CommandBuildContext.simple(VanillaRegistries.createLookup(), FeatureFlags.DEFAULT_FLAGS)))))
+        completion.register(literal<Boolean>("component").then(argument("value", net.minecraft.commands.arguments.ComponentArgument.textComponent())))
         completion.register(literal<Boolean>("mode").then(literal<Boolean>("creative")))
         completion.register(literal<Boolean>("bool").then(argument("value", BoolArgumentType.bool())))
         completion.register(literal<Boolean>("number").then(argument("value", IntegerArgumentType.integer())))
@@ -136,7 +135,7 @@ object CommandSuggestionTreeCheck {
             listOf(CommandSuggestion("Player778", "Player778", start = 4, end = 6))
         }?.first == "/tp Player778 ")
         check(expand("/target m ")?.first == "/target @s ")
-        check(singleTokenCommandArgument(ResourceKeyArgument.key(Registries.RECIPE)))
+        check(singleTokenCommandArgument(ResourceKeyArgument.key(Registries.CONFIGURED_FEATURE)))
         check(!singleTokenCommandArgument(net.minecraft.commands.arguments.CompoundTagArgument.compoundTag()))
         check(commandArgumentHint(dispatcher, false, "/give ") == "Enter a number")
         check(commandArgumentHint(dispatcher, false, "/give nope") == "Enter a number")
@@ -150,14 +149,14 @@ object CommandSuggestionTreeCheck {
             check(commandArgumentHint(numbers, false, "/number ") == "Enter a number")
             check(commandArgumentHint(numbers, false, "/number 2 ") == null)
         }
-        val type = ResourceKeyArgument.key(Registries.RECIPE)
+        val type = ResourceKeyArgument.key(Registries.CONFIGURED_FEATURE)
         val info = ArgumentTypeInfos.byClass(type)
         val json = JsonObject()
         fun <A : com.mojang.brigadier.arguments.ArgumentType<*>, T : net.minecraft.commands.synchronization.ArgumentTypeInfo.Template<A>> serialize(
             i: net.minecraft.commands.synchronization.ArgumentTypeInfo<A, T>, a: A
         ) { i.serializeToJson(i.unpack(a), json) }
         serialize(info, type)
-        check(commandRegistryId(json) == "minecraft:recipe")
+        check(commandRegistryId(json) == "minecraft:worldgen/configured_feature")
         val rules = CommandDispatcher<CommandSourceStack>()
         GameRuleCommand.register(rules)
         val catalog = CommandCatalog.gameRules()

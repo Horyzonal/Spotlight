@@ -13,20 +13,19 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.model.geom.ModelLayers
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.core.Holder
-import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.block.entity.BannerPattern
-import net.minecraft.world.level.block.entity.BannerPatternLayers
+import dev.spotlight.platform.BannerLayer
 
 class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Banner editor")) {
     private var loaded = false
     private var failure: String? = null
     private var patterns = emptyList<Holder.Reference<BannerPattern>>()
-    private val layers = mutableListOf<BannerPatternLayers.Layer>()
+    private val layers = mutableListOf<BannerLayer>()
     private var base = DyeColor.WHITE
     private var dye = DyeColor.WHITE
     private var query = ""
@@ -71,7 +70,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         rows += listOf(search)
         patternGrid = BannerPatternGrid(flag) { pattern ->
             if (failure == null && layers.size < CreativeBanner.MAX_LAYERS) {
-                layers += BannerPatternLayers.Layer(pattern, dye)
+                layers += BannerLayer(pattern, dye)
                 notice = ""
                 refresh()
             }
@@ -81,7 +80,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
                 graphics.enableScissor(x, y, right, bottom)
                 graphics.themeText(font, catalogClip(font, "Current draft", width), x + 4, y + 4, SpotlightTheme.color(0xFFF2F5FC))
                 val bannerWidth = minOf(64, (width - 12).coerceAtLeast(0), ((height - 24) / 2).coerceAtLeast(0))
-                if (bannerWidth > 0) graphics.renderBanner(flag, base, BannerPatternLayers(layers.toList()),
+                if (bannerWidth > 0) graphics.renderBanner(flag, base, layers.toList(),
                     x + (width - bannerWidth) / 2, y + 20, x + (width + bannerWidth) / 2, y + 20 + bannerWidth * 2)
                 graphics.disableScissor()
             }
@@ -131,7 +130,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     }
 
     private fun filtered() = patterns.filter { pattern ->
-        val text = "${pattern.key().location()} ${BannerPatternLayers.Layer(pattern, dye).description().string}".lowercase()
+        val text = "${pattern.key().location()} ${BannerLayer(pattern, dye).description().string}".lowercase()
         var index = 0
         query.lowercase().all { character ->
             val found = text.indexOf(character, index)
@@ -257,11 +256,11 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         }
         override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean =
             isMouseOver(mouseX, mouseY) && super.mouseClicked(mouseX, mouseY, button)
-        override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+        override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
             if (!isMouseOver(mouseX, mouseY)) return false
-            if (patternGrid.isMouseOver(mouseX, mouseY) && patternGrid.mouseScrolled(mouseX, mouseY, horizontal, vertical)) return true
-            if (layerList.isMouseOver(mouseX, mouseY) && layerList.mouseScrolled(mouseX, mouseY, horizontal, vertical)) return true
-            return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
+            if (patternGrid.isMouseOver(mouseX, mouseY) && patternGrid.mouseScrolled(mouseX, mouseY, vertical)) return true
+            if (layerList.isMouseOver(mouseX, mouseY) && layerList.mouseScrolled(mouseX, mouseY, vertical)) return true
+            return super.mouseScrolled(mouseX, mouseY, vertical)
         }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             graphics.enableScissor(x, y, right, bottom)

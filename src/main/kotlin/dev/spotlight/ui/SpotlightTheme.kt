@@ -59,14 +59,23 @@ object SpotlightTheme {
     }
 }
 
-// ponytail: 1.21.1 Style has no shadow color; native widgets need a Font draw override until that field returns.
-internal fun catalogFont(font: Font): Font = object : Font(
-    @Suppress("UNCHECKED_CAST")
-    (Font::class.java.declaredFields.single { it.type == java.util.function.Function::class.java }.let {
-        it.isAccessible = true
-        it.get(font) as java.util.function.Function<ResourceLocation, net.minecraft.client.gui.font.FontSet>
-    }), false,
-) {
+// ponytail: 1.20.1 Style has no shadow control; delegate native drawing and metrics until it does.
+internal fun catalogFont(font: Font): Font = object : Font({ error("Font operations must delegate to native font") }, false) {
+    override fun width(text: String) = font.width(text)
+    override fun width(text: net.minecraft.network.chat.FormattedText) = font.width(text)
+    override fun width(text: FormattedCharSequence) = font.width(text)
+    override fun plainSubstrByWidth(text: String, width: Int, reverse: Boolean) = font.plainSubstrByWidth(text, width, reverse)
+    override fun plainSubstrByWidth(text: String, width: Int) = font.plainSubstrByWidth(text, width)
+    override fun substrByWidth(text: net.minecraft.network.chat.FormattedText, width: Int) = font.substrByWidth(text, width)
+    override fun wordWrapHeight(text: String, width: Int) = font.wordWrapHeight(text, width)
+    override fun wordWrapHeight(text: net.minecraft.network.chat.FormattedText, width: Int) = font.wordWrapHeight(text, width)
+    override fun split(text: net.minecraft.network.chat.FormattedText, width: Int) = font.split(text, width)
+    override fun getSplitter() = font.splitter
+    override fun isBidirectional() = font.isBidirectional
+    override fun bidirectionalShaping(text: String) = font.bidirectionalShaping(text)
+    override fun drawInBatch8xOutline(text: FormattedCharSequence, x: Float, y: Float, color: Int, outline: Int,
+        matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource, light: Int) =
+        font.drawInBatch8xOutline(text, x, y, color, outline, matrix, buffers, light)
     override fun drawInBatch(text: String, x: Float, y: Float, color: Int, shadow: Boolean,
         matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource,
         mode: Font.DisplayMode, background: Int, light: Int): Int =

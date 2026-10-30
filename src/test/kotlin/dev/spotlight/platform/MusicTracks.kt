@@ -24,14 +24,14 @@ object MusicTracksCheck {
         check(tracks.single { it.id == "mod:music/new_song" }.let { it.title == "New Song" && it.artist == null })
         check(resolveMusicTracks(definitions, emptySet()) { true }.isEmpty())
         check(MusicMetadata.track("mod:music/game/infinite_amethyst", emptySet()).artist == null)
-        val instance = TrackSoundInstance(ResourceLocation.parse(amethyst.id))
+        val instance = TrackSoundInstance(ResourceLocation(amethyst.id))
         val selected = requireNotNull(instance.sound)
-                check(selected.location.toString() == amethyst.id && selected.shouldStream())
+        check(selected.location.toString() == amethyst.id && selected.shouldStream())
         check(instance.isLooping && instance.isRelative && instance.source == SoundSource.MUSIC)
         check(instance.attenuation == SoundInstance.Attenuation.NONE)
         val deep = (0..100).associate { index ->
-            ResourceLocation.parse("test:music.$index") to listOf(Sound(
-                ResourceLocation.parse("test:music.${index + 1}"), ConstantFloat.of(1f), ConstantFloat.of(1f),
+            ResourceLocation("test:music.$index") to listOf(Sound(
+                "test:music.${index + 1}", ConstantFloat.of(1f), ConstantFloat.of(1f),
                 1, Sound.Type.SOUND_EVENT, false, false, 16,
             ))
         }

@@ -11,10 +11,9 @@ import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
-import net.minecraft.util.StringUtil
 import java.util.function.Consumer
 
-// ponytail: 1.21.1 native multiline editor hides styling; use its text model until styling setters return.
+// ponytail: 1.20.1 native multiline editor hides styling; use its text model until styling setters return.
 internal class SpotlightMultiLineEditBox(
     private val textFont: Font, x: Int, y: Int, width: Int, height: Int, label: Component,
 ) : AbstractScrollWidget(x, y, width, height, label) {
@@ -79,7 +78,7 @@ internal class SpotlightMultiLineEditBox(
         active && state.keyPressed(keyCode)
 
     override fun charTyped(character: Char, modifiers: Int): Boolean {
-        if (!active || !visible || !isFocused || !StringUtil.isAllowedChatCharacter(character)) return false
+        if (!active || !visible || !isFocused || !net.minecraft.SharedConstants.isAllowedChatCharacter(character)) return false
         state.insertText(character.toString())
         return true
     }
