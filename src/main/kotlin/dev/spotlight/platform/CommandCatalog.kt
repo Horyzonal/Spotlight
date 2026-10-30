@@ -38,7 +38,7 @@ internal object CommandCatalog {
 
     fun entries(registry: Registry<*>, kind: SelectionKind, tags: Boolean = false): List<CommandSuggestion> {
         if (tags) return registry.tags.map {
-            val id = "#${it.key().location()}"
+            val id = "#${it.first.location()}"
             entry(id, id, registry.key().location().toString(), SelectionKind.TAGS)
         }.toList()
         return registry.entrySet().map { (key, value) ->
@@ -132,7 +132,7 @@ internal object CommandCatalog {
             SelectionKind.DIFFICULTIES -> Difficulty.values().map { entry(it.serializedName, it.displayName.string, "", kind) }
             SelectionKind.GAMEMODES -> GameType.values().map { entry(it.serializedName, it.longDisplayName.string, "", kind) }
             SelectionKind.DIMENSIONS -> client.connection?.levels()?.map { entry(it.location().toString(), it.location().toString(), "", kind) }.orEmpty()
-            SelectionKind.GAMERULES -> gameRules(GameRules(client.level?.enabledFeatures() ?: net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS))
+            SelectionKind.GAMERULES -> gameRules()
             SelectionKind.TAGS -> registries().flatMap { entries(it, kind, tags = true) }
             SelectionKind.TIMES -> listOf("day", "noon", "night", "midnight").map { entry(it, it, "Time preset", kind) }
             SelectionKind.WEATHERS -> listOf("clear", "rain", "thunder").map { entry(it, it, "Weather", kind) }
@@ -145,8 +145,8 @@ internal object CommandCatalog {
         }.sortedBy { it.value }
     }
 
-    internal fun gameRules(rules: GameRules): List<CommandSuggestion> = buildList {
-        rules.visitGameRuleTypes(object : GameRules.GameRuleTypeVisitor {
+    internal fun gameRules(): List<CommandSuggestion> = buildList {
+        GameRules.visitGameRuleTypes(object : GameRules.GameRuleTypeVisitor {
             override fun <T : GameRules.Value<T>> visit(key: GameRules.Key<T>, type: GameRules.Type<T>) {
                 add(entry(key.id, Component.translatable(key.descriptionId).string,
                     "${key.id} · ${type.createRule().javaClass.simpleName}", SelectionKind.GAMERULES))

@@ -3,7 +3,6 @@ package dev.spotlight.ui
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
@@ -22,7 +21,7 @@ internal class BannerLayersWidget(
     private val flag: ModelPart,
     private val layers: MutableList<BannerPatternLayers.Layer>,
     private val changed: () -> Unit,
-) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder.")) {
+) : UiScrollContainer(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder.")) {
     private var base = DyeColor.WHITE
     private var snapshot = emptyList<BannerPatternLayers.Layer>()
     private val rows = mutableListOf<Row>()

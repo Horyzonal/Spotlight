@@ -61,7 +61,7 @@ object Spotlight {
     fun stack(id: String): ItemStack {
         val key = requireNotNull(ResourceLocation.tryParse(id)) { "Invalid item ID: $id" }
         require(BuiltInRegistries.ITEM.containsKey(key)) { "Unknown item: $id" }
-        val item = requireNotNull(BuiltInRegistries.ITEM.getValue(key)) { "Unknown item: $id" }
+        val item = requireNotNull(BuiltInRegistries.ITEM.get(key)) { "Unknown item: $id" }
         require(item != Items.AIR) { "Air is not an item action target" }
         return ItemStack(item)
     }
@@ -167,7 +167,7 @@ object Spotlight {
 
 internal fun notifySpotlight(message: String) {
     val client = Minecraft.getInstance()
-    SystemToast.add(client.toastManager, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+    SystemToast.add(client.toasts, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
         Component.literal("Spotlight"), Component.literal(message))
 }
 

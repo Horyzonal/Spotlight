@@ -2,7 +2,6 @@ package dev.spotlight.ui
 
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
@@ -23,7 +22,7 @@ internal class MacroFormLayout(
     val fields: List<EditBox>,
     private val labels: List<String>,
     private val onFocus: (Int) -> Unit,
-) : AbstractContainerWidget(x, y, width, height, catalogText("Macro arguments")) {
+) : UiScrollContainer(x, y, width, height, catalogText("Macro arguments")) {
     override fun children(): List<EditBox> = fields
     override fun contentHeight() = fields.size * macroFieldStep
     override fun scrollRate() = macroFieldStep.toDouble()

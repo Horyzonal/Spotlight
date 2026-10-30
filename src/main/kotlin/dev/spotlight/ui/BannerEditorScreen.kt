@@ -3,7 +3,6 @@ package dev.spotlight.ui
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.platform.CreativeBanner
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
@@ -61,7 +60,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             }
         }
         rows.clear()
-        val flag = minecraft!!.entityModels.bakeLayer(ModelLayers.STANDING_BANNER_FLAG).getChild("flag")
+        val flag = minecraft!!.entityModels.bakeLayer(ModelLayers.BANNER).getChild("flag")
         rows += listOf(ColorPicker("Base color", baseIcons, { base }) { base = it; refresh() })
         rows += listOf(ColorPicker("Next layer color", dyeIcons, { dye }) { dye = it; refresh() })
         val search = SpotlightEditBox(font, 0, 0, 100, 20, catalogText("Search registry patterns"))
@@ -164,7 +163,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         icons: Map<DyeColor, ItemStack>,
         private val current: () -> DyeColor,
         private val choose: (DyeColor) -> Unit,
-    ) : AbstractContainerWidget(0, 0, 100, 56, catalogText("$label; arrows choose color")) {
+    ) : UiScrollContainer(0, 0, 100, 56, catalogText("$label; arrows choose color")) {
         private val swatches = DyeColor.entries.map { color -> Swatch(color, icons.getValue(color)) }
         private fun columns() = if (width >= 16 * 20) 16 else 8
         private fun layoutSwatches() {
@@ -222,7 +221,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         }
     }
 
-    private inner class Form : AbstractContainerWidget(0, 34, 100, 100, catalogText("Banner editor controls")) {
+    private inner class Form : UiScrollContainer(0, 34, 100, 100, catalogText("Banner editor controls")) {
         private val offsets = mutableMapOf<AbstractWidget, Int>()
         private var totalHeight = 0
         override fun children(): List<AbstractWidget> = rows.flatten()

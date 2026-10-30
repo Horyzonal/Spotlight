@@ -5,14 +5,12 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.crafting.CraftingRecipe
-import net.minecraft.world.item.crafting.display.RecipeDisplay
-import net.minecraft.util.context.ContextMap
+import net.minecraft.core.HolderLookup
+import net.minecraft.world.item.crafting.ShapedRecipe
+import net.minecraft.world.item.crafting.ShapelessRecipe
+import net.minecraft.world.item.crafting.Ingredient
 import java.util.concurrent.CompletableFuture
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay
-import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay
-import net.minecraft.world.item.crafting.display.SlotDisplay
-import net.minecraft.world.item.crafting.display.SlotDisplayContext
 
 
 data class CraftingRecipeView(
@@ -34,7 +32,7 @@ enum class RecipeSource { C, S }
 
 private data class StackKey(val item: net.minecraft.world.item.Item, val components: Set<net.minecraft.core.component.TypedDataComponent<*>>, val count: Int)
 private fun stackKey(stack: ItemStack, output: Boolean = false) =
-    StackKey(stack.item, stack.immutableComponents().toSet(), if (output) stack.count else 1)
+    StackKey(stack.item, stack.components.toSet(), if (output) stack.count else 1)
 private data class RecipeKey(val shapeless: Boolean, val width: Int, val height: Int, val slots: Any, val result: StackKey)
 private fun recipeKey(view: CraftingRecipeView): RecipeKey {
     val slots = view.ingredients.map { alternatives -> alternatives.filterNot { it.isEmpty }.map { stackKey(it) }.toSet() }
@@ -60,14 +58,14 @@ internal fun mergeRecipeViews(views: List<CraftingRecipeView>): List<CraftingRec
 }
 
 object CraftingRecipes {
-    private var skipped: Map<String, String> = emptyMap()
+
 
 
     fun unsupported(): Map<String, String> {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
         syncSession(client)
-        return skipped.toMap()
+        return localSnapshot.unsupported + snapshot.unsupported
     }
 
     private data class ServerSnapshot(val views: List<CraftingRecipeView>, val unsupported: Map<String, String>,
@@ -88,7 +86,7 @@ object CraftingRecipes {
             serverSession = client.singleplayerServer
             generation++
             snapshot = ServerSnapshot(emptyList(), emptyMap())
-            skipped = emptyMap()
+
             serverStatus = if (client.singleplayerServer == null)
                 "[S] unavailable: remote servers do not expose full recipes"
             else "Server index not refreshed"
@@ -124,7 +122,7 @@ object CraftingRecipes {
                 if (ticket == generation && client.singleplayerServer === server) {
                     if (error == null) {
                         snapshot = result
-                        serverStatus = "Integrated-server crafting index ready; unsupported displays listed by unsupported()"
+                        serverStatus = "Integrated-server crafting index ready; unsupported recipes listed by unsupported()"
                     } else {
                         snapshot = ServerSnapshot(emptyList(), emptyMap())
                         serverStatus = "Server recipe snapshot failed: ${error.cause?.message ?: error.message}"
@@ -136,22 +134,19 @@ object CraftingRecipes {
         try {
             server.execute {
                 try {
-                    val context = SlotDisplayContext.fromLevel(server.overworld())
                     val views = mutableListOf<CraftingRecipeView>()
                     val unsupported = linkedMapOf<String, String>()
                     for (holder in server.recipeManager.recipes) {
                         if (holder.value() !is CraftingRecipe) continue
-                        val id = holder.id().location().toString()
+                        val id = holder.id().toString()
                         try {
-                            val displays = holder.value().display()
-                            if (displays.isEmpty()) unsupported["[S] $id"] = "Crafting recipe provides no displays"
-                            for (display in displays) views += resolve(id, display, RecipeSource.S, context, unsupported)
+                            views += resolve(id, holder.value() as CraftingRecipe, RecipeSource.S, server.registryAccess(), unsupported)
                         } catch (exception: RuntimeException) {
-                            unsupported["[S] $id"] = "Recipe display failed: ${exception.message ?: exception.javaClass.name}"
+                            unsupported["[S] $id"] = "Recipe resolution failed: ${exception.message ?: exception.javaClass.name}"
                         }
                     }
                     future.complete(ServerSnapshot(views.toList(), unsupported.toMap(),
-                        server.recipeManager.recipes.mapTo(linkedSetOf()) { it.id().location().toString() }))
+                        server.recipeManager.recipes.mapTo(linkedSetOf()) { it.id().toString() }))
                 } catch (exception: Exception) {
                     future.completeExceptionally(exception)
                 }
@@ -178,7 +173,6 @@ object CraftingRecipes {
                 return@execute
             }
 
-            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.lookup).create(SlotDisplayContext.CONTEXT)
             val views = mutableListOf<CraftingRecipeView>()
             val unsupported = loaded.unsupported.toMutableMap()
             var offset = 0
@@ -192,18 +186,16 @@ object CraftingRecipes {
                     try {
                         val recipe = LocalRecipeIndex.decode(entry, loaded)
                         if (recipe is CraftingRecipe) {
-                            val displays = recipe.display()
-                            if (displays.isEmpty()) unsupported["[C] ${entry.id}"] = "Local crafting recipe provides no displays"
-                            for (display in displays) views += resolve(entry.id, display, RecipeSource.C, context, unsupported)
+                            views += resolve(entry.id, recipe, RecipeSource.C, loaded.lookup, unsupported)
                         }
                     } catch (exception: Exception) {
-                        unsupported["[C] ${entry.id}"] = "Local decode/display failed: ${exception.message}"
+                        unsupported["[C] ${entry.id}"] = "Local decode/resolution failed: ${exception.message}"
                     }
                 } while (System.nanoTime() < deadline)
                 if (offset < loaded.entries.size) {
 
                     CompletableFuture.delayedExecutor(1, java.util.concurrent.TimeUnit.MILLISECONDS)
-                        .execute { client.schedule(Runnable { chunk() }) }
+                        .execute { client.execute { chunk() } }
                 } else {
                     localSnapshot = ServerSnapshot(views.toList(), unsupported.toMap(), loaded.entries.mapTo(linkedSetOf()) { it.id })
                     localStatus = "[C] ready: ${views.size} local views, ${unsupported.size} skipped; local tags/default registries; " +
@@ -211,7 +203,7 @@ object CraftingRecipes {
                     onUpdate()
                 }
             }
-            client.schedule(Runnable { chunk() })
+            client.execute { chunk() }
         } }
     }
 
@@ -231,74 +223,55 @@ object CraftingRecipes {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
         syncSession(client)
-        skipped = emptyMap()
-        skipped = localSnapshot.unsupported + snapshot.unsupported
 
-        val displayErrors = skipped.toMutableMap()
-        val context = client.level?.let { SlotDisplayContext.fromLevel(it) }
-        // ponytail: client displays lack recipe keys; only integrated-server snapshots supply executable IDs.
-        val knownDisplays = if (context == null) emptyList() else client.player?.recipeBook?.collections.orEmpty()
-            .flatMap { it.recipes }.distinctBy { it.id() }
-            .filter { it.display() is ShapedCraftingRecipeDisplay || it.display() is ShapelessCraftingRecipeDisplay }
-            .flatMap { entry ->
-                resolve("display:${entry.id().index()}", entry.display(), RecipeSource.C, context, displayErrors)
-            }
-        skipped = displayErrors.toMap()
-        val views = (localSnapshot.views + snapshot.views + knownDisplays).map { view -> view.copy(
+
+        val views = (localSnapshot.views + snapshot.views).map { view -> view.copy(
             ingredients = view.ingredients.map { alternatives -> alternatives.map { it.copy() } }, result = view.result.copy(),
         ) }
         return mergeRecipeViews(views)
     }
 
-    private fun resolve(id: String, display: RecipeDisplay, source: RecipeSource, context: ContextMap,
-                        unsupported: MutableMap<String, String>): List<CraftingRecipeView> {
-        val reportId = "[$source] $id"
+    internal fun resolve(id: String, recipe: CraftingRecipe, source: RecipeSource, registries: HolderLookup.Provider,
+                         unsupported: MutableMap<String, String>): List<CraftingRecipeView> {
         fun reject(reason: String): List<CraftingRecipeView> {
-            unsupported[reportId] = reason
+            unsupported["[$source] $id"] = reason
             return emptyList()
         }
         try {
-            val slots: List<SlotDisplay>
             val width: Int
             val height: Int
             val shapeless: Boolean
-            when (display) {
-                is ShapedCraftingRecipeDisplay -> {
-                    width = display.width()
-                    height = display.height()
-                    slots = display.ingredients()
+            when (recipe) {
+                is ShapedRecipe -> {
+                    width = recipe.width
+                    height = recipe.height
                     shapeless = false
-                    if (width !in 1..3 || height !in 1..3 || slots.size != width * height)
+                    if (width !in 1..3 || height !in 1..3 || recipe.ingredients.size != width * height)
                         return reject("Shaped grid outside 3x3 or inconsistent dimensions")
                 }
-                is ShapelessCraftingRecipeDisplay -> {
-                    slots = display.ingredients()
-                    if (slots.size !in 1..9) return reject("Shapeless ingredient count outside 1..9")
-                    width = minOf(3, slots.size)
-                    height = (slots.size + width - 1) / width
+                is ShapelessRecipe -> {
+                    if (recipe.ingredients.size !in 1..9) return reject("Shapeless ingredient count outside 1..9")
+                    width = minOf(3, recipe.ingredients.size)
+                    height = (recipe.ingredients.size + width - 1) / width
                     shapeless = true
                 }
-                else -> return reject("Unsupported display type: ${display.javaClass.name}")
+                else -> return reject("Unsupported dynamic crafting recipe: ${recipe.javaClass.name}; no static shape/result")
             }
-            val ingredients = slots.map { slot ->
-                slot.resolveForStacks(context).filterNot { it.isEmpty }.map { it.copy() }
-            }
-            if (slots.indices.any { ingredients[it].isEmpty() && (shapeless || slots[it] !is SlotDisplay.Empty) })
-                return reject("Ingredient display has no resolved alternatives")
-            val results = display.result().resolveForStacks(context).filterNot { it.isEmpty }
-            if (results.isEmpty()) return reject("Result display has no resolved stacks")
-            return results.map { result ->
-                CraftingRecipeView(
-                    id, "${result.hoverName.string} (${BuiltInRegistries.ITEM.getKey(result.item)})",
-                    width, height, ingredients.map { alternatives -> alternatives.map { it.copy() } },
-                    result.copy(), shapeless, setOf(source),
-                )
-            }
+            // ponytail: static views cannot model input-dependent outputs; add dedicated resolvers when needed.
+            if (recipe.isSpecial) return reject("Special crafting recipe requires input-dependent resolution: ${recipe.javaClass.name}")
+            val ingredients = recipe.ingredients.map { slot -> slot.items.filterNot { it.isEmpty }.map { it.copy() } }
+            if (recipe.ingredients.indices.any { ingredients[it].isEmpty() && (shapeless || recipe.ingredients[it] !== Ingredient.EMPTY) })
+                return reject("Ingredient has no resolved alternatives")
+            val result = recipe.getResultItem(registries)
+            if (result.isEmpty) return reject("Recipe has no static result")
+            return listOf(CraftingRecipeView(
+                id, "${result.hoverName.string} (${BuiltInRegistries.ITEM.getKey(result.item)})",
+                width, height, ingredients, result.copy(), shapeless, setOf(source),
+            ))
         } catch (exception: RuntimeException) {
-            return reject("Display resolution failed (${display.javaClass.name}): ${exception.message ?: exception.javaClass.simpleName}")
+            return reject("Recipe resolution failed (${recipe.javaClass.name}): ${exception.message ?: exception.javaClass.simpleName}")
         }
     }
-
 
     fun inventoryStatus(recipe: CraftingRecipeView): List<Boolean> {
         val client = Minecraft.getInstance()

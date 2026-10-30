@@ -13,7 +13,7 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 
 internal object MacroTargeting {
-    
+
     const val MAX_DISTANCE = 256.0
     data class Targets(val block: BlockPos?, val entity: String?)
     data class Trace(val block: BlockPos?, val limitSqr: Double)
@@ -28,10 +28,10 @@ internal object MacroTargeting {
         fun chunk(pos: BlockPos) = level.chunkSource.getChunk(pos.x shr 4, pos.z shr 4, ChunkStatus.FULL, false)
         fun loaded(pos: BlockPos) = !level.isOutsideBuildHeight(pos) &&
             kotlin.math.abs(pos.x.toLong()) < 30_000_000 && kotlin.math.abs(pos.z.toLong()) < 30_000_000 && chunk(pos) != null
-        
+
         val blocks = object : BlockGetter {
             override fun getHeight() = level.height
-            override fun getMinY() = level.minY
+            override fun getMinBuildHeight() = level.minBuildHeight
             override fun getBlockEntity(pos: BlockPos): BlockEntity? = null
             override fun getBlockState(pos: BlockPos) =
                 if (loaded(pos)) chunk(pos)!!.getBlockState(pos) else Blocks.AIR.defaultBlockState()

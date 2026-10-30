@@ -137,7 +137,7 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
             val previewY = detailY + 16
             graphics.fill(left, previewY, left + panelWidth, previewY + 26, entry.config.color(ThemeColor.PANEL_BACKGROUND.defaultArgb))
             graphics.fill(left + 4, previewY + 4, left + 8, previewY + 22, entry.config.color(ThemeColor.ACCENT.defaultArgb))
-            graphics.drawString(font, catalogClip(font, "Selected preview · Text / accent / background", panelWidth - 20, entry.config.textShadow()),
+            graphics.drawString(font, catalogClip(font, "Selected preview · Text / accent / background", panelWidth - 20),
                 left + 14, previewY + 9, entry.config.color(ThemeColor.TEXT.defaultArgb), entry.config.textShadow())
         }
         graphics.themeText(font, catalogClip(font, if (results.isEmpty() && !failed) "No matching themes" else notice, panelWidth), left, height - 65, SpotlightTheme.color(if (failed) 0xFFFFB4A9 else 0xFF9DADC3))

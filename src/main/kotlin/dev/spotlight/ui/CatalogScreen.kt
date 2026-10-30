@@ -27,15 +27,14 @@ internal fun catalogHints(graphics: GuiGraphics, font: Font, width: Int, height:
     graphics.disableScissor()
 }
 
-internal fun catalogClip(font: Font, text: String, width: Int, shadow: Boolean = SpotlightTheme.textShadow()): net.minecraft.util.FormattedCharSequence =
-    font.split(font.substrByWidth(catalogText(Component.literal(text), shadow), width.coerceAtLeast(0)), Int.MAX_VALUE).firstOrNull()
+internal fun catalogClip(font: Font, text: String, width: Int): net.minecraft.util.FormattedCharSequence =
+    font.split(font.substrByWidth(catalogText(Component.literal(text)), width.coerceAtLeast(0)), Int.MAX_VALUE).firstOrNull()
         ?: net.minecraft.util.FormattedCharSequence.EMPTY
 
 internal fun catalogText(text: String): net.minecraft.network.chat.MutableComponent = catalogText(Component.literal(text))
 
-internal fun catalogText(text: Component, shadow: Boolean = SpotlightTheme.textShadow()): net.minecraft.network.chat.MutableComponent = text.copy().withStyle { style ->
-    val fontStyle = SpotlightTheme.font()?.let { style.withFont(it) } ?: style
-    if (shadow) fontStyle else fontStyle.withShadowColor(0)
+internal fun catalogText(text: Component): net.minecraft.network.chat.MutableComponent = text.copy().withStyle { style ->
+    SpotlightTheme.font()?.let { style.withFont(it) } ?: style
 }
 
 
@@ -58,6 +57,22 @@ internal fun catalogFrame(graphics: GuiGraphics, widget: AbstractWidget) {
 
 internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Component, font: Font): FittingMultiLineTextWidget =
     object : FittingMultiLineTextWidget(x, y, width, height, message, font) {
+        override fun getInnerHeight(): Int = font.wordWrapHeight(this.message, (this.width - 8).coerceAtLeast(1))
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            if (showingScrollBar()) super.renderWidget(graphics, mouseX, mouseY, delta)
+            else {
+                renderBackground(graphics)
+                renderContents(graphics, mouseX, mouseY, delta)
+            }
+        }
+
+        override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            font.split(this.message, (this.width - 8).coerceAtLeast(1)).forEachIndexed { index, line ->
+                graphics.themeText(font, line, this.x + 4, this.y + 4 + index * font.lineHeight,
+                    catalogNativeColor(-1, 0xFFF2F5FC))
+            }
+        }
         override fun renderBackground(graphics: GuiGraphics) {
             if (catalogCustomFrame()) catalogFrame(graphics, this) else super.renderBackground(graphics)
         }

@@ -6,7 +6,6 @@ import dev.spotlight.core.ThemeConfig
 import dev.spotlight.core.ThemeEntry
 import dev.spotlight.core.ThemeMetric
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
@@ -170,7 +169,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
         graphics.themeText(font, catalogClip(font, validation ?: notice, panelWidth), left, height - 50, SpotlightTheme.color(if (validation != null || failed) 0xFFFFB4A9 else 0xFF9DADC3))
     }
 
-    private inner class Form : AbstractContainerWidget(0, 0, 100, 100, catalogText("Theme fields")) {
+    private inner class Form : UiScrollContainer(0, 0, 100, 100, catalogText("Theme fields")) {
         private val offsets = linkedMapOf<AbstractWidget, Int>()
         private var keys = emptyList<String>()
         override fun children(): List<AbstractWidget> = offsets.keys.toList()

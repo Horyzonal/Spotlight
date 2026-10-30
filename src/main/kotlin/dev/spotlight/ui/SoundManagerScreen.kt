@@ -35,7 +35,7 @@ internal class SoundMenuList(
     private val foreground = SpotlightTheme.color(0xFFF2F5FC)
     override fun getRowWidth() = (width - 16).coerceAtLeast(1)
     fun show(entries: List<Pair<String, String>>, previous: String?) {
-        val scroll = scrollAmount()
+        val scroll = scrollAmount
         replaceEntries(entries.map { Row(it.first, it.second) })
         val token = soundSelection(entries.map { it.first }, previous)
         setSelected(children().firstOrNull { it.token == token })

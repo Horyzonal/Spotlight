@@ -12,7 +12,6 @@ import dev.spotlight.platform.CommandSuggestion
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
 import net.minecraft.client.gui.components.PlayerFaceRenderer
-import net.minecraft.client.renderer.RenderType
 import net.minecraft.resources.ResourceLocation
 import dev.spotlight.platform.CommandContext
 import dev.spotlight.platform.CommandInput
@@ -323,7 +322,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
                     val id = ResourceLocation.tryParse(suggestion.iconId ?: suggestion.value) ?: return false
                     val sprite = ResourceLocation.fromNamespaceAndPath(id.namespace, "mob_effect/${id.path}")
                     if (minecraft!!.resourceManager.getResource(ResourceLocation.fromNamespaceAndPath(id.namespace, "textures/gui/sprites/mob_effect/${id.path}.png")).isEmpty) return false
-                    graphics.blitSprite(RenderType::guiTextured, sprite, x, y, 16, 16)
+                    graphics.blitSprite(sprite, x, y, 16, 16)
                     true
                 }
                 else -> false
@@ -518,7 +517,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         } catch (failure: Exception) {
             error = "Action completed; history not saved: ${failure.message ?: failure.javaClass.simpleName}"
 
-            SystemToast.add(minecraft!!.toastManager, SystemToast.SystemToastId(),
+            SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastId(),
                 Component.literal("Spotlight: history not saved"), Component.literal(error!!))
         }
     }
@@ -573,7 +572,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteMenuAction("Edit location", shortcut = "${primaryModifierLabel}+E", group = "Location") { editLocation(entry) },
             PaletteMenuAction("Copy coordinates", group = "More") {
                 minecraft!!.keyboardHandler.clipboard = "${location.x} ${location.y} ${location.z}"
-                SystemToast.add(minecraft!!.toastManager, SystemToast.SystemToastId(),
+                SystemToast.add(minecraft!!.toasts, SystemToast.SystemToastId(),
                     Component.literal("Spotlight: coordinates copied"), Component.literal(location.name))
             },
             PaletteMenuAction("Delete location (confirm)", shortcut = "${primaryModifierLabel}+Shift+D", group = "More") {

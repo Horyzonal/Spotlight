@@ -7,7 +7,7 @@ import com.mojang.blaze3d.vertex.Tesselator
 import com.mojang.blaze3d.vertex.VertexFormat
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
 import net.minecraft.client.renderer.RenderType
-import net.minecraft.client.renderer.ShapeRenderer
+import net.minecraft.client.renderer.LevelRenderer
 import net.minecraft.world.phys.AABB
 
 internal fun drawWorldOutline(context: WorldRenderContext, box: AABB, color: Int, width: Float) {
@@ -18,7 +18,7 @@ internal fun drawWorldOutline(context: WorldRenderContext, box: AABB, color: Int
     try {
         poses.translate(-camera.x, -camera.y, -camera.z)
         val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL)
-        ShapeRenderer.renderLineBox(poses, buffer, box,
+        LevelRenderer.renderLineBox(poses, buffer, box,
             (color ushr 16 and 255) / 255f, (color ushr 8 and 255) / 255f,
             (color and 255) / 255f, (color ushr 24) / 255f)
         lines.setupRenderState()

@@ -3,7 +3,7 @@ package dev.spotlight.ui
 import net.minecraft.Util
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractTextAreaWidget
+import net.minecraft.client.gui.components.AbstractScrollWidget
 import net.minecraft.client.gui.components.MultilineTextField
 import net.minecraft.client.gui.components.Whence
 import net.minecraft.client.gui.narration.NarratedElementType
@@ -14,10 +14,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.StringUtil
 import java.util.function.Consumer
 
-// ponytail: 1.21.4 native multiline editor hides styling; use its text model until styling setters return.
+// ponytail: 1.21.1 native multiline editor hides styling; use its text model until styling setters return.
 internal class SpotlightMultiLineEditBox(
     private val textFont: Font, x: Int, y: Int, width: Int, height: Int, label: Component,
-) : AbstractTextAreaWidget(x, y, width, height, label) {
+) : AbstractScrollWidget(x, y, width, height, label) {
     private class TextState(font: Font, width: Int) : MultilineTextField(font, width) {
         fun lines(): List<IntRange> = iterateLines().map { it.beginIndex() until it.endIndex() }
         fun selection(): IntRange = selected.let { it.beginIndex() until it.endIndex() }
@@ -84,6 +84,19 @@ internal class SpotlightMultiLineEditBox(
         return true
     }
 
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (!active || !visible || button != 0 || !super.mouseClicked(mouseX, mouseY, button)) return false
+        if (isMouseOver(mouseX, mouseY)) onClick(mouseX, mouseY)
+        return true
+    }
+
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+        if (super.mouseDragged(mouseX, mouseY, button, dx, dy)) return true
+        if (!active || !visible || !isFocused || button != 0) return false
+        onDrag(mouseX, mouseY, dx, dy)
+        return true
+    }
+
     override fun onClick(mouseX: Double, mouseY: Double) {
         updateWidth()
         state.setSelecting(Screen.hasShiftDown())
@@ -105,6 +118,9 @@ internal class SpotlightMultiLineEditBox(
         super.setFocused(focused)
         if (focused) focusedAt = Util.getMillis()
     }
+
+    public override fun scrollAmount() = super.scrollAmount()
+    public override fun getMaxScrollAmount() = super.getMaxScrollAmount()
 
     override fun getInnerHeight(): Int { updateWidth(); return state.lineCount * textFont.lineHeight }
     override fun scrollRate() = textFont.lineHeight / 2.0

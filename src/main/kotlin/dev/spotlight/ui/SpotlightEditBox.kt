@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.EditBox
 import net.minecraft.network.chat.Component
 
 class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, label: Component) :
-    EditBox(font, x, y, width.coerceAtLeast(1), height.coerceAtLeast(1), label) {
+    EditBox(catalogFont(font), x, y, width.coerceAtLeast(1), height.coerceAtLeast(1), label) {
     private var extractingText = false
 
     init {

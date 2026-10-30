@@ -47,6 +47,12 @@ internal object RegionSelectionCheck {
         clone.select(false, RegionPoint(2, 3, 4))
         check(clone.destination == null)
         fails { clone.command(-64, 319) }
+        val bounds = RegionSelectionState("minecraft:stone", "replace")
+        bounds.select(true, RegionPoint(0, -64, 0))
+        bounds.select(false, RegionPoint(0, 319, 0))
+        check(bounds.command(-64, 319) == "/fill 0 -64 0 0 319 0 minecraft:stone replace")
+        bounds.select(false, RegionPoint(0, 320, 0))
+        fails { bounds.command(-64, 319) }
         val large = RegionSelectionState("minecraft:air", "replace")
         large.select(true, RegionPoint(-29_999_999, -64, -29_999_999))
         large.select(false, RegionPoint(29_999_999, 319, 29_999_999))

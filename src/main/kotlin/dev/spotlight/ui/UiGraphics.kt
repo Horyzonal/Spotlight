@@ -39,10 +39,8 @@ internal fun GuiGraphics.renderBanner(flag: ModelPart, base: DyeColor, layers: B
         pose.scale((right - left) / 20f * 16f, (bottom - top) / 40f * 16f, -1f)
         flag.xRot = 0f
         flag.y = 0f
-        drawSpecial { buffers ->
-            BannerRenderer.renderPatterns(pose, buffers, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
-                flag, ModelBakery.BANNER_BASE, true, base, layers)
-        }
+        BannerRenderer.renderPatterns(pose, bufferSource(), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+            flag, ModelBakery.BANNER_BASE, true, base, layers)
         flush()
     } finally {
         flag.xRot = oldXRot

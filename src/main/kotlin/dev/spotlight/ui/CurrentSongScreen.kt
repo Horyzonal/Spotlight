@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.ResourceLocation
 import kotlin.math.PI
@@ -110,7 +109,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         val image = NativeImage(64, 64, false)
         var texture: DynamicTexture? = null
         try {
-            for (y in 0 until 64) for (x in 0 until 64) image.setPixel(x, y, pixels[y * 64 + x])
+            for (y in 0 until 64) for (x in 0 until 64) image.setPixelRGBA(x, y, (pixels[y * 64 + x] and 0xFF00FF00.toInt()) or ((pixels[y * 64 + x] ushr 16) and 0xFF) or ((pixels[y * 64 + x] and 0xFF) shl 16))
             texture = DynamicTexture(image)
             minecraft!!.textureManager.register(textureId, texture)
             hasTexture = true
@@ -160,8 +159,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
             pose.pushPose()
             pose.translate(cx.toFloat(), cy.toFloat(), 0f)
             pose.mulPose(com.mojang.math.Axis.ZP.rotation(angle))
-            graphics.blit(RenderType::guiTextured, textureId, -discSize / 2, -discSize / 2,
-                0f, 0f, discSize, discSize, 64, 64, 64, 64)
+            graphics.blit(textureId, -discSize / 2, -discSize / 2, discSize, discSize, 0f, 0f, 64, 64, 64, 64)
             pose.popPose()
             val dx = mouseX - cx
             val dy = mouseY - cy

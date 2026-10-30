@@ -8,7 +8,6 @@ import dev.spotlight.core.TextMode
 import dev.spotlight.core.TextStyle
 import dev.spotlight.platform.CreativeText
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
@@ -258,7 +257,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         timeline.extractDragGhost(graphics, mouseX, mouseY)
     }
 
-    private inner class Form : AbstractContainerWidget(0, 28, 100, 100, catalogText("Text editor form")) {
+    private inner class Form : UiScrollContainer(0, 28, 100, 100, catalogText("Text editor form")) {
         private val offsets = mutableMapOf<AbstractWidget, Int>()
         private val labels = mutableListOf<Pair<String, Int>>()
         private var totalHeight = 0
@@ -310,7 +309,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
             if (!isMouseOver(mouseX, mouseY)) return false
             val child = children().firstOrNull { it.isMouseOver(mouseX, mouseY) }
-            if (child is net.minecraft.client.gui.components.AbstractScrollArea && child.maxScrollAmount() > 0) {
+            if (child is SpotlightMultiLineEditBox && child.maxScrollAmount > 0) {
                 val before = child.scrollAmount()
                 child.mouseScrolled(mouseX, mouseY, horizontal, vertical)
                 if (before != child.scrollAmount()) return true

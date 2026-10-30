@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack
 internal fun fillBlockIcon(id: String): ItemStack {
     val key = ResourceLocation.tryParse(id) ?: return ItemStack.EMPTY
     if (!BuiltInRegistries.BLOCK.containsKey(key)) return ItemStack.EMPTY
-    return ItemStack(requireNotNull(BuiltInRegistries.BLOCK.getValue(key)).asItem())
+    return ItemStack(requireNotNull(BuiltInRegistries.BLOCK.get(key)).asItem())
 }
 
 internal fun fillModes(advertised: List<String>): List<String> {

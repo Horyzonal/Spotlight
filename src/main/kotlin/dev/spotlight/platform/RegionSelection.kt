@@ -101,7 +101,7 @@ object RegionSelection {
         if (submit) {
             val current = session ?: return
             try {
-                val command = current.state.command(current.level.minY, current.level.maxY)
+                val command = current.state.command(current.level.minBuildHeight, current.level.maxBuildHeight - 1)
 
                 session = null
                 Spotlight.executeSlash(command)

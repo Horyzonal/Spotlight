@@ -21,7 +21,7 @@ internal fun entityEntries(): List<Entry> {
         Entry("entity:$id", type.description.string, id, id)
     }
     val tags = BuiltInRegistries.ENTITY_TYPE.tags.map { tag ->
-        val id = "#${tag.key().location()}"
+        val id = "#${tag.first.location()}"
         Entry("entity:$id", id, "Entity type category", id)
     }.toList()
     val singles = Minecraft.getInstance().level?.entitiesForRendering()?.map { entity ->
@@ -69,15 +69,15 @@ internal object FindTargets {
             }
             text.startsWith('#') -> {
                 val id = requireNotNull(ResourceLocation.tryParse(text.drop(1))) { "Invalid entity category" }
-                val tag = BuiltInRegistries.ENTITY_TYPE.tags.filter { it.key().location() == id }.findFirst()
+                val tag = BuiltInRegistries.ENTITY_TYPE.tags.filter { it.first.location() == id }.findFirst()
                     .orElseThrow { IllegalArgumentException("Unknown entity category: $text") }
-                val types = tag.stream().map { it.value() }.toList().toSet();
+                val types = tag.second.stream().map { it.value() }.toList().toSet();
                 { entity -> entity.type in types }
             }
             else -> {
                 val id = requireNotNull(ResourceLocation.tryParse(text)) { "Invalid entity type" }
                 require(BuiltInRegistries.ENTITY_TYPE.containsKey(id)) { "Unknown entity type: $text" }
-                val type = BuiltInRegistries.ENTITY_TYPE.getValue(id);
+                val type = BuiltInRegistries.ENTITY_TYPE.get(id);
                 { entity -> entity.type == type }
             }
         }
@@ -96,10 +96,10 @@ internal object FindTargets {
         val start = player.position()
         val radius = client.options.effectiveRenderDistance
         val origin = player.blockPosition()
-        val block = BuiltInRegistries.BLOCK.getValue(id)
+        val block = BuiltInRegistries.BLOCK.get(id)
         val search = NearestBlockSearch(start.x, start.y, start.z,
-            ((origin.x shr 4) - radius) shl 4, level.minY, ((origin.z shr 4) - radius) shl 4,
-            (((origin.x shr 4) + radius + 1) shl 4) - 1, level.maxY, (((origin.z shr 4) + radius + 1) shl 4) - 1,
+            ((origin.x shr 4) - radius) shl 4, level.minBuildHeight, ((origin.z shr 4) - radius) shl 4,
+            (((origin.x shr 4) + radius + 1) shl 4) - 1, (level.maxBuildHeight - 1), (((origin.z shr 4) + radius + 1) shl 4) - 1,
             sectionMayContain = { x, y, z ->
                 level.chunkSource.getChunk(x, z, ChunkStatus.FULL, false)
                     ?.getSection(level.getSectionIndexFromSectionY(y))?.maybeHas { it.block == block } == true

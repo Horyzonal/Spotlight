@@ -59,6 +59,35 @@ object SpotlightTheme {
     }
 }
 
+// ponytail: 1.21.1 Style has no shadow color; native widgets need a Font draw override until that field returns.
+internal fun catalogFont(font: Font): Font = object : Font(
+    @Suppress("UNCHECKED_CAST")
+    (Font::class.java.declaredFields.single { it.type == java.util.function.Function::class.java }.let {
+        it.isAccessible = true
+        it.get(font) as java.util.function.Function<ResourceLocation, net.minecraft.client.gui.font.FontSet>
+    }), false,
+) {
+    override fun drawInBatch(text: String, x: Float, y: Float, color: Int, shadow: Boolean,
+        matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource,
+        mode: Font.DisplayMode, background: Int, light: Int): Int =
+        font.drawInBatch(text, x, y, color, shadow && SpotlightTheme.textShadow(), matrix, buffers, mode, background, light)
+
+    override fun drawInBatch(text: String, x: Float, y: Float, color: Int, shadow: Boolean,
+        matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource,
+        mode: Font.DisplayMode, background: Int, light: Int, bidi: Boolean): Int =
+        font.drawInBatch(text, x, y, color, shadow && SpotlightTheme.textShadow(), matrix, buffers, mode, background, light, bidi)
+
+    override fun drawInBatch(text: Component, x: Float, y: Float, color: Int, shadow: Boolean,
+        matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource,
+        mode: Font.DisplayMode, background: Int, light: Int): Int =
+        font.drawInBatch(text, x, y, color, shadow && SpotlightTheme.textShadow(), matrix, buffers, mode, background, light)
+
+    override fun drawInBatch(text: FormattedCharSequence, x: Float, y: Float, color: Int, shadow: Boolean,
+        matrix: org.joml.Matrix4f, buffers: net.minecraft.client.renderer.MultiBufferSource,
+        mode: Font.DisplayMode, background: Int, light: Int): Int =
+        font.drawInBatch(text, x, y, color, shadow && SpotlightTheme.textShadow(), matrix, buffers, mode, background, light)
+}
+
 internal fun GuiGraphics.themeText(font: Font, text: String, x: Int, y: Int, color: Int) =
     drawString(font, text, x, y, color, SpotlightTheme.textShadow())
 
