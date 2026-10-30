@@ -13,7 +13,7 @@ import net.minecraft.world.level.GameType
 import net.minecraft.world.level.block.entity.BannerPatternLayers
 
 object CreativeBanner {
-    
+
     const val MAX_LAYERS = 20
 
     private fun bannerItem(base: DyeColor): BannerItem =
@@ -48,7 +48,7 @@ object CreativeBanner {
         val connection = requireNotNull(client.connection) { "Server connection unavailable" }
         val gameMode = requireNotNull(client.gameMode) { "Game mode unavailable" }
         val inventory = player.inventory
-        val selectedSlot = inventory.selectedSlot
+        val selectedSlot = inventory.selected
         val existing = (0 until 36).map { inventory.getItem(it).copy() }
         val carried = player.inventoryMenu.carried.copy()
         fun checkState() {
@@ -58,16 +58,16 @@ object CreativeBanner {
             }
             check(gameMode.playerMode == GameType.CREATIVE && player.abilities.instabuild) { "Creative mode required to give" }
             check(player.containerMenu === player.inventoryMenu) { "Close the open container first" }
-            check(inventory.selectedSlot == selectedSlot &&
+            check(inventory.selected == selectedSlot &&
                 existing.indices.all { ItemStack.matches(inventory.getItem(it), existing[it]) } &&
                 ItemStack.matches(player.inventoryMenu.carried, carried)) { "Inventory changed; try again" }
         }
         fun validate(stack: ItemStack) {
-            ItemStack.validateStrict(stack).getOrThrow()
+
             require(stack.count in 1..stack.maxStackSize && stack.isItemEnabled(level.enabledFeatures())) {
                 "Created item is not valid for this server"
             }
-            ItemStack.CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), stack).getOrThrow()
+            ItemStack.STRICT_CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), stack).getOrThrow()
         }
         checkState()
         val incoming = draft.copyWithCount(1)
@@ -105,7 +105,7 @@ object CreativeBanner {
         private val level = requireNotNull(client.level) { "Join a world first" }
         private val connection = requireNotNull(client.connection) { "Server connection unavailable" }
         private val gameMode = requireNotNull(client.gameMode) { "Game mode unavailable" }
-        private val slot = player.inventory.selectedSlot
+        private val slot = player.inventory.selected
         private var original = player.mainHandItem.copy()
         val source: ItemStack get() = original.copy()
 
@@ -119,7 +119,7 @@ object CreativeBanner {
                 client.gameMode !== gameMode || !connection.connection.isConnected -> "World or connection changed; reopen editor"
             gameMode.playerMode != GameType.CREATIVE || !player.abilities.instabuild -> "Creative mode required to apply"
             player.containerMenu !== player.inventoryMenu -> "Close the open container first"
-            slot !in 0..8 || player.inventory.selectedSlot != slot ||
+            slot !in 0..8 || player.inventory.selected != slot ||
                 !ItemStack.matches(player.mainHandItem, original) -> "Held item changed; reopen editor"
             else -> null
         }
@@ -128,11 +128,11 @@ object CreativeBanner {
             check(client.isSameThread) { "Banner editing requires the client thread" }
             check(unavailableReason() == null) { unavailableReason().orEmpty() }
             val changed = buildBanner(original, base, patterns)
-            ItemStack.validateStrict(changed).getOrThrow()
+
             require(changed.count in 1..changed.maxStackSize && changed.isItemEnabled(level.enabledFeatures())) {
                 "Held item is not valid for this server"
             }
-            ItemStack.CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
+            ItemStack.STRICT_CODEC.encodeStart(connection.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
             check(unavailableReason() == null) { unavailableReason().orEmpty() }
             gameMode.handleCreativeModeItemAdd(changed, slot + 36)
             player.inventory.setItem(slot, changed)

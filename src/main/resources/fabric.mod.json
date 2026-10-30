@@ -11,9 +11,9 @@
   "mixins": ["spotlight.mixins.json"],
   "depends": {
     "fabricloader": ">=0.20.1",
-    "minecraft": "1.21.11",
+    "minecraft": "1.21.4",
     "java": ">=21",
-    "fabric-api": ">=0.141.6+1.21.11",
+    "fabric-api": ">=0.119.4+1.21.4",
     "fabric-language-kotlin": ">=1.14.2+kotlin.2.4.21"
   }
 }

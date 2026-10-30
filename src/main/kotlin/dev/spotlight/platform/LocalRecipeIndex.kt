@@ -21,7 +21,8 @@ import net.minecraft.server.packs.PathPackResources
 import net.minecraft.server.packs.repository.PackSource
 import net.minecraft.server.packs.resources.MultiPackResourceManager
 import net.minecraft.tags.TagLoader
-import net.minecraft.util.StrictJsonParser
+import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import java.util.Optional
 
 
@@ -77,7 +78,9 @@ internal object LocalRecipeIndex {
             try {
                 val bytes = resource.open().use { it.readNBytes(512 * 1024 + 1) }
                 require(bytes.size <= 512 * 1024) { "Recipe exceeds 512 KiB" }
-                val json = StrictJsonParser.parse(bytes.toString(Charsets.UTF_8).reader())
+                val json = GsonBuilder().setStrictness(Strictness.STRICT).create()
+                    .fromJson(bytes.toString(Charsets.UTF_8), JsonElement::class.java)
+                require(json != null && json.isJsonObject) { "Recipe must be a JSON object" }
 
                 require(!json.isJsonObject || !json.asJsonObject.has("fabric:load_conditions")) {
                     "Conditional local recipe needs Fabric reload context"

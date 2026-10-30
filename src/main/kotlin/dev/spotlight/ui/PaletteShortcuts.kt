@@ -1,10 +1,8 @@
 package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.InputQuirks
 
-internal val macShortcuts = InputQuirks.REPLACE_CTRL_KEY_WITH_CMD_KEY
+internal val macShortcuts = net.minecraft.client.Minecraft.ON_OSX
 internal val primaryModifierLabel = if (macShortcuts) "Cmd" else "Ctrl"
 internal fun primaryModifier(event: KeyEvent): Boolean = event.hasControlDownWithQuirk()
 
@@ -16,7 +14,7 @@ internal enum class PaletteShortcut {
 internal fun paletteShortcut(key: Int, control: Boolean, shift: Boolean, alt: Boolean, locations: Boolean): PaletteShortcut? {
     if (alt) return null
     if (!control) return when {
-        key == InputConstants.KEY_F1 -> PaletteShortcut.MENU 
+        key == InputConstants.KEY_F1 -> PaletteShortcut.MENU
 
         else -> null
     }

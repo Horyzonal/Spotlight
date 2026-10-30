@@ -6,10 +6,8 @@ import dev.spotlight.core.ThemeReport
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
-import net.minecraft.client.gui.components.MultiLineEditBox
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 import java.nio.file.Path
 
@@ -23,13 +21,13 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
     private var left = 0
     private var panelWidth = 1
     private var previewY = 0
-    private lateinit var editor: MultiLineEditBox
+    private lateinit var editor: SpotlightMultiLineEditBox
     private lateinit var source: SpotlightEditBox
     private lateinit var importButton: Button
     private var summary: FittingMultiLineTextWidget? = null
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun init() {
         summary = null
@@ -45,12 +43,7 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
         nameField.setResponder { name = it; failure = null; validate() }
         val buttonsY = height - 28
         val contentHeight = ((height - 200) / 2).coerceAtLeast(24)
-        editor = addRenderableWidget(MultiLineEditBox.builder().setX(left).setY(106)
-            .setTextShadow(SpotlightTheme.textShadow())
-            .setTextColor(catalogNativeColor(-2039584, 0xFFF2F5FC))
-            .setCursorColor(catalogNativeColor(-3092272, 0xFFF2F5FC))
-            .setShowBackground(!catalogCustomFrame())
-            .build(font, panelWidth, contentHeight, catalogText("Theme properties")))
+        editor = addRenderableWidget(SpotlightMultiLineEditBox(font, left, 106, panelWidth, contentHeight, catalogText("Theme properties")))
 
         editor.setCharacterLimit(128 * 1024)
         editor.value = text
@@ -109,7 +102,7 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
 
     private fun paste() {
         try {
-            val clipboard = minecraft.keyboardHandler.clipboard
+            val clipboard = minecraft!!.keyboardHandler.clipboard
             if (fileMode) {
                 require(clipboard.length <= 4096) { "File path exceeds 4096 characters" }
                 source.value = clipboard
@@ -154,13 +147,14 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
         }
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown() && event.isConfirmation) {
             importTheme()
             return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

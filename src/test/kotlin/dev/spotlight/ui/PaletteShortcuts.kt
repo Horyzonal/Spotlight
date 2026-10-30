@@ -1,7 +1,6 @@
 package dev.spotlight.ui
 
 import com.mojang.blaze3d.platform.InputConstants
-import net.minecraft.client.input.KeyEvent
 import org.lwjgl.glfw.GLFW
 
 object PaletteShortcutsCheck {

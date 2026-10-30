@@ -9,13 +9,12 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 
 internal fun fillBlockIcon(id: String): ItemStack {
-    val key = Identifier.tryParse(id) ?: return ItemStack.EMPTY
+    val key = ResourceLocation.tryParse(id) ?: return ItemStack.EMPTY
     if (!BuiltInRegistries.BLOCK.containsKey(key)) return ItemStack.EMPTY
     return ItemStack(requireNotNull(BuiltInRegistries.BLOCK.getValue(key)).asItem())
 }
@@ -66,7 +65,7 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
         panelWidth = minOf(SpotlightTheme.metric("selectorWidth", 520, 160, 4096), (width - 16).coerceAtLeast(1))
         left = (width - panelWidth) / 2
         count = ((height - 218) / rowStep).coerceIn(0, 12)
-        modes = fillModes(minecraft.connection?.commands?.root?.getChild("fill")?.getChild("from")
+        modes = fillModes(minecraft!!.connection?.commands?.root?.getChild("fill")?.getChild("from")
             ?.getChild("to")?.getChild("block")?.children.orEmpty().map { it.name })
         if (mode !in modes) mode = modes.first()
         entries = Spotlight.blocks()
@@ -194,7 +193,8 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
         }
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && !event.hasAltDown() && (search.isFocused || primaryModifier(event))) {
             if (filterTarget && !primaryModifier(event)) { choose(); refresh() } else start()
@@ -203,7 +203,7 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
         if (search.isFocused && !primaryModifier(event) && !event.hasAltDown() && (event.isDown || event.isUp)) {
             move(if (event.isDown) 1 else -1); return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
@@ -211,7 +211,7 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))

@@ -13,8 +13,4 @@ abstract class OptionSliderMixin {
         return ExtendedOptions.vanillaValue(option);
     }
 
-    @Redirect(method = "resetValue", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;"))
-    private Object spotlight$resetValue(OptionInstance<?> option) {
-        return ExtendedOptions.vanillaValue(option);
-    }
 }

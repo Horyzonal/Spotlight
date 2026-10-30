@@ -44,8 +44,8 @@ internal object BlockHitActions {
             pos.x, pos.y, pos.z, BuiltInRegistries.BLOCK.getKey(block).toString(), block.name.string))
         fun button(label: String, action: String, description: String) = Component.literal(label).setStyle(
             Style.EMPTY.withColor(SpotlightTheme.color(0xFF81B8FF) and 0xFFFFFF).withUnderlined(true)
-                .withClickEvent(ClickEvent.RunCommand(command(action, token)))
-                .withHoverEvent(HoverEvent.ShowText(Component.literal(description))))
+                .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, command(action, token)))
+                .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(description))))
         return Component.literal(text).withStyle { it.withColor(SpotlightTheme.color(0xFFF2F5FC) and 0xFFFFFF) }
             .append(" ").append(button("[Highlight again]", "highlight", "Highlight only this block for another 15 seconds"))
             .append(" ").append(button("[Add location]", "location", "Open a prefilled location editor; nothing saves until Save"))

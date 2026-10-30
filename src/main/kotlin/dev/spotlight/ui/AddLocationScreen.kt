@@ -6,7 +6,6 @@ import dev.spotlight.platform.LocationActions
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 
 internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogText("Add location")) {
     private var error: String? = null
@@ -27,7 +26,7 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
 
     private fun choose(source: () -> SavedLocation) {
         try {
-            minecraft.setScreen(LocationEditScreen(parent, source()))
+            minecraft!!.setScreen(LocationEditScreen(parent, source()))
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             focused?.let { if (it is net.minecraft.client.gui.components.AbstractWidget) it.message = catalogText("Add location. $error") }
@@ -38,11 +37,12 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
     private fun custom() = choose { LocationActions.current().copy(name = "New location") }
 
     private fun clipboard() = choose {
-        val coordinates = parseLocationCoordinates(minecraft.keyboardHandler.clipboard)
+        val coordinates = parseLocationCoordinates(minecraft!!.keyboardHandler.clipboard)
         LocationActions.current().copy(name = "New location", x = coordinates[0], y = coordinates[1], z = coordinates[2])
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape || (primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown() && event.key() == InputConstants.KEY_W)) {
             onClose()
             return true
@@ -55,10 +55,10 @@ internal class AddLocationScreen(private val parent: Screen?) : Screen(catalogTe
                 event.key() == InputConstants.KEY_V -> { clipboard(); return true }
             }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

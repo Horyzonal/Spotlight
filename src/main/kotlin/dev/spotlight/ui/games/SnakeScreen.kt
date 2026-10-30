@@ -8,7 +8,7 @@ import dev.spotlight.ui.catalogText
 import dev.spotlight.ui.spotlightButton
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
+import dev.spotlight.ui.KeyEvent
 
 class SnakeScreen(private val parent: Screen?) : Screen(catalogText("Snake")) {
     private val game = SnakeGame(System.nanoTime())
@@ -24,9 +24,10 @@ class SnakeScreen(private val parent: Screen?) : Screen(catalogText("Snake")) {
     }
 
     override fun tick() { super.tick(); game.tick() }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         when (event.key()) {
             InputConstants.KEY_ESCAPE -> onClose()
             InputConstants.KEY_R -> game.restart()
@@ -35,7 +36,7 @@ class SnakeScreen(private val parent: Screen?) : Screen(catalogText("Snake")) {
             InputConstants.KEY_DOWN, InputConstants.KEY_S -> game.turn(SnakeGame.Direction.DOWN)
             InputConstants.KEY_LEFT, InputConstants.KEY_A -> game.turn(SnakeGame.Direction.LEFT)
             InputConstants.KEY_RIGHT, InputConstants.KEY_D -> game.turn(SnakeGame.Direction.RIGHT)
-            else -> return super.keyPressed(event)
+            else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
         }
         return true
     }

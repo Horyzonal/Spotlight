@@ -8,9 +8,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.FontDescription
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
@@ -36,8 +34,8 @@ internal fun catalogClip(font: Font, text: String, width: Int, shadow: Boolean =
 internal fun catalogText(text: String): net.minecraft.network.chat.MutableComponent = catalogText(Component.literal(text))
 
 internal fun catalogText(text: Component, shadow: Boolean = SpotlightTheme.textShadow()): net.minecraft.network.chat.MutableComponent = text.copy().withStyle { style ->
-    val fontStyle = SpotlightTheme.font()?.let { style.withFont(FontDescription.Resource(it)) } ?: style
-    if (shadow) fontStyle else fontStyle.withoutShadow()
+    val fontStyle = SpotlightTheme.font()?.let { style.withFont(it) } ?: style
+    if (shadow) fontStyle else fontStyle.withShadowColor(0)
 }
 
 
@@ -125,13 +123,14 @@ class CatalogScreen(private val parent: Screen) : Screen(catalogText("Selection 
         page = page.coerceIn(0, ((filtered.size - 1) / count).coerceAtLeast(0))
         filtered.drop(page * count).take(count).forEachIndexed { index, row ->
             rows += addRenderableWidget(catalogButton("${row.title} · ${row.value}", left, 64 + index * rowStep, panelWidth) {
-                minecraft.keyboardHandler.clipboard = row.value
+                minecraft!!.keyboardHandler.clipboard = row.value
             })
         }
         if (hadRowFocus) setFocused(search)
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         val selected = rows.indexOfFirst { it.isFocused }
         if ((search.isFocused || selected >= 0) && !primaryModifier(event) && !event.hasAltDown()) {
@@ -148,14 +147,14 @@ class CatalogScreen(private val parent: Screen) : Screen(catalogText("Selection 
                 return true
             }
             if (event.isConfirmation && search.isFocused) {
-                rows.firstOrNull()?.onPress(event)
+                rows.firstOrNull()?.onPress()
                 return true
             }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         super.render(graphics, mouseX, mouseY, delta)

@@ -160,6 +160,10 @@ object CommandSuggestionTreeCheck {
         check(commandRegistryId(json) == "minecraft:recipe")
         val rules = CommandDispatcher<CommandSourceStack>()
         GameRuleCommand.register(rules, CommandBuildContext.simple(VanillaRegistries.createLookup(), FeatureFlags.DEFAULT_FLAGS))
+        val catalog = CommandCatalog.gameRules(net.minecraft.world.level.GameRules(FeatureFlags.DEFAULT_FLAGS))
+        check(catalog.map { it.value }.toSet() == rules.root.getChild("gamerule").children.map { it.name }.toSet())
+        check(catalog.any { it.value == "keepInventory" && "BooleanValue" in it.detail })
+        check(catalog.any { it.value == "randomTickSpeed" && "IntegerValue" in it.detail })
         val types = rules.root.getChild("gamerule").children.flatMap { it.children }.mapNotNull {
             (it as? com.mojang.brigadier.tree.ArgumentCommandNode<*, *>)?.type
         }

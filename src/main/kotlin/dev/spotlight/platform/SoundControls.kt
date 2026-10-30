@@ -7,8 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.client.sounds.ChannelAccess
-import net.minecraft.client.sounds.SoundEngine
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.sounds.SoundSource
 import java.util.Collections
 import java.util.IdentityHashMap
@@ -43,7 +42,7 @@ object SoundControls {
         
         val entries = channels().entries.map { it.key to it.value }
         val active = identities.sync(entries.filterNot { it.second.isStopped }.map { it.first }
-            .sortedWith(compareBy({ it.identifier.toString() }, { it.sound?.location.toString() })))
+            .sortedWith(compareBy({ it.location.toString() }, { it.sound?.location.toString() })))
         
         entries.filter { identities.isPaused(it.first) }.forEach { (_, handle) ->
             handle.execute { it.pause() }
@@ -59,7 +58,7 @@ object SoundControls {
             ?: identities.latest(active.filter { it.source == SoundSource.MUSIC })
             ?: return null
         val recording = instance.sound?.location?.toString() ?: return null
-        return currentSongMetadata(identities.id(instance), recording, instance.identifier.toString(),
+        return currentSongMetadata(identities.id(instance), recording, instance.location.toString(),
             identities.isPaused(instance), instance === musicInstance)
     }
 
@@ -105,7 +104,7 @@ object SoundControls {
 
     fun playTrack(track: MusicTrack): String? {
         val minecraft = client()
-        val file = Identifier.tryParse(track.id) ?: return null
+        val file = ResourceLocation.tryParse(track.id) ?: return null
         if (!minecraft.resourceManager.getResource(file.withPath("sounds/${file.path}.ogg")).isPresent) return null
         
         if (tracks().none { it.id == track.id }) return null
@@ -134,7 +133,7 @@ object SoundControls {
     private fun start(id: String, volume: Float, pitch: Float, source: SoundSource, loop: Boolean): String? {
         val minecraft = client()
         if (!validSoundParameters(volume, pitch)) return null
-        val identifier = Identifier.tryParse(id) ?: return null
+        val identifier = ResourceLocation.tryParse(id) ?: return null
         if (identifier !in minecraft.soundManager.availableSounds) return null
         if (source == SoundSource.MUSIC && !isMusicSound(identifier.toString())) return null
         val instance = SimpleSoundInstance(
@@ -150,14 +149,14 @@ object SoundControls {
             stopMusic()
             minecraft.musicManager.stopPlaying()
         }
-        if (minecraft.soundManager.play(instance) == SoundEngine.PlayResult.NOT_STARTED) return null
+        minecraft.soundManager.play(instance)
         if (snapshot().none { it === instance }) return null
         if (instance.source == SoundSource.MUSIC) musicInstance = instance
         return identities.id(instance)
     }
 
     private fun describe(instance: SoundInstance) = PlayingSound(
-        identities.id(instance), instance.identifier.toString(), instance.source.getName(),
+        identities.id(instance), instance.location.toString(), instance.source.getName(),
         instance.volume, instance.pitch, instance.isLooping,
         if (instance.isRelative) null else SoundPosition(instance.x, instance.y, instance.z),
     )

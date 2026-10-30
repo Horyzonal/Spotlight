@@ -8,13 +8,11 @@ import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
-import net.minecraft.client.model.`object`.banner.BannerFlagModel
-import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.client.model.geom.ModelPart
+import net.minecraft.client.renderer.RenderType
 import net.minecraft.core.Holder
 
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.DyeColor
 
 import net.minecraft.world.level.block.entity.BannerPattern
@@ -23,7 +21,7 @@ import net.minecraft.world.level.block.entity.BannerPatternLayers
 internal fun bannerGridRows(count: Int) = (count.coerceAtLeast(0) + 3) / 4
 
 internal class BannerPatternGrid(
-    private val flag: BannerFlagModel,
+    private val flag: ModelPart,
     private val choose: (Holder.Reference<BannerPattern>) -> Unit,
 ) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Banner patterns; arrows navigate, click / Enter / Space adds layer")) {
     private val tiles = mutableListOf<Tile>()
@@ -44,7 +42,7 @@ internal class BannerPatternGrid(
         cachedDye = dye
         setFocused(null as GuiEventListener?)
         tiles.clear()
-        
+
         patterns.forEach { pattern ->
             val layer = BannerPatternLayers.Layer(pattern, dye)
             tiles += Tile(pattern, BannerPatternLayers(listOf(layer)), layer.description().string)
@@ -76,13 +74,14 @@ internal class BannerPatternGrid(
         else if (top + 40 > scrollAmount() + height) setScrollAmount((top + 40 - height).toDouble())
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         val offset = when (event.key()) {
             InputConstants.KEY_LEFT -> -1
             InputConstants.KEY_RIGHT -> 1
             InputConstants.KEY_UP -> -4
             InputConstants.KEY_DOWN -> 4
-            else -> return super.keyPressed(event)
+            else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
         }
         if (tiles.isEmpty()) return false
         val index = (tiles.indexOf(focused).coerceAtLeast(0) + offset).coerceIn(0, tiles.lastIndex)
@@ -91,9 +90,11 @@ internal class BannerPatternGrid(
         return true
     }
 
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
         layoutTiles()
-        return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+        return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event.x(), event.y(), event.button())
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
@@ -107,7 +108,7 @@ internal class BannerPatternGrid(
             it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
         }
         graphics.disableScissor()
-        renderScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -115,20 +116,21 @@ internal class BannerPatternGrid(
     }
 
     private inner class Tile(val pattern: Holder.Reference<BannerPattern>, val preview: BannerPatternLayers, label: String) :
-        AbstractWidget(0, 0, 24, 40, catalogText("$label · ${pattern.key().identifier()}")) {
+        AbstractWidget(0, 0, 24, 40, catalogText("$label · ${pattern.key().location()}")) {
         init { setTooltip(Tooltip.create(if (canAdd) message else catalogText("Cannot add: layer limit ${CreativeBanner.MAX_LAYERS} or registry unavailable"))) }
         private fun add() { selected = pattern; if (canAdd) choose(pattern) }
-        override fun onClick(event: MouseButtonEvent, doubleClick: Boolean) { add() }
-        override fun keyPressed(event: KeyEvent): Boolean {
+        override fun onClick(mouseX: Double, mouseY: Double) { add() }
+        override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+            val event = KeyEvent(keyCode, scanCode, modifiers)
             if (event.key() != InputConstants.KEY_RETURN && event.key() != InputConstants.KEY_SPACE) return false
             add()
             return true
         }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             val state = if (selected == pattern) "pattern_selected" else if (isHoveredOrFocused) "pattern_highlighted" else "pattern"
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("container/loom/$state"), x, y, width, height)
+            graphics.blitSprite(RenderType::guiTextured, ResourceLocation.withDefaultNamespace("container/loom/$state"), x, y, width, height)
             val bannerWidth = minOf(16, (width - 4).coerceAtLeast(0))
-            if (bannerWidth > 0) graphics.submitBannerPatternRenderState(flag, requireNotNull(cachedBase), preview,
+            if (bannerWidth > 0) graphics.renderBanner(flag, requireNotNull(cachedBase), preview,
                 x + (width - bannerWidth) / 2, y + 4, x + (width + bannerWidth) / 2, y + 36)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { defaultButtonNarrationText(output) }

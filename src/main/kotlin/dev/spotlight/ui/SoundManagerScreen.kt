@@ -10,8 +10,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.ObjectSelectionList
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 
 internal fun soundRow(sound: PlayingSound): String =
@@ -47,7 +45,7 @@ internal class SoundMenuList(
         val index = children().indexOf(selected)
         val row = children().getOrNull((index + delta).coerceIn(0, (children().size - 1).coerceAtLeast(0))) ?: return
         setSelected(row)
-        scrollToEntry(row)
+        ensureVisible(row)
     }
     override fun setSelected(entry: Row?) {
         super.setSelected(entry)
@@ -55,12 +53,14 @@ internal class SoundMenuList(
     }
     inner class Row(val token: String, private val label: String) : Entry<Row>() {
         override fun getNarration(): Component = catalogText(label)
-        override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+            val event = MouseButtonEvent(mouseX, mouseY, button)
+
             if (!soundRowClick(event.button())) return false
             setSelected(this)
             return true
         }
-        override fun renderContent(graphics: GuiGraphics, mouseX: Int, mouseY: Int, hovered: Boolean, delta: Float) {
+        override fun render(graphics: GuiGraphics, index: Int, contentY: Int, contentX: Int, contentWidth: Int, contentHeight: Int, mouseX: Int, mouseY: Int, hovered: Boolean, delta: Float) {
             graphics.themeText(textFont, catalogClip(textFont, label, contentWidth), contentX, contentY + 3, foreground)
             if (hovered) graphics.setTooltipForNextFrame(catalogText(label), mouseX, mouseY)
         }
@@ -107,7 +107,7 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         search = addRenderableWidget(SpotlightEditBox(font, left, top + 24, panelWidth, 20, catalogText("Search sounds")))
         search.value = query
         search.setResponder { query = it; filter() }
-        list = addRenderableWidget(SoundMenuList(minecraft, font, panelWidth, (bottom - top - 138).coerceAtLeast(1), top + 48) {
+        list = addRenderableWidget(SoundMenuList(minecraft!!, font, panelWidth, (bottom - top - 138).coerceAtLeast(1), top + 48) {
             if (manual) selectedSound = it else selectedToken = it
         }.also { it.x = left })
         val fieldWidth = (panelWidth / 2 - 4).coerceAtLeast(1)
@@ -122,7 +122,7 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         val third = panelWidth / 3
         addRenderableWidget(catalogButton(if (manual) "Play (Enter)" else "Stop selected ($primaryModifierLabel+S)", left, bottom - 22, third) { act() })
         addRenderableWidget(catalogButton("Stop all…", left + third, bottom - 22, third) {
-            minecraft.setScreen(ConfirmSpotlightScreen(this, "Stop all sounds?", "Stops every vanilla/modded sound and queued playback. Confirm with Delete; this removes no files.") {
+            minecraft!!.setScreen(ConfirmSpotlightScreen(this, "Stop all sounds?", "Stops every vanilla/modded sound and queued playback. Confirm with Delete; this removes no files.") {
                 runCatching { SoundControls.stopAll() }.fold({ status = "All sounds stopped" }, { status = "Stop failed: ${it.message}" })
                 refresh()
             })
@@ -163,16 +163,17 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         refresh()
     }
     override fun tick() { if (++ticks % 5 == 0) refresh() }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (!manual && primaryModifier(event) && !event.hasAltDown() && event.key() == InputConstants.KEY_S) { act(); return true }
         if ((search.isFocused || list.isFocused) && !primaryModifier(event) && !event.hasAltDown()) {
             if (event.isUp || event.isDown) { list.move(if (event.isDown) 1 else -1); return true }
             if (event.isConfirmation) { act(); return true }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
         super.render(graphics, mouseX, mouseY, delta)

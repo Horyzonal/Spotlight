@@ -10,7 +10,7 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
     private var extractingText = false
 
     init {
-        setTextShadow(SpotlightTheme.textShadow())
+        setFormatter { text, _ -> catalogText(text).visualOrderText }
         if (!SpotlightTheme.isDefault()) {
             setTextColor(SpotlightTheme.color(0xFFF2F5FC))
             setTextColorUneditable(SpotlightTheme.color(0xFF91A0B5))
@@ -22,7 +22,7 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
             else catalogText(hint).withStyle { it.withColor(SpotlightTheme.color(0xFF9DADC3)) })
     }
 
-    
+
     override fun isBordered(): Boolean = !extractingText && super.isBordered()
     override fun getInnerWidth(): Int = if (super.isBordered()) width - 8 else width
 
@@ -35,7 +35,7 @@ class SpotlightEditBox(font: Font, x: Int, y: Int, width: Int, height: Int, labe
         graphics.fill(x, y, right, bottom, SpotlightTheme.color(0xFF161D29))
         graphics.renderOutline(x, y, width, height,
             SpotlightTheme.color(if (isFocused && active) 0xFF81B8FF else 0xFF415877))
-        
+
         extractingText = true
         try {
             super.renderWidget(graphics, mouseX, mouseY, delta)

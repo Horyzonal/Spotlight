@@ -2,16 +2,15 @@ package dev.spotlight.platform
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.ui.SpotlightTheme
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
 
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.gizmos.GizmoStyle
-import net.minecraft.gizmos.Gizmos
+
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.phys.AABB
 
 object RegionSelection {
@@ -21,11 +20,11 @@ object RegionSelection {
     private var ticks = 0
 
     fun startFill(blockId: String, mode: String, replaceBlockId: String? = null) {
-        val id = requireNotNull(Identifier.tryParse(blockId)) { "Invalid block ID" }
+        val id = requireNotNull(ResourceLocation.tryParse(blockId)) { "Invalid block ID" }
         require(BuiltInRegistries.BLOCK.containsKey(id)) { "Unknown block: $blockId" }
         val state = RegionSelectionState(id.toString(), mode, replaceBlockId = replaceBlockId)
         replaceBlockId?.let {
-            val filter = requireNotNull(Identifier.tryParse(it)) { "Invalid replacement block ID" }
+            val filter = requireNotNull(ResourceLocation.tryParse(it)) { "Invalid replacement block ID" }
             require(BuiltInRegistries.BLOCK.containsKey(filter)) { "Unknown replacement block: $it" }
         }
         start(state)
@@ -92,7 +91,7 @@ object RegionSelection {
             cancel()
             return
         }
-        if (InputConstants.isKeyDown(client.window, InputConstants.KEY_ESCAPE)) {
+        if (InputConstants.isKeyDown(client.window.window, InputConstants.KEY_ESCAPE)) {
             cancel()
             return
         }
@@ -114,7 +113,7 @@ object RegionSelection {
     }
 
     private fun enterPressed(): Boolean {
-        val window = Minecraft.getInstance().window
+        val window = Minecraft.getInstance().window.window
         return InputConstants.isKeyDown(window, InputConstants.KEY_RETURN) ||
             InputConstants.isKeyDown(window, InputConstants.KEY_NUMPADENTER)
     }
@@ -137,22 +136,19 @@ object RegionSelection {
     }
 
     fun initialize() {
-        WorldRenderEvents.END_EXTRACTION.register { context ->
+        WorldRenderEvents.AFTER_TRANSLUCENT.register { context ->
             if (active()) {
                 val state = session!!.state
                 val color = SpotlightTheme.color(0xFF81B8FF)
                 fun draw(bounds: Pair<RegionPoint, RegionPoint>, width: Float) {
                     val (a, b) = bounds
-                    Gizmos.cuboid(AABB(a.x.toDouble(), a.y.toDouble(), a.z.toDouble(),
-                        b.x.toDouble() + 1, b.y.toDouble() + 1, b.z.toDouble() + 1).inflate(0.01),
-                        GizmoStyle.stroke(color, width)).setAlwaysOnTop()
+                    drawWorldOutline(context, AABB(a.x.toDouble(), a.y.toDouble(), a.z.toDouble(),
+                        b.x.toDouble() + 1, b.y.toDouble() + 1, b.z.toDouble() + 1).inflate(0.01), color, width)
                 }
-                context.worldRenderer().collectPerFrameGizmos().use {
-                    state.first?.let { draw(it to it, 3f) }
-                    state.second?.let { draw(it to it, 3f) }
-                    state.bounds()?.let { draw(it, 2f) }
-                    runCatching { state.destinationBounds() }.getOrNull()?.let { draw(it, 3f) }
-                }
+                state.first?.let { draw(it to it, 3f) }
+                state.second?.let { draw(it to it, 3f) }
+                state.bounds()?.let { draw(it, 2f) }
+                runCatching { state.destinationBounds() }.getOrNull()?.let { draw(it, 3f) }
             }
         }
     }

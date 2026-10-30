@@ -1,14 +1,13 @@
 package dev.spotlight.platform
 
 import dev.spotlight.core.Entry
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.gizmos.GizmoStyle
-import net.minecraft.gizmos.Gizmos
+
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.minecraft.world.phys.AABB
@@ -26,14 +25,14 @@ internal fun entityEntries(): List<Entry> {
         Entry("entity:$id", id, "Entity type category", id)
     }.toList()
     val singles = Minecraft.getInstance().level?.entitiesForRendering()?.map { entity ->
-        Entry("entity:uuid:${entity.uuid}", entity.displayName.string,
+        Entry("entity:uuid:${entity.uuid}", (entity.displayName ?: entity.name).string,
             "${BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)} · ${entity.uuid}", "uuid:${entity.uuid}")
     }.orEmpty()
     return types + tags + singles
 }
 
 internal object FindTargets {
-    
+
     private const val RADIUS = 32
     private const val MAX_MARKERS = 64
     private var scan: BlockScan? = null
@@ -42,11 +41,9 @@ internal object FindTargets {
     private var expires = 0L
 
     fun initialize() {
-        WorldRenderEvents.END_EXTRACTION.register { context ->
+        WorldRenderEvents.AFTER_TRANSLUCENT.register { context ->
             if (Minecraft.getInstance().level === highlightLevel && System.nanoTime() < expires) {
-                context.worldRenderer().collectPerFrameGizmos().use {
-                    highlights.forEach { Gizmos.cuboid(it, GizmoStyle.stroke(0xff55ffff.toInt(), 2f)).setAlwaysOnTop() }
-                }
+                highlights.forEach { drawWorldOutline(context, it, 0xff55ffff.toInt(), 2f) }
             }
         }
     }
@@ -71,14 +68,14 @@ internal object FindTargets {
                 { entity -> entity.uuid == uuid }
             }
             text.startsWith('#') -> {
-                val id = requireNotNull(Identifier.tryParse(text.drop(1))) { "Invalid entity category" }
+                val id = requireNotNull(ResourceLocation.tryParse(text.drop(1))) { "Invalid entity category" }
                 val tag = BuiltInRegistries.ENTITY_TYPE.tags.filter { it.key().location() == id }.findFirst()
                     .orElseThrow { IllegalArgumentException("Unknown entity category: $text") }
                 val types = tag.stream().map { it.value() }.toList().toSet();
                 { entity -> entity.type in types }
             }
             else -> {
-                val id = requireNotNull(Identifier.tryParse(text)) { "Invalid entity type" }
+                val id = requireNotNull(ResourceLocation.tryParse(text)) { "Invalid entity type" }
                 require(BuiltInRegistries.ENTITY_TYPE.containsKey(id)) { "Unknown entity type: $text" }
                 val type = BuiltInRegistries.ENTITY_TYPE.getValue(id);
                 { entity -> entity.type == type }
@@ -91,7 +88,7 @@ internal object FindTargets {
     }
 
     fun blocks(text: String) {
-        val id = requireNotNull(Identifier.tryParse(text)) { "Invalid block ID" }
+        val id = requireNotNull(ResourceLocation.tryParse(text)) { "Invalid block ID" }
         require(BuiltInRegistries.BLOCK.containsKey(id)) { "Unknown block: $text" }
         val client = Minecraft.getInstance()
         val player = requireNotNull(client.player) { "Join a world first" }
@@ -148,6 +145,6 @@ internal object FindTargets {
         Minecraft.getInstance().gui.chat.addMessage(Component.literal(message))
     }
 
-    
+
     private class BlockScan(val level: net.minecraft.client.multiplayer.ClientLevel, val search: NearestBlockSearch, val radius: Int)
 }

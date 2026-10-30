@@ -7,7 +7,6 @@ import dev.spotlight.platform.notifySpotlight
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 
 class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music player")) {
     private var query = ""
@@ -37,7 +36,7 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         search = addRenderableWidget(SpotlightEditBox(font, left, top, panelWidth, 20, catalogText("Search titles, artists or file IDs")))
         search.value = query
         search.setResponder { query = it; filter() }
-        list = addRenderableWidget(SoundMenuList(minecraft, font, panelWidth, (bottom - top - 110).coerceAtLeast(1), top + 24) {
+        list = addRenderableWidget(SoundMenuList(minecraft!!, font, panelWidth, (bottom - top - 110).coerceAtLeast(1), top + 24) {
             selectedId = it
         }.also { it.x = left })
         val third = panelWidth / 3
@@ -75,16 +74,17 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         refresh()
     }
     override fun tick() { if (++ticks % 5 == 0) refresh() }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (primaryModifier(event) && !event.hasAltDown() && event.key() == InputConstants.KEY_S) { stop(); return true }
         if ((search.isFocused || list.isFocused) && !primaryModifier(event) && !event.hasAltDown()) {
             if (event.isUp || event.isDown) { list.move(if (event.isDown) 1 else -1); return true }
             if (event.isConfirmation) { play(); return true }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, background)
         super.render(graphics, mouseX, mouseY, delta)

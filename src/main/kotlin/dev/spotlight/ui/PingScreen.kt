@@ -9,7 +9,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import java.util.Locale
 import java.util.UUID
 
@@ -35,7 +34,7 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
 
     private fun currentEntries(): List<Entry> {
         if (worldUnavailable() != null) return emptyList()
-        return pingEntries(minecraft.connection?.onlinePlayers.orEmpty().map {
+        return pingEntries(minecraft!!.connection?.onlinePlayers.orEmpty().map {
             Triple(it.profile.id, it.profile.name, it.latency)
         })
     }
@@ -97,18 +96,19 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
             notifySpotlight("Player no longer online")
             return
         }
-        minecraft.keyboardHandler.clipboard = "${entry.title}: ${entry.detail}"
+        minecraft!!.keyboardHandler.clipboard = "${entry.title}: ${entry.detail}"
         notifySpotlight("Copied player ping to clipboard")
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && !event.hasAltDown()) { copy(); return true }
         if (!primaryModifier(event) && !event.hasAltDown()) {
             if (event.isDown || event.isUp) { move(if (event.isDown) 1 else -1); return true }
             if (event.key() == InputConstants.KEY_TAB) { move(if (event.hasShiftDown()) -1 else 1, cycle = true); return true }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
@@ -116,7 +116,7 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))

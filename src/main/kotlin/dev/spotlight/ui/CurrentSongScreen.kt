@@ -8,15 +8,14 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.texture.DynamicTexture
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.PI
 import kotlin.math.sin
 
 class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Current song")) {
-    private val textureId = Identifier.fromNamespaceAndPath("spotlight", "current_song_artwork")
+    private val textureId = ResourceLocation.fromNamespaceAndPath("spotlight", "current_song_artwork")
     private val rotation = SongRotation()
     private var artworkId: String? = null
     private var hasTexture = false
@@ -43,7 +42,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         val controlsY = top + panelHeight - 72
         play = addRenderableWidget(object : Button(center - 26, controlsY, 52, 30, catalogText("Pause playback"),
             OnPress { control { CurrentMusic.togglePause() } }, CreateNarration { it.get() }) {
-            override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                 val highlighted = active && (isHovered || isFocused)
                 graphics.fill(x, y, right, bottom, SpotlightTheme.color(if (highlighted) 0xFF293F5B else 0xFF161D29))
                 graphics.renderOutline(x, y, this.width, this.height, SpotlightTheme.color(if (highlighted) 0xFF81B8FF else 0xFF415877))
@@ -64,7 +63,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         addRenderableWidget(catalogButton("Back", left + panelWidth - 16 - half, controlsY + 5, half) { onClose() })
             .setTooltip(Tooltip.create(catalogText("Back (Esc); playback continues")))
         addRenderableWidget(catalogButton("Open library", center - minOf(144, panelWidth - 32) / 2, controlsY + 38,
-            minOf(144, panelWidth - 32).coerceAtLeast(1)) { minecraft.setScreen(MusicPlayerScreen(this)) })
+            minOf(144, panelWidth - 32).coerceAtLeast(1)) { minecraft!!.setScreen(MusicPlayerScreen(this)) })
             .setTooltip(Tooltip.create(catalogText("Open music library to choose a song")))
         refresh()
         setInitialFocus(play)
@@ -112,8 +111,8 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         var texture: DynamicTexture? = null
         try {
             for (y in 0 until 64) for (x in 0 until 64) image.setPixel(x, y, pixels[y * 64 + x])
-            texture = DynamicTexture({ "Spotlight generated song artwork" }, image)
-            minecraft.textureManager.register(textureId, texture)
+            texture = DynamicTexture(image)
+            minecraft!!.textureManager.register(textureId, texture)
             hasTexture = true
         } catch (failure: Throwable) {
             if (texture != null) texture.close() else image.close()
@@ -122,7 +121,7 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
     }
 
     private fun releaseArtwork() {
-        if (hasTexture) minecraft.textureManager.release(textureId)
+        if (hasTexture) minecraft!!.textureManager.release(textureId)
         hasTexture = false
         artworkId = null
     }
@@ -135,15 +134,16 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
 
     override fun tick() { if (++ticks % 5 == 0) refresh() }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.key() == InputConstants.KEY_SPACE && !primaryModifier(event) && !event.hasAltDown() && !event.hasControlDown()) {
             if (song != null) control { CurrentMusic.togglePause() }
             return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val foreground = SpotlightTheme.color(0xFFF2F5FC)
@@ -157,12 +157,12 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         val angle = rotation.update(song?.id, song?.paused == false, System.nanoTime())
         if (hasTexture) {
             val pose = graphics.pose()
-            pose.pushMatrix()
-            pose.translate(cx.toFloat(), cy.toFloat())
-            pose.rotate(angle)
-            graphics.blit(RenderPipelines.GUI_TEXTURED, textureId, -discSize / 2, -discSize / 2,
+            pose.pushPose()
+            pose.translate(cx.toFloat(), cy.toFloat(), 0f)
+            pose.mulPose(com.mojang.math.Axis.ZP.rotation(angle))
+            graphics.blit(RenderType::guiTextured, textureId, -discSize / 2, -discSize / 2,
                 0f, 0f, discSize, discSize, 64, 64, 64, 64)
-            pose.popMatrix()
+            pose.popPose()
             val dx = mouseX - cx
             val dy = mouseY - cy
             if (dx * dx + dy * dy <= discSize * discSize / 4)
@@ -173,11 +173,11 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         val titleY = top + 44 + discSize
         fun centered(value: String, y: Int, scale: Float, color: Int) {
             val pose = graphics.pose()
-            pose.pushMatrix()
-            pose.translate(cx.toFloat(), y.toFloat())
-            pose.scale(scale, scale)
+            pose.pushPose()
+            pose.translate(cx.toFloat(), y.toFloat(), 0f)
+            pose.scale(scale, scale, 1f)
             graphics.themeCenteredText(font, catalogClip(font, value, ((panelWidth - 32) / scale).toInt().coerceAtLeast(1)), 0, 0, color)
-            pose.popMatrix()
+            pose.popPose()
         }
         centered(song?.title ?: "Choose something to play", titleY, 1.5f, foreground)
         centered(song?.artist?.takeIf { it.isNotBlank() } ?: if (song == null) "Open your music library below" else "Unknown artist", titleY + 20, 1.15f, muted)

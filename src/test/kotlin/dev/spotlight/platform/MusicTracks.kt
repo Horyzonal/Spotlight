@@ -3,7 +3,7 @@ package dev.spotlight.platform
 import dev.spotlight.core.MusicMetadata
 import net.minecraft.client.resources.sounds.Sound
 import net.minecraft.client.resources.sounds.SoundInstance
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.valueproviders.ConstantFloat
 
@@ -12,7 +12,7 @@ object MusicTracksCheck {
     fun main(args: Array<String>) {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
-        val definitions = linkedMapOf<Identifier, List<Sound>>()
+        val definitions = linkedMapOf<ResourceLocation, List<Sound>>()
         fun merge(json: String) = mergeMusicDefinitions(definitions, "test", json.reader().use(::readMusicDefinitions))
         merge("""{"music.root":{"sounds":[{"name":"test:nested","type":"event"},"test:music/old"]},"nested":{"sounds":["minecraft:music/game/infinite_amethyst",{"name":"test:music.root","type":"event"}]},"music.other":{"sounds":["minecraft:music/game/infinite_amethyst","mod:music/new_song"]}}""")
         merge("""{"music.root":{"replace":true,"sounds":[{"name":"test:nested","type":"event"} ]},"music.other":{"sounds":["mod:music/new_song","test:missing"]}}""")
@@ -24,14 +24,14 @@ object MusicTracksCheck {
         check(tracks.single { it.id == "mod:music/new_song" }.let { it.title == "New Song" && it.artist == null })
         check(resolveMusicTracks(definitions, emptySet()) { true }.isEmpty())
         check(MusicMetadata.track("mod:music/game/infinite_amethyst", emptySet()).artist == null)
-        val instance = TrackSoundInstance(Identifier.parse(amethyst.id))
+        val instance = TrackSoundInstance(ResourceLocation.parse(amethyst.id))
         val selected = requireNotNull(instance.sound)
                 check(selected.location.toString() == amethyst.id && selected.shouldStream())
         check(instance.isLooping && instance.isRelative && instance.source == SoundSource.MUSIC)
         check(instance.attenuation == SoundInstance.Attenuation.NONE)
         val deep = (0..100).associate { index ->
-            Identifier.parse("test:music.$index") to listOf(Sound(
-                Identifier.parse("test:music.${index + 1}"), ConstantFloat.of(1f), ConstantFloat.of(1f),
+            ResourceLocation.parse("test:music.$index") to listOf(Sound(
+                ResourceLocation.parse("test:music.${index + 1}"), ConstantFloat.of(1f), ConstantFloat.of(1f),
                 1, Sound.Type.SOUND_EVENT, false, false, 16,
             ))
         }
@@ -39,7 +39,7 @@ object MusicTracksCheck {
         check(runCatching { "12345".reader().readTextBounded(4) }.isFailure)
         check("1234".reader().readTextBounded(4) == "1234")
         if (args.isNotEmpty()) {
-            val vanilla = linkedMapOf<Identifier, List<Sound>>()
+            val vanilla = linkedMapOf<ResourceLocation, List<Sound>>()
             java.io.File(args.single()).bufferedReader().use {
                 mergeMusicDefinitions(vanilla, "minecraft", readMusicDefinitions(it))
             }

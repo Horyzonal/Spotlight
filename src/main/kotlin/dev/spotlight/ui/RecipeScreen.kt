@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.world.item.ItemStack
 
 
@@ -71,7 +70,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
         }
         val buttonWidth = (panelWidth / 3).coerceAtLeast(1)
         copy = addRenderableWidget(catalogButton("Copy recipe ID", left, footerY, buttonWidth) {
-            current?.recipeIds?.minOrNull()?.let { minecraft.keyboardHandler.clipboard = it }
+            current?.recipeIds?.minOrNull()?.let { minecraft!!.keyboardHandler.clipboard = it }
         })
         addRenderableWidget(catalogButton("Reload", left + buttonWidth, footerY, buttonWidth) { reload() })
         addRenderableWidget(catalogButton("Back (Esc)", left + buttonWidth * 2, footerY, (panelWidth - buttonWidth * 2).coerceAtLeast(1)) { onClose() })
@@ -86,7 +85,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
     private fun reload() {
         reloadList()
         CraftingRecipes.refresh {
-            if (minecraft.screen === this) reloadList()
+            if (minecraft!!.screen === this) reloadList()
         }
         sourceStatus = CraftingRecipes.status()
     }
@@ -149,16 +148,17 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
         if (ticks % 5L == 0L) updateInventory()
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (!primaryModifier(event) && !event.hasAltDown() && (event.isUp || event.isDown)) {
             select(selected + if (event.isDown) 1 else -1)
             return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     private fun text(graphics: GuiGraphics, value: String, x: Int, y: Int, available: Int, color: Long = 0xFFF2F5FC) {
         graphics.themeText(font, catalogClip(font, value, available), x, y, SpotlightTheme.color(color))

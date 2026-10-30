@@ -17,7 +17,7 @@ import net.minecraft.client.Minecraft
 
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import java.util.Collections
@@ -47,7 +47,7 @@ object Spotlight {
     }
 
     fun register(command: SpotlightCommand) {
-        require(Identifier.tryParse(command.id) != null && ':' in command.id) { "Command ID must be namespaced: ${command.id}" }
+        require(ResourceLocation.tryParse(command.id) != null && ':' in command.id) { "Command ID must be namespaced: ${command.id}" }
         require(command.title.isNotBlank()) { "Command title must not be blank" }
         require(commands.none { it.id == command.id }) { "Duplicate Spotlight command: ${command.id}" }
         registeredCommands.add(command)
@@ -59,7 +59,7 @@ object Spotlight {
     }
 
     fun stack(id: String): ItemStack {
-        val key = requireNotNull(Identifier.tryParse(id)) { "Invalid item ID: $id" }
+        val key = requireNotNull(ResourceLocation.tryParse(id)) { "Invalid item ID: $id" }
         require(BuiltInRegistries.ITEM.containsKey(key)) { "Unknown item: $id" }
         val item = requireNotNull(BuiltInRegistries.ITEM.getValue(key)) { "Unknown item: $id" }
         require(item != Items.AIR) { "Air is not an item action target" }
@@ -69,7 +69,7 @@ object Spotlight {
     private val savedSettings by lazy { loadStore("commands", ::CommandSettings) }
     private val savedLocations by lazy { loadStore("locations", ::LocationStore) }
     var requestedCommandId: String? = null
-    
+
     var requestedQuery: String? = null
 
     var spotlightSettings: SpotlightSettings? = null
@@ -114,7 +114,7 @@ object Spotlight {
             .joinToString("") { "%02x".format(it) }
     }
 
-    fun dimension(): String = requireNotNull(Minecraft.getInstance().level) { "Join a world first" }.dimension().identifier().toString()
+    fun dimension(): String = requireNotNull(Minecraft.getInstance().level) { "Join a world first" }.dimension().location().toString()
 
     fun executeSlash(text: String) {
         val command = validatedSlash(text)

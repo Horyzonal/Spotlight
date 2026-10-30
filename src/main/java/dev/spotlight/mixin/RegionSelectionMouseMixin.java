@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.spotlight.platform.RegionSelection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
-import net.minecraft.client.input.MouseButtonInfo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,11 +15,10 @@ public abstract class RegionSelectionMouseMixin {
     @Unique private boolean spotlight$leftDown;
     @Unique private boolean spotlight$rightDown;
 
-    @Inject(method = "onButton(JLnet/minecraft/client/input/MouseButtonInfo;I)V", at = @At("HEAD"), cancellable = true)
-    private void spotlight$select(long window, MouseButtonInfo info, int action, CallbackInfo ci) {
+    @Inject(method = "onPress(JIII)V", at = @At("HEAD"), cancellable = true)
+    private void spotlight$select(long window, int button, int action, int modifiers, CallbackInfo ci) {
         Minecraft client = Minecraft.getInstance();
-        if (window == 0 || window != client.getWindow().handle()) return;
-        int button = info.button();
+        if (window == 0 || window != client.getWindow().getWindow()) return;
         boolean left = button == InputConstants.MOUSE_BUTTON_LEFT;
         if (!left && button != InputConstants.MOUSE_BUTTON_RIGHT) return;
         boolean held = left ? spotlight$leftDown : spotlight$rightDown;

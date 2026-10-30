@@ -6,7 +6,7 @@ import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.tree.ArgumentCommandNode
 import com.mojang.brigadier.tree.LiteralCommandNode
 import net.minecraft.client.Minecraft
-import net.minecraft.client.multiplayer.ClientSuggestionProvider
+import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.arguments.*
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument
 import net.minecraft.commands.arguments.blocks.BlockStateArgument
@@ -24,10 +24,10 @@ object CommandSuggestions {
 
     fun isValidIp(value: String): Boolean = validCommandIp(value)
 
-    
+
     fun executionText(text: String): String = text.trimEnd(' ')
 
-    
+
     fun expandAlias(text: String, cursor: Int): Pair<String, Int>? {
         val client = Minecraft.getInstance()
         val connection = client.connection ?: return null
@@ -40,16 +40,16 @@ object CommandSuggestions {
         }
     }
 
-    
+
     fun argumentHint(text: String): String? {
         val connection = Minecraft.getInstance().connection ?: return null
         return commandArgumentHint(connection.commands, connection.suggestionsProvider, text)
     }
 
-    
+
     fun catalog(kind: SelectionKind): List<CommandSuggestion> = CommandCatalog.catalog(kind)
 
-    
+
     fun completeOnSpace(text: String, cursor: Int, candidates: List<CommandSuggestion> = emptyList()): Pair<String, Int>? {
         expandAlias(text, cursor)?.let { return it }
         val connection = Minecraft.getInstance().connection ?: return null
@@ -65,8 +65,8 @@ object CommandSuggestions {
     )
 
     private fun localSuggestions(
-        dispatcher: com.mojang.brigadier.CommandDispatcher<ClientSuggestionProvider>,
-        source: ClientSuggestionProvider, text: String
+        dispatcher: com.mojang.brigadier.CommandDispatcher<SharedSuggestionProvider>,
+        source: SharedSuggestionProvider, text: String
     ): LocalSuggestions {
         val start = commandTokenStart(text)
         val query = text.substring(start)
@@ -76,7 +76,7 @@ object CommandSuggestions {
         var inferredKind: SelectionKind? = null
         for (node in children) {
             if (node is LiteralCommandNode) {
-                
+
                 val rule = if (dispatcher.getPath(node).toList().dropLast(1).lastOrNull() == "gamerule") {
                     catalog(SelectionKind.GAMERULES).firstOrNull {
                         it.value == node.literal || it.value.removePrefix("minecraft:") == node.literal
@@ -84,12 +84,12 @@ object CommandSuggestions {
                 } else null
                 val row = rule?.copy(value = node.literal, start = start, end = text.length)
                     ?: CommandSuggestion(node.literal, node.literal, start = start, end = text.length,
-                        kind = literalKind(children.filterIsInstance<LiteralCommandNode<ClientSuggestionProvider>>().map { it.literal }))
+                        kind = literalKind(children.filterIsInstance<LiteralCommandNode<SharedSuggestionProvider>>().map { it.literal }))
                 local += row
                 knownRows[row.value] = row
                 continue
             }
-            if (node !is ArgumentCommandNode<ClientSuggestionProvider, *>) continue
+            if (node !is ArgumentCommandNode<SharedSuggestionProvider, *>) continue
             val type = node.type
             val metadata = argumentMetadata(type)
             val registryId = commandRegistryId(metadata)
@@ -99,13 +99,13 @@ object CommandSuggestions {
             if (kind != null) inferredKind = kind
             val candidates = if (registryId != null) {
                 val registry = CommandCatalog.registry(registryId)
-                val tagType = type is ResourceOrTagArgument<*> || type is ResourceOrTagKeyArgument<*> || type is ResourceSelectorArgument<*>
+                val tagType = type is ResourceOrTagArgument<*> || type is ResourceOrTagKeyArgument<*>
                 if (registry != null) CommandCatalog.entries(registry, kind ?: SelectionKind.REGISTRY) +
                     (if (tagType) CommandCatalog.entries(registry, SelectionKind.TAGS, tags = true) else emptyList())
                 else kind?.let { catalog(it) }.orEmpty()
             } else when (type) {
                 is EntityArgument -> catalog(SelectionKind.PLAYERS) + catalog(SelectionKind.ENTITIES).filter {
-                    
+
                     val playersOnly = metadata.get("type")?.asString == "players"
                     val single = metadata.get("amount")?.asString == "single"
                     (!playersOnly || it.value != "@e") && (!single || it.value !in setOf("@a", "@e"))
@@ -120,7 +120,7 @@ object CommandSuggestions {
                 else -> kind?.let { catalog(it) }.orEmpty()
             }
             candidates.forEach { knownRows[it.value] = it }
-            
+
             if (!query.startsWith('@') && !query.startsWith('"') && !query.startsWith('\'') &&
                 '[' !in query && '{' !in query) {
                 local += candidates.map { it.copy(start = start, end = text.length) }
@@ -140,7 +140,7 @@ object CommandSuggestions {
         return LocalSuggestions(ranked, knownRows, inferredKind)
     }
 
-    
+
     fun request(text: String, accept: (List<CommandSuggestion>) -> Unit) {
         val client = Minecraft.getInstance()
         if (!client.isSameThread) {
@@ -154,9 +154,9 @@ object CommandSuggestions {
         val reader = StringReader(text).also { it.cursor = 1 }
         val parsed = dispatcher.parse(reader, source)
         val (ranked, knownRows, inferredKind) = localSuggestions(dispatcher, source, text)
-        
-        
-        
+
+
+
         val future = try { boundedCommandCompletion(dispatcher.getCompletionSuggestions(parsed)) }
             catch (_: com.mojang.brigadier.exceptions.CommandSyntaxException) { null }
         accept(ranked)
@@ -198,7 +198,7 @@ object CommandSuggestions {
             else -> when (provider) {
                 "minecraft:available_sounds" -> SelectionKind.SOUNDS
                 "minecraft:summonable_entities" -> SelectionKind.ENTITY_TYPES
-                
+
                 else -> when (name) {
                     "ip" -> SelectionKind.IP
                     else -> null

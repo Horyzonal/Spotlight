@@ -32,6 +32,7 @@ object BannerPatternGridCheck {
         check(bannerGridRows(4) == 1)
         check(bannerGridRows(5) == 2)
         check(bannerGridRows(1000) == 250)
+        MultilineInputCheck.main(emptyArray())
         BannerLayersCheck.main(emptyArray())
         println("Banner grid empty and partial row checks passed")
     }

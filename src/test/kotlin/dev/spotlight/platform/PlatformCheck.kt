@@ -13,7 +13,7 @@ import dev.spotlight.core.LocationStore
 import dev.spotlight.core.CommandSettings
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.storage.LevelData
+
 import java.nio.file.Files
 import dev.spotlight.ui.fillModes
 import dev.spotlight.ui.fillModeHelp
@@ -247,8 +247,7 @@ internal object PlatformCheck {
         check(pingEntries(listOf(Triple(playerId, "Self", 99))).single().detail == "99 ms")
         check(Spotlight.commands.single { it.id == "spotlight:add_location" }.input == CommandInput.NONE)
         check(Spotlight.commands.single { it.id == "spotlight:spawn_location" }.title == "Spawn location")
-        val spawnData = LevelData.RespawnData.of(Level.NETHER, BlockPos(0, 64, -12), 0f, 0f)
-        val spawnDraft = LocationActions.spawnDraft(spawnData, "world-a")
+        val spawnDraft = LocationActions.spawnDraft(BlockPos(0, 64, -12), Level.NETHER, "world-a")
         check(spawnDraft.id == "spawn" && spawnDraft.name == "Spawnpoint location")
         check(spawnDraft.dimension == "minecraft:the_nether" && spawnDraft.scope == "world-a")
         check(spawnDraft.x == 0.0 && spawnDraft.y == 64.0 && spawnDraft.z == -12.0)

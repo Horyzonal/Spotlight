@@ -6,8 +6,6 @@ import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import com.mojang.blaze3d.platform.InputConstants
 import kotlin.math.roundToInt
 
@@ -31,7 +29,7 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
     private var fieldY = 0
 
     override fun isPauseScreen() = false
-    override fun onClose() { dragging = null; minecraft.setScreen(parent) }
+    override fun onClose() { dragging = null; minecraft!!.setScreen(parent) }
 
     override fun init() {
         dragging = null
@@ -116,23 +114,26 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
         validate()
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) {
             commit(); return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
-        val surface = dragging ?: return super.mouseDragged(event, dx, dy)
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+        val surface = dragging ?: return super.mouseDragged(event.x(), event.y(), event.button(), dx, dy)
         surface.pick(event.x(), event.y())
         return true
     }
 
-    override fun mouseReleased(event: MouseButtonEvent): Boolean {
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
         if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && dragging != null) { dragging = null; isDragging = false; return true }
-        return super.mouseReleased(event)
+        return super.mouseReleased(event.x(), event.y(), event.button())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -159,9 +160,10 @@ class ColorPickerScreen(private val parent: Screen, initialColor: Int, private v
             picked()
         }
 
-        override fun onClick(event: MouseButtonEvent, doubleClick: Boolean) { dragging = this; pick(event.x(), event.y()) }
+        override fun onClick(mouseX: Double, mouseY: Double) { dragging = this; pick(mouseX, mouseY) }
 
-        override fun keyPressed(event: KeyEvent): Boolean {
+        override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+            val event = KeyEvent(keyCode, scanCode, modifiers)
             if (!active) return false
             val step = if (event.hasShiftDown()) 0.1 else 0.01
             val direction = when (event.key()) {

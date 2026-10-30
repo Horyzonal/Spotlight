@@ -8,9 +8,7 @@ import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
-import net.minecraft.client.model.`object`.banner.BannerFlagModel
+import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.level.block.entity.BannerPatternLayers
 
@@ -21,7 +19,7 @@ internal fun <T> moveBannerLayer(layers: MutableList<T>, index: Int, target: Int
 }
 
 internal class BannerLayersWidget(
-    private val flag: BannerFlagModel,
+    private val flag: ModelPart,
     private val layers: MutableList<BannerPatternLayers.Layer>,
     private val changed: () -> Unit,
 ) : AbstractContainerWidget(0, 0, 100, 180, catalogText("Layers: first bottom, last top. Arrows select; $primaryModifierLabel+arrows reorder; Delete removes. Drag handles reorder.")) {
@@ -70,19 +68,22 @@ internal class BannerLayersWidget(
         changed()
         setFocused(rows.getOrNull(selected))
     }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.key() == InputConstants.KEY_DELETE || event.key() == InputConstants.KEY_BACKSPACE) { remove(selected); return true }
         val offset = when (event.key()) {
             InputConstants.KEY_UP -> -1
             InputConstants.KEY_DOWN -> 1
-            else -> return super.keyPressed(event)
+            else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
         }
         if (rows.isEmpty()) return true
         val target = (selected.coerceAtLeast(0) + offset).coerceIn(0, rows.lastIndex)
         if (primaryModifier(event)) move(target) else setFocused(rows[target])
         return true
     }
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
         layoutRows()
         if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || !isMouseOver(event.x(), event.y())) return false
         val row = rows.firstOrNull { it.isMouseOver(event.x(), event.y()) }
@@ -92,17 +93,19 @@ internal class BannerLayersWidget(
             draggingHandle = event.x() < row.x + 14
             return true
         }
-        return super.mouseClicked(event, doubleClick)
+        return super.mouseClicked(event.x(), event.y(), event.button())
     }
-    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
-        if (!draggingHandle || rows.isEmpty()) return super.mouseDragged(event, dx, dy)
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+        if (!draggingHandle || rows.isEmpty()) return super.mouseDragged(event.x(), event.y(), event.button(), dx, dy)
         val target = ((event.y() - y + scrollAmount()) / 32).toInt().coerceIn(0, rows.lastIndex)
         if (target != selected) move(target)
         return true
     }
-    override fun mouseReleased(event: MouseButtonEvent): Boolean {
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
         draggingHandle = false
-        return super.mouseReleased(event)
+        return super.mouseReleased(event.x(), event.y(), event.button())
     }
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double) =
         isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
@@ -113,7 +116,7 @@ internal class BannerLayersWidget(
         val inside = isMouseOver(mouseX.toDouble(), mouseY.toDouble())
         rows.filter { it.bottom > y && it.y < bottom }.forEach { it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta) }
         graphics.disableScissor()
-        renderScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics)
     }
     override fun updateWidgetNarration(output: NarrationElementOutput) {
         if (focused is AbstractWidget) (focused as AbstractWidget).updateNarration(output) else defaultButtonNarrationText(output)
@@ -125,7 +128,7 @@ internal class BannerLayersWidget(
             val font = Minecraft.getInstance().font
             if (selected == index) graphics.renderOutline(x, y, width, height, SpotlightTheme.color(0xFF81B8FF))
             graphics.themeText(font, "↕", x + 3, y + 11, SpotlightTheme.color(0xFFF2F5FC))
-            graphics.submitBannerPatternRenderState(flag, base, cumulative, x + 16, y + 2, x + 30, y + 30)
+            graphics.renderBanner(flag, base, cumulative, x + 16, y + 2, x + 30, y + 30)
             graphics.themeText(font, catalogClip(font, "${index + 1}. ${layers[index].description().string}", (width - 58).coerceAtLeast(1)), x + 34, y + 11, SpotlightTheme.color(0xFFF2F5FC))
             graphics.themeText(font, "×", right - 14, y + 11, SpotlightTheme.color(0xFFF2F5FC))
             if (isHovered && mouseX >= right - 20) graphics.setTooltipForNextFrame(catalogText("Remove layer ${index + 1}"), mouseX, mouseY)

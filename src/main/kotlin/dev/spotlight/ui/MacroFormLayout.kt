@@ -6,7 +6,6 @@ import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.input.MouseButtonEvent
 
 internal const val macroFieldStep = 38
 
@@ -51,16 +50,19 @@ internal class MacroFormLayout(
         }
     }
 
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
         if (!isMouseOver(event.x(), event.y())) return false
         positionFields()
-        return super.mouseClicked(event, doubleClick)
+        return super.mouseClicked(event.x(), event.y(), event.button())
     }
 
-    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
-        
-        if (!isMouseOver(event.x(), event.y()) && !isOverScrollbar(event.x(), event.y())) return false
-        return super.mouseDragged(event, dx, dy)
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
+        if (!isMouseOver(event.x(), event.y()) && !(event.x() >= scrollBarX() && event.x() < scrollBarX() + 6 && event.y() >= y && event.y() < bottom)) return false
+        return super.mouseDragged(event.x(), event.y(), event.button(), dx, dy)
     }
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -75,7 +77,7 @@ internal class MacroFormLayout(
             }
         }
         graphics.disableScissor()
-        renderScrollbar(graphics, mouseX, mouseY)
+        renderScrollbar(graphics)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {

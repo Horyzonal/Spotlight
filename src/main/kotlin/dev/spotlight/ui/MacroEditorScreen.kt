@@ -7,15 +7,10 @@ import dev.spotlight.core.MacroTemplates
 import dev.spotlight.platform.MacroRuntime
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
-import net.minecraft.client.gui.components.MultilineTextField
-import net.minecraft.client.gui.components.MultiLineEditBox
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.narration.NarratedElementType
-import net.minecraft.client.input.CharacterEvent
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import java.util.UUID
 
@@ -24,17 +19,11 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
     private var template = macro?.template ?: "/say {Argument=message:text}"
     private var error: String? = null
     private var validation = ""
-    private lateinit var editor: MultiLineEditBox
+    private lateinit var editor: SpotlightMultiLineEditBox
     private var summary: FittingMultiLineTextWidget? = null
     private var left = 0
     private var panelWidth = 1
     private var detailY = 0
-    private class CursorMirror(font: net.minecraft.client.gui.Font, width: Int) : MultilineTextField(font, width) {
-        fun lineStart(): Int = getLineView(getLineAtCursor()).beginIndex()
-        fun atLineEnd(): Boolean = getLineAtCursor() >= 0 && cursor() == getLineView(getLineAtCursor()).endIndex()
-    }
-
-    private lateinit var cursorState: CursorMirror
     private val completionRows = mutableListOf<Button>()
     private var completion: MacroCompletion.Match? = null
     private var selected = 0
@@ -57,19 +46,11 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         field.value = name
         field.setResponder { name = it; validate() }
         val editorHeight = (height - 190).coerceAtLeast(40)
-        editor = addRenderableWidget(MultiLineEditBox.builder().setX(left).setY(66)
-            .setTextShadow(SpotlightTheme.textShadow())
-            .setTextColor(catalogNativeColor(-2039584, 0xFFF2F5FC))
-            .setCursorColor(catalogNativeColor(-3092272, 0xFFF2F5FC))
-            .setShowBackground(!catalogCustomFrame())
-            .build(font, panelWidth, editorHeight, catalogText("Command template")))
+        editor = addRenderableWidget(SpotlightMultiLineEditBox(font, left, 66, panelWidth, editorHeight, catalogText("Command template")))
         editor.setCharacterLimit(32768)
         editor.value = template
         editor.setValueListener { template = it; validate() }
-        
-        cursorState = CursorMirror(font, panelWidth - 8)
-        cursorState.setCharacterLimit(32768)
-        cursorState.setValue(template)
+
         completion = null
         dismissed = null
         listOpen = false
@@ -118,7 +99,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
 
     private fun delete() {
         val saved = macro ?: return
-        minecraft.setScreen(ConfirmSpotlightScreen(this, "Delete ${saved.name}?", "This removes the saved macro. This cannot be undone.") {
+        minecraft!!.setScreen(ConfirmSpotlightScreen(this, "Delete ${saved.name}?", "This removes the saved macro. This cannot be undone.") {
             try { MacroRuntime.store().remove(saved.id); onClose() }
             catch (failure: Exception) { error = failure.message ?: failure.javaClass.simpleName }
         })
@@ -127,8 +108,8 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
     private fun refreshCompletion() {
         if (!tracking) return
         val previous = completion
-        completion = if (editor.isFocused && cursorState.value() == editor.value && !cursorState.hasSelection() &&
-            dismissed != (template to cursorState.cursor())) MacroCompletion.find(template, cursorState.cursor()) else null
+        completion = if (editor.isFocused && !editor.hasSelection() &&
+            dismissed != (template to editor.cursor())) MacroCompletion.find(template, editor.cursor()) else null
         if (completion != previous) { selected = 0; first = 0 }
         if (completion == null) listOpen = false
         updateCompletionRows()
@@ -136,7 +117,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
 
     private fun updateCompletionRows() {
         val options = completion?.options.orEmpty()
-        
+
         val bottom = (height - 59).coerceAtLeast(4)
         visibleRows = minOf(8, ((bottom - 4 - 32) / rowHeight).coerceAtLeast(0), options.size)
         first = first.coerceIn(0, (options.size - visibleRows).coerceAtLeast(0))
@@ -161,63 +142,49 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
 
     private fun acceptCompletion(index: Int) {
         val option = completion?.options?.getOrNull(index) ?: return
-        if (cursorState.hasSelection() || cursorState.value() != editor.value) return
-        val edit = MacroCompletion.accept(template, cursorState.cursor(), option) ?: return
+        if (editor.hasSelection()) return
+        val edit = MacroCompletion.accept(template, editor.cursor(), option) ?: return
         tracking = false
         setFocused(editor)
         editor.value = edit.text
-        cursorState.setValue(edit.text)
-        
-        val leftKey = KeyEvent(InputConstants.KEY_LEFT, 0, 0)
-        repeat(edit.text.length - edit.cursor) { editor.keyPressed(leftKey); cursorState.keyPressed(leftKey) }
+
+        editor.seekCursor(edit.cursor)
         tracking = true
         listOpen = false
         dismissed = null
         refreshCompletion()
     }
 
-    override fun charTyped(event: CharacterEvent): Boolean {
-        if (editor.isFocused && event.isAllowedChatCharacter) cursorState.insertText(event.codepointAsString())
-        val handled = super.charTyped(event)
+    override fun charTyped(character: Char, modifiers: Int): Boolean {
+        val event = CharacterEvent(character.code, modifiers)
+        val handled = super.charTyped(event.codepoint().toChar(), event.modifiers())
         refreshCompletion()
         return handled
     }
 
-    private fun trackMouse(event: MouseButtonEvent, doubleClick: Boolean, dragging: Boolean = false) {
-        if (doubleClick) cursorState.selectWordAtCursor()
-        else {
-            cursorState.setSelecting(dragging || event.hasShiftDown())
-            cursorState.seekCursorToPoint(event.x() - editor.x - 4, event.y() - editor.y - 4 + editor.scrollAmount())
-            if (dragging) cursorState.setSelecting(event.hasShiftDown())
-        }
-    }
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
 
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         completionRows.firstOrNull { it.visible && it.isMouseOver(event.x(), event.y()) }?.let {
-            return it.mouseClicked(event, doubleClick)
+            return it.mouseClicked(event.x(), event.y(), event.button())
         }
-        scrollbarDrag = editor.isMouseOver(event.x(), event.y()) && event.button() == InputConstants.MOUSE_BUTTON_LEFT && event.x() >= editor.right
-        if (editor.isMouseOver(event.x(), event.y()) && event.button() == InputConstants.MOUSE_BUTTON_LEFT && !scrollbarDrag) {
-            trackMouse(event, doubleClick)
-        }
-        val handled = super.mouseClicked(event, doubleClick)
+        val handled = super.mouseClicked(event.x(), event.y(), event.button())
         refreshCompletion()
         return handled
     }
 
-    override fun mouseDragged(event: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        
-        if (editor.isFocused && event.button() == InputConstants.MOUSE_BUTTON_LEFT && !scrollbarDrag) trackMouse(event, false, true)
-        val handled = super.mouseDragged(event, deltaX, deltaY)
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
+        val handled = super.mouseDragged(event.x(), event.y(), event.button(), deltaX, deltaY)
         refreshCompletion()
         return handled
     }
 
-    private var scrollbarDrag = false
 
-    override fun mouseReleased(event: MouseButtonEvent): Boolean {
-        scrollbarDrag = false
-        val handled = super.mouseReleased(event)
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+        val handled = super.mouseReleased(event.x(), event.y(), event.button())
         refreshCompletion()
         return handled
     }
@@ -235,13 +202,14 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         refreshCompletion()
         if (completion != null) {
             if (event.isEscape) {
                 if (listOpen) listOpen = false
                 else {
-                    dismissed = template to cursorState.cursor()
+                    dismissed = template to editor.cursor()
                     completion = null
                 }
                 updateCompletionRows()
@@ -273,28 +241,20 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         if (event.isEscape) { onClose(); return true }
         if (primaryModifier(event) && event.hasShiftDown() && !event.hasAltDown() && event.key() == InputConstants.KEY_D) { delete(); return true }
         if (event.isConfirmation && primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) { save(); return true }
-        if (editor.isFocused) {
-            
-            when {
-                event.isCopy -> Unit
-                event.isCut -> cursorState.insertText("")
-                else -> cursorState.keyPressed(event)
-            }
-        }
-        val handled = super.keyPressed(event)
+        val handled = super.keyPressed(event.key(), event.scancode(), event.modifiers())
         refreshCompletion()
         return handled
     }
     private fun caretPosition(): Pair<Int, Int>? {
-        if (cursorState.value() != editor.value || cursorState.hasSelection()) return null
-        val lineIndex = cursorState.getLineAtCursor()
+        if (editor.hasSelection()) return null
+        val lineIndex = editor.lineAtCursor()
         if (lineIndex < 0) return null
-        return (editor.x + 4 + font.width(template.substring(cursorState.lineStart(), cursorState.cursor()))) to
+        return (editor.x + 4 + font.width(template.substring(editor.lineStart(), editor.cursor()))) to
             (editor.y + 4 + lineIndex * font.lineHeight - editor.scrollAmount().toInt())
     }
 
-    private fun ghostOption(): String? = if (!cursorState.atLineEnd()) null else completion?.options?.firstOrNull {
-        MacroCompletion.ghostSuffix(template, cursorState.cursor(), it) != null
+    private fun ghostOption(): String? = if (!editor.atLineEnd()) null else completion?.options?.firstOrNull {
+        MacroCompletion.ghostSuffix(template, editor.cursor(), it) != null
     }
 
     override fun updateNarrationState(output: NarrationElementOutput) {
@@ -305,7 +265,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
             else "Suggested placeholder: $option. Tab opens suggestions. Escape dismisses preview."))
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Macro name"), left, 17, SpotlightTheme.color(0xFFF2F5FC))
@@ -317,7 +277,7 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
         refreshCompletion()
         if (!listOpen) {
             val option = ghostOption()
-            val suffix = option?.let { MacroCompletion.ghostSuffix(template, cursorState.cursor(), it) }
+            val suffix = option?.let { MacroCompletion.ghostSuffix(template, editor.cursor(), it) }
             val caret = caretPosition()
             if (suffix != null && caret != null) {
                 graphics.enableScissor(editor.x + 4, editor.y + 4, editor.right - 4, editor.bottom - 4)

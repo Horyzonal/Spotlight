@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component
 fun spotlightButton(label: String, x: Int, y: Int, width: Int, height: Int = 20, onPress: () -> Unit): Button =
     object : Button(x, y, width.coerceAtLeast(1), height.coerceAtLeast(1), Component.literal(label),
         OnPress { onPress() }, CreateNarration { it.get() }) {
-        override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             val highlighted = active && (isHovered || isFocused)
             graphics.fill(this.x, this.y, right, bottom, when {
                 !active -> SpotlightTheme.color(0xFF19202B)

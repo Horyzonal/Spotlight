@@ -6,7 +6,6 @@ import dev.spotlight.core.ThemeEntry
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 
 class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) {
     private var query = ""
@@ -26,7 +25,7 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
     private val swatches = listOf(ThemeColor.SCREEN_BACKGROUND, ThemeColor.ROW_SELECTED, ThemeColor.ACCENT, ThemeColor.TEXT, ThemeColor.ERROR)
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun init() {
         rows.clear()
         panelWidth = minOf(620, (width - 24).coerceAtLeast(1))
@@ -41,7 +40,7 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
         val cell = ((panelWidth - 16) / 5).coerceAtLeast(1)
         apply = addRenderableWidget(macroButton("Apply · Enter", left, height - 48, cell) { applySelected() })
         edit = addRenderableWidget(macroButton("Edit · $primaryModifierLabel+E", left + cell + 4, height - 48, cell) { editSelected() })
-        addRenderableWidget(macroButton("New · $primaryModifierLabel+N", left + (cell + 4) * 2, height - 48, cell) { minecraft.setScreen(ThemeEditorScreen(this)) })
+        addRenderableWidget(macroButton("New · $primaryModifierLabel+N", left + (cell + 4) * 2, height - 48, cell) { minecraft!!.setScreen(ThemeEditorScreen(this)) })
         addRenderableWidget(macroButton("Import · $primaryModifierLabel+I", left + (cell + 4) * 3, height - 48, cell) { openImport() })
                 addRenderableWidget(macroButton("Back · Esc", left + (cell + 4) * 4, height - 48, cell) { onClose() })
         refresh()
@@ -73,12 +72,12 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
             offset = 0
             failed = false
             notice = "Imported ${entry.name} · not applied; select Apply to use it"
-            minecraft.setScreen(this)
+            minecraft!!.setScreen(this)
         }
 
-        private fun openImport() { minecraft.setScreen(ThemeImportScreen(this)) }
+        private fun openImport() { minecraft!!.setScreen(ThemeImportScreen(this)) }
         private fun chosen() = results.find { it.id == selectedId }
-    private fun editSelected() { chosen()?.let { minecraft.setScreen(ThemeEditorScreen(this, it)) } }
+    private fun editSelected() { chosen()?.let { minecraft!!.setScreen(ThemeEditorScreen(this, it)) } }
     private fun error(failure: Exception) { failed = true; notice = failure.message ?: failure.javaClass.simpleName }
     private fun applySelected() {
         val entry = chosen() ?: return
@@ -91,10 +90,11 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
         } catch (failure: Exception) { error(failure) }
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) {
-            if (event.key() == InputConstants.KEY_N) { minecraft.setScreen(ThemeEditorScreen(this)); return true }
+            if (event.key() == InputConstants.KEY_N) { minecraft!!.setScreen(ThemeEditorScreen(this)); return true }
             if (event.key() == InputConstants.KEY_E) { editSelected(); return true }
                         if (event.key() == InputConstants.KEY_I) { openImport(); return true }
         }
@@ -106,7 +106,7 @@ class ThemesScreen(private val parent: Screen?) : Screen(catalogText("Themes")) 
                 return true
             }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
     private fun move(delta: Int) {
         if (results.isEmpty()) return

@@ -15,6 +15,21 @@ object CreativeBannerCheck {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
         val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
+        val text = dev.spotlight.core.StyledText(listOf(dev.spotlight.core.ColoredRun("name\nlore", 0x123456)))
+        val lines = CreativeText.loreLines(text)
+        check(lines.map { it.string } == listOf("name", "lore"))
+        CreativeText.validateTextSize(lines, registries)
+        val textStack = ItemStack(Items.DIAMOND_SWORD).also {
+            it.set(DataComponents.CUSTOM_NAME, CreativeText.component(text))
+            it.set(DataComponents.LORE, net.minecraft.world.item.component.ItemLore(lines))
+            it.set(DataComponents.UNBREAKABLE, net.minecraft.world.item.component.Unbreakable(true))
+        }
+        val ops = registries.createSerializationContext(JsonOps.INSTANCE)
+        val roundTrip = ItemStack.STRICT_CODEC.parse(ops, ItemStack.STRICT_CODEC.encodeStart(ops, textStack).getOrThrow()).getOrThrow()
+        check(ItemStack.matches(textStack, roundTrip))
+        check(roundTrip.get(DataComponents.UNBREAKABLE)?.showInTooltip() == true)
+        val invalid = ItemStack(Items.DIAMOND_SWORD).also { it.set(DataComponents.MAX_STACK_SIZE, 64) }
+        check(ItemStack.STRICT_CODEC.encodeStart(ops, invalid).error().isPresent)
         val pattern = registries.lookupOrThrow(net.minecraft.core.registries.Registries.BANNER_PATTERN).listElements().findFirst().orElseThrow()
         val layers = BannerPatternLayers(listOf(BannerPatternLayers.Layer(pattern, DyeColor.BLUE)))
         val source = ItemStack(BuiltInRegistries.ITEM.first { it is BannerItem && it.color == DyeColor.WHITE }, 3)
@@ -53,8 +68,7 @@ object CreativeBannerCheck {
             check(createdShield.get(DataComponents.BASE_COLOR) == base)
             check(createdShield.get(DataComponents.BANNER_PATTERNS) == layers && createdShield.damageValue == 0)
             for (stack in listOf(banner, createdShield)) {
-                ItemStack.validateStrict(stack).getOrThrow()
-                ItemStack.CODEC.encodeStart(registries.createSerializationContext(JsonOps.INSTANCE), stack).getOrThrow()
+                ItemStack.STRICT_CODEC.encodeStart(registries.createSerializationContext(JsonOps.INSTANCE), stack).getOrThrow()
             }
         }
         val draftLayers = layers.layers().toMutableList()

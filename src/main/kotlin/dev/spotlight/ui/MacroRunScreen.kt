@@ -17,7 +17,6 @@ import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 
 internal fun macroButton(label: String, x: Int, y: Int, width: Int, onPress: () -> Unit): Button =
@@ -162,7 +161,7 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
                 }
                 CommandSuggestions.catalog(kind).map { Entry(it.value, it.title, it.value) }
             }
-            MacroArgumentType.PLAYER -> requireNotNull(minecraft.connection) { "Join a world first" }.onlinePlayers.map {
+            MacroArgumentType.PLAYER -> requireNotNull(minecraft!!.connection) { "Join a world first" }.onlinePlayers.map {
                 val name = it.profile.name
                 Entry(name, name, "Online player")
             }
@@ -297,14 +296,15 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
             sent = true
         } catch (failure: Exception) { fail(failure) }
         finally { execution.finish(sent) }
-        if (sent) minecraft.setScreen(null)
+        if (sent) minecraft!!.setScreen(null)
     }
     private fun fail(failure: Exception) {
         error = failure.message ?: failure.javaClass.simpleName
         input?.message = catalogText("${arguments.getOrNull(index)?.name.orEmpty()}. $error")
         triggerImmediateNarration(true)
     }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) {
             submit()
@@ -325,9 +325,9 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
                 return true
             }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun getNarrationMessage(): Component = catalogText("${macro.name}. ${arguments.getOrNull(index)?.let { "${it.name}: ${it.type}. " }.orEmpty()}${command ?: liveText}. ${error ?: variableError.orEmpty()}")
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))

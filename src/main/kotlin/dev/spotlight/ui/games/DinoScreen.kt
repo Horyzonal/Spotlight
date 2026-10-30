@@ -8,7 +8,7 @@ import dev.spotlight.ui.catalogText
 import dev.spotlight.ui.spotlightButton
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
+import dev.spotlight.ui.KeyEvent
 import kotlin.math.roundToInt
 
 class DinoScreen(private val parent: Screen?) : Screen(catalogText("Dino Runner")) {
@@ -26,23 +26,25 @@ class DinoScreen(private val parent: Screen?) : Screen(catalogText("Dino Runner"
     }
 
     override fun tick() { super.tick(); game.tick() }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         when (event.key()) {
             InputConstants.KEY_ESCAPE -> onClose()
             InputConstants.KEY_R -> game.restart()
             InputConstants.KEY_P -> game.togglePause()
             InputConstants.KEY_SPACE, InputConstants.KEY_UP -> game.jump()
             InputConstants.KEY_DOWN -> game.setDucking(true)
-            else -> return super.keyPressed(event)
+            else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
         }
         return true
     }
 
-    override fun keyReleased(event: KeyEvent): Boolean {
+    override fun keyReleased(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.key() == InputConstants.KEY_DOWN) { game.setDucking(false); return true }
-        return super.keyReleased(event)
+        return super.keyReleased(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -75,7 +77,7 @@ class DinoScreen(private val parent: Screen?) : Screen(catalogText("Dino Runner"
             val x = DinoGame.PLAYER_X
             val y = game.altitude
             val h = game.playerHeight
-            
+
             rect(x + 3, y + 6, 12.0, h - 12, 0xFF81B8FF)
             rect(x + 8, y + h - 10, 10.0, 8.0, 0xFF81B8FF)
             rect(x + 4, y + h - 2, 8.0, 2.0, 0xFFFFD27D)

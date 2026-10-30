@@ -7,9 +7,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.input.CharacterEvent
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import kotlin.math.abs
 
 internal class GradientTimeline(
@@ -44,7 +41,9 @@ internal class GradientTimeline(
     private fun closeHit(my: Double) = my < y + 17
     private fun plusHit(mx: Double, my: Double) = mx >= right - 22 && mx < right - 2 && my >= y + 2 && my < bottom - 2
 
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
         if (!active || !visible || event.button() != InputConstants.MOUSE_BUTTON_LEFT || !isMouseOver(event.x(), event.y())) return false
         if (plusHit(event.x(), event.y())) { add(); return true }
         val index = hit(event.x(), event.y())
@@ -59,7 +58,8 @@ internal class GradientTimeline(
         return true
     }
 
-    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
         if (captured < 0 || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false
         moved = moved || abs(event.x() - pressX) >= 4 || abs(event.y() - pressY) >= 4
         if (moved) {
@@ -75,7 +75,8 @@ internal class GradientTimeline(
         return true
     }
 
-    override fun mouseReleased(event: MouseButtonEvent): Boolean {
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
         if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || captured < 0) return false
         val index = captured
         captured = -1
@@ -97,7 +98,8 @@ internal class GradientTimeline(
         publish()
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (!active) return false
         when (event.key()) {
             InputConstants.KEY_LEFT, InputConstants.KEY_RIGHT -> {
@@ -116,7 +118,8 @@ internal class GradientTimeline(
         return true
     }
 
-    override fun charTyped(event: CharacterEvent): Boolean {
+    override fun charTyped(character: Char, modifiers: Int): Boolean {
+        val event = CharacterEvent(character.code, modifiers)
         if (!active || event.codepoint() != '+'.code) return false
         add()
         return true
@@ -160,7 +163,7 @@ internal class GradientTimeline(
         if (captured < 0 && isMouseOver(mouseX.toDouble(), mouseY.toDouble())) graphics.setTooltipForNextFrame(catalogText(tip), mouseX, mouseY)
     }
 
-    
+
     fun extractDragGhost(graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
         if (captured !in stops.indices || !moved) return
         val color = stops[captured].color

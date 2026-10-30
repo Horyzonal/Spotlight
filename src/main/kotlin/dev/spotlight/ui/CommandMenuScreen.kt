@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 
 internal data class PaletteMenuAction(
@@ -48,7 +47,7 @@ internal class CommandMenuScreen(
             val narration = listOf(action.group, action.label, action.shortcut).filter { it.isNotEmpty() }.joinToString(". ")
             val button = object : Button(left + 4, top + 17 + index * 22, (menuWidth - 8).coerceAtLeast(1), 20,
                 Component.literal(narration), OnPress { choose(row.actionIndex) }, CreateNarration { it.get() }) {
-                override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+                override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                     val highlighted = active && (isHovered || isFocused)
                     graphics.fill(x, y, right, bottom, SpotlightTheme.color(when {
                         !active -> 0xFF19202B
@@ -75,11 +74,11 @@ internal class CommandMenuScreen(
 
     private fun choose(index: Int) {
         val action = actions.getOrNull(index)?.takeIf { it.enabled } ?: return
-        minecraft.setScreen(parent)
+        minecraft!!.setScreen(parent)
         action.run()
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     private fun moveSelection(direction: Int) {
         val enabled = entries.map { it.actionIndex }.filter { actions.getOrNull(it)?.enabled == true }
@@ -89,7 +88,8 @@ internal class CommandMenuScreen(
         triggerImmediateNarration(true)
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (parent.handlePaletteShortcut(event)) return true
         if (event.isUp || event.isDown || event.key() == InputConstants.KEY_TAB) {
@@ -97,7 +97,7 @@ internal class CommandMenuScreen(
             return true
         }
         if (event.isConfirmation) { choose(selected); return true }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {

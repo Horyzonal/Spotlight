@@ -55,7 +55,7 @@ object CreativeText {
         edit(lines) { it.set(DataComponents.LORE, ItemLore(lines)) }
     }
 
-    fun makeUnbreakable() { edit(emptyList()) { it.set(DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE) } }
+    fun makeUnbreakable() { edit(emptyList()) { it.set(DataComponents.UNBREAKABLE, net.minecraft.world.item.component.Unbreakable(true)) } }
 
     fun clearName() { edit(emptyList()) { it.remove(DataComponents.CUSTOM_NAME) } }
 
@@ -93,20 +93,20 @@ object CreativeText {
         }
         validateState()
         val inventory = player.inventory
-        val slot = inventory.selectedSlot
+        val slot = inventory.selected
         check(slot in 0..8) { "Select a hotbar slot" }
         val original = inventory.getItem(slot).copy()
         require(!original.isEmpty) { "Hold an item in your main hand" }
         val changed = original.copy()
         change(changed)
         validateTextSize(lines, level.registryAccess())
-        ItemStack.validateStrict(changed).getOrThrow()
+
         require(changed.count in 1..changed.maxStackSize && changed.isItemEnabled(level.enabledFeatures())) {
             "Held item is not valid for this server"
         }
-        ItemStack.CODEC.encodeStart(level.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
+        ItemStack.STRICT_CODEC.encodeStart(level.registryAccess().createSerializationContext(JsonOps.INSTANCE), changed).getOrThrow()
         validateState()
-        check(inventory.selectedSlot == slot && ItemStack.matches(inventory.getItem(slot), original)) {
+        check(inventory.selected == slot && ItemStack.matches(inventory.getItem(slot), original)) {
             "Held item changed; try again"
         }
         gameMode.handleCreativeModeItemAdd(changed, slot + 36)

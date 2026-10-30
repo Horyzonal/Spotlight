@@ -8,7 +8,7 @@ import dev.spotlight.ui.catalogText
 import dev.spotlight.ui.spotlightButton
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
+import dev.spotlight.ui.KeyEvent
 
 class TetrisScreen(private val parent: Screen?) : Screen(catalogText("Tetris")) {
     private val game = TetrisGame(System.nanoTime())
@@ -29,9 +29,10 @@ class TetrisScreen(private val parent: Screen?) : Screen(catalogText("Tetris")) 
     }
 
     override fun tick() { super.tick(); game.tick() }
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         when (event.key()) {
             InputConstants.KEY_ESCAPE -> onClose()
             InputConstants.KEY_R -> game.restart()
@@ -41,7 +42,7 @@ class TetrisScreen(private val parent: Screen?) : Screen(catalogText("Tetris")) 
             InputConstants.KEY_UP, InputConstants.KEY_W -> game.rotate()
             InputConstants.KEY_DOWN -> game.softDrop()
             InputConstants.KEY_SPACE -> game.hardDrop()
-            else -> return super.keyPressed(event)
+            else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
         }
         return true
     }

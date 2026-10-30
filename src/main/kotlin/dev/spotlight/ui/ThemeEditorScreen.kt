@@ -13,8 +13,6 @@ import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 
 internal fun validateThemeDraft(name: String, values: Map<String, String>): ThemeConfig {
     val trimmed = name.trim()
@@ -65,11 +63,11 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
     private var recreateFields = true
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
     override fun init() {
         panelWidth = minOf(680, (width - 24).coerceAtLeast(1))
         left = (width - panelWidth) / 2
-        
+
         if (recreateFields) {
             recreateFields = false
             fields.clear()
@@ -133,7 +131,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
     private fun pick(token: ThemeColor) {
         val key = "colors.${token.key}"
         val original = values.getValue(key).trim().drop(1).toLongOrNull(16)?.toInt() ?: return
-        minecraft.setScreen(ColorPickerScreen(this, original and 0xFFFFFF) { rgb ->
+        minecraft!!.setScreen(ColorPickerScreen(this, original and 0xFFFFFF) { rgb ->
             fields.getValue(key).value = argb(themePickerArgb(original, rgb))
         })
     }
@@ -150,19 +148,20 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
                 val report = SpotlightTheme.apply(saved.id)
                 check(report.warnings.isEmpty()) { "Saved, but apply failed: ${report.warnings.joinToString("; ")}" }
                 notice = "Saved and applied ${saved.name} · no restart needed"
-                
+
                 recreateFields = true
                 rebuildWidgets()
             }
             validate()
         } catch (failure: Exception) { failed = true; notice = failure.message ?: failure.javaClass.simpleName }
     }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event) && !event.hasAltDown()) {
             commit(event.hasShiftDown()); return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
@@ -207,8 +206,8 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
             if (top < scrollAmount()) setScrollAmount(top.toDouble())
             else if (top + widget.height > scrollAmount() + height) setScrollAmount((top + widget.height - height).toDouble())
         }
-        override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean =
-            isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean =
+            isMouseOver(mouseX, mouseY) && super.mouseClicked(mouseX, mouseY, button)
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
             isMouseOver(mouseX, mouseY) && super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -226,7 +225,7 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
             }
             children().forEach { it.render(graphics, mouseX, mouseY, delta) }
             graphics.disableScissor()
-            renderScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { children().firstOrNull { it.isFocused }?.updateNarration(output) }
     }

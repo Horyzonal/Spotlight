@@ -9,7 +9,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
-import net.minecraft.client.input.KeyEvent
 
 
 internal class LocationEditScreen(private val parent: Screen?, private val location: SavedLocation) : Screen(catalogText("Edit location")) {
@@ -46,7 +45,7 @@ internal class LocationEditScreen(private val parent: Screen?, private val locat
                 z = coordinate(3), dimension = values[4])
             LocationActions.save(draft)
             notifySpotlight("Saved location ${draft.name}")
-            minecraft.setScreen(parent)
+            minecraft!!.setScreen(parent)
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             fields.first().message = catalogText("Name. $error")
@@ -55,13 +54,14 @@ internal class LocationEditScreen(private val parent: Screen?, private val locat
         }
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isConfirmation && primaryModifier(event)) { save(); return true }
         if (event.isEscape || (primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown() && event.key() == InputConstants.KEY_W)) { onClose(); return true }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

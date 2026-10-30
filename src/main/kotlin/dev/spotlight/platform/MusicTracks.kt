@@ -11,7 +11,7 @@ import net.minecraft.client.resources.sounds.SoundEventRegistrationSerializer
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.client.sounds.SoundManager
 import net.minecraft.client.sounds.WeighedSoundEvents
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.valueproviders.ConstantFloat
@@ -42,21 +42,21 @@ internal fun Reader.readTextBounded(limit: Int): String {
 }
 
 internal fun mergeMusicDefinitions(
-    target: MutableMap<Identifier, List<Sound>>,
+    target: MutableMap<ResourceLocation, List<Sound>>,
     namespace: String,
     definitions: Map<String, SoundEventRegistration>,
 ) {
     definitions.forEach { (name, registration) ->
-        val id = Identifier.fromNamespaceAndPath(namespace, name)
+        val id = ResourceLocation.fromNamespaceAndPath(namespace, name)
         target[id] = (if (registration.isReplace) emptyList() else target[id].orEmpty()) + registration.sounds
     }
 }
 
 internal fun loadedMusicTracks(resources: ResourceManager, manager: SoundManager): List<MusicTrack> {
-    val definitions = linkedMapOf<Identifier, List<Sound>>()
+    val definitions = linkedMapOf<ResourceLocation, List<Sound>>()
     for (namespace in resources.namespaces) {
 
-        for (resource in resources.getResourceStack(Identifier.fromNamespaceAndPath(namespace, "sounds.json"))) {
+        for (resource in resources.getResourceStack(ResourceLocation.fromNamespaceAndPath(namespace, "sounds.json"))) {
             try {
                 val parsed = resource.openAsReader().use(::readMusicDefinitions)
                 mergeMusicDefinitions(definitions, namespace, parsed)
@@ -71,16 +71,16 @@ internal fun loadedMusicTracks(resources: ResourceManager, manager: SoundManager
 }
 
 internal fun resolveMusicTracks(
-    definitions: Map<Identifier, List<Sound>>,
-    loadedEvents: Set<Identifier>,
+    definitions: Map<ResourceLocation, List<Sound>>,
+    loadedEvents: Set<ResourceLocation>,
     exists: (Sound) -> Boolean,
 ): List<MusicTrack> {
     val recordings = linkedMapOf<String, MutableSet<String>>()
     for ((root, sounds) in definitions) {
         if (root !in loadedEvents) continue
         var remaining = 100_000
-        val visiting = mutableSetOf<Identifier>()
-        fun visit(event: Identifier, music: Boolean, depth: Int) {
+        val visiting = mutableSetOf<ResourceLocation>()
+        fun visit(event: ResourceLocation, music: Boolean, depth: Int) {
             if (depth > 64 || --remaining < 0 || event !in loadedEvents || !visiting.add(event)) return
             for (sound in definitions[event].orEmpty()) {
                 if (--remaining < 0) break
@@ -99,7 +99,7 @@ internal fun resolveMusicTracks(
 }
 
 
-internal class TrackSoundInstance(file: Identifier) : AbstractSoundInstance(
+internal class TrackSoundInstance(file: ResourceLocation) : AbstractSoundInstance(
     file, SoundSource.MUSIC, SoundInstance.createUnseededRandom(),
 ) {
     private val trackEvent: WeighedSoundEvents

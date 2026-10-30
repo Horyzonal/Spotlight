@@ -4,7 +4,6 @@ import net.minecraft.client.gui.GuiGraphics
 
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 
 import net.minecraft.network.chat.Component
 
@@ -38,7 +37,7 @@ internal class PromptScreen(
     private fun save() {
         try {
             submit(input.value)
-            if (minecraft.screen === this) minecraft.setScreen(parent)
+            if (minecraft!!.screen === this) minecraft!!.setScreen(parent)
         } catch (failure: Exception) {
             error = failure.message ?: failure.javaClass.simpleName
             input.message = catalogText("${title.string}. $error")
@@ -46,13 +45,14 @@ internal class PromptScreen(
         }
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isConfirmation && (input.isFocused || primaryModifier(event))) { save(); return true }
         if (event.isEscape) { onClose(); return true }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

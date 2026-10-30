@@ -12,8 +12,8 @@ import dev.spotlight.platform.CommandSuggestion
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
 import net.minecraft.client.gui.components.PlayerFaceRenderer
-import net.minecraft.client.renderer.RenderPipelines
-import net.minecraft.resources.Identifier
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.resources.ResourceLocation
 import dev.spotlight.platform.CommandContext
 import dev.spotlight.platform.CommandInput
 import dev.spotlight.platform.Spotlight
@@ -24,9 +24,6 @@ import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.toasts.SystemToast
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.CharacterEvent
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import com.mojang.blaze3d.platform.InputConstants
@@ -142,7 +139,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             openMacroTab(2)
         })
         nowPlaying = NowPlayingWidget(font, left + panelWidth - 12 - footerLayout.widgetWidth,
-            footerTop, footerLayout.widgetWidth) { minecraft.setScreen(CurrentSongScreen(this)) }.also {
+            footerTop, footerLayout.widgetWidth) { minecraft!!.setScreen(CurrentSongScreen(this)) }.also {
             addRenderableWidget(it.button)
         }
         refresh()
@@ -264,7 +261,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             suggestions = emptyMap()
             results = emptyList()
             CommandSuggestions.request(text) { values ->
-                if (generation != suggestionGeneration || minecraft.screen !== this || input.value != text) return@request
+                if (generation != suggestionGeneration || minecraft!!.screen !== this || input.value != text) return@request
                 val selectedId = currentEntry()?.id
                 suggestions = values.associateBy { "slash:${it.start}:${it.end}:${it.value}" }
                 results = suggestions.map { (id, value) -> Entry(id, value.title, value.detail.ifBlank { value.value }) }
@@ -279,7 +276,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     }
 
     private fun validSlash(text: String): Boolean {
-        val connection = minecraft.connection ?: return false
+        val connection = minecraft!!.connection ?: return false
         val parsed = connection.commands.parse(StringReader(CommandSuggestions.executionText(text)).also { it.cursor = 1 }, connection.suggestionsProvider)
         return !parsed.reader.canRead() && parsed.context.lastChild.command != null
     }
@@ -288,7 +285,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         val text = input.value
         if (!text.startsWith('/')) return false
         val selector = selectorSpan(text, input.cursorPosition) ?: return false
-        minecraft.setScreen(SelectorScreen(this, text.substring(selector.first, selector.last + 1)) { value ->
+        minecraft!!.setScreen(SelectorScreen(this, text.substring(selector.first, selector.last + 1)) { value ->
             input.value = text.replaceRange(selector.first, selector.last + 1, value)
             input.setCursorPosition(selector.first + value.length)
             setFocused(input)
@@ -318,15 +315,15 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         return try {
             when (suggestion.kind) {
                 SelectionKind.PLAYERS -> {
-                    val player = minecraft.connection?.onlinePlayers?.firstOrNull { it.profile.id().toString() == suggestion.iconId } ?: return false
+                    val player = minecraft!!.connection?.onlinePlayers?.firstOrNull { it.profile.id.toString() == suggestion.iconId } ?: return false
                     PlayerFaceRenderer.draw(graphics, player.skin, x, y, 16)
                     true
                 }
                 SelectionKind.EFFECTS -> {
-                    val id = Identifier.tryParse(suggestion.iconId ?: suggestion.value) ?: return false
-                    val sprite = Identifier.fromNamespaceAndPath(id.namespace, "mob_effect/${id.path}")
-                    if (minecraft.resourceManager.getResource(Identifier.fromNamespaceAndPath(id.namespace, "textures/gui/sprites/mob_effect/${id.path}.png")).isEmpty) return false
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16)
+                    val id = ResourceLocation.tryParse(suggestion.iconId ?: suggestion.value) ?: return false
+                    val sprite = ResourceLocation.fromNamespaceAndPath(id.namespace, "mob_effect/${id.path}")
+                    if (minecraft!!.resourceManager.getResource(ResourceLocation.fromNamespaceAndPath(id.namespace, "textures/gui/sprites/mob_effect/${id.path}.png")).isEmpty) return false
+                    graphics.blitSprite(RenderType::guiTextured, sprite, x, y, 16, 16)
                     true
                 }
                 else -> false
@@ -360,7 +357,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             val narration = Component.literal("$caption. ${detail(entry)}" + if (entry.id in preferences?.favorites.orEmpty()) ". Favorite" else "")
             val button = object : Button(left + 10, listTop + index * rowHeight, (panelWidth - 24).coerceAtLeast(1), rowHeight - 2,
                 narration, OnPress { activateRow(entry.id) }, CreateNarration { supplier -> supplier.get() }) {
-                override fun renderContents(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+                override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
                     val chosen = absolute == selected
                     graphics.fill(x, y, right, bottom, when {
                         isHoveredOrFocused -> SpotlightTheme.color(0xFF2B3F59)
@@ -436,7 +433,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         }
         val entry = (if (clickedId == null) currentEntry() else results.firstOrNull { it.id == clickedId }) ?: return
         if (entry.id == "calculator:copy") {
-            minecraft.keyboardHandler.clipboard = entry.title
+            minecraft!!.keyboardHandler.clipboard = entry.title
             error = "Copied ${entry.title}"
             updateSelection()
             return
@@ -485,7 +482,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     private fun runSlash(text: String) = attempt {
         Spotlight.executeSlash(text)
         CommandHistory.record(text)
-        minecraft.setScreen(parent)
+        minecraft!!.setScreen(parent)
     }
 
     private fun enterStage() {
@@ -504,11 +501,11 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             return
         }
         try {
-            minecraft.setScreen(parent)
+            minecraft!!.setScreen(parent)
             cmd.execute(CommandContext(itemId, quantity, text))
         } catch (failure: Exception) {
             error = "${cmd.title}: ${failure.message ?: failure.javaClass.simpleName}"
-            minecraft.setScreen(this)
+            minecraft!!.setScreen(this)
             triggerImmediateNarration(true)
             return
         }
@@ -521,7 +518,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         } catch (failure: Exception) {
             error = "Action completed; history not saved: ${failure.message ?: failure.javaClass.simpleName}"
 
-            SystemToast.add(minecraft.toastManager, SystemToast.SystemToastId(),
+            SystemToast.add(minecraft!!.toastManager, SystemToast.SystemToastId(),
                 Component.literal("Spotlight: history not saved"), Component.literal(error!!))
         }
     }
@@ -536,7 +533,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         val cmd = selectedCommand ?: return@attempt
         val settings = Spotlight.settings()
         val current = (if (hotkey) settings.hotkeys else settings.aliases)[cmd.id].orEmpty()
-        minecraft.setScreen(PromptScreen(this, "${if (hotkey) "Hotkey" else "Alias"}: ${cmd.title}", current,
+        minecraft!!.setScreen(PromptScreen(this, "${if (hotkey) "Hotkey" else "Alias"}: ${cmd.title}", current,
             if (hotkey) "Type ${primaryModifierLabel}+G, ${primaryModifierLabel}+SHIFT+G, etc. Empty clears binding. CTRL stays Control; SUPER is Command." else "One command token; empty clears alias.") { value ->
             if (hotkey) settings.setHotkey(cmd.id, value) else settings.setAlias(cmd.id, value)
         })
@@ -548,17 +545,17 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     }
 
     private fun addLocation() = attempt {
-        minecraft.setScreen(AddLocationScreen(this))
+        minecraft!!.setScreen(AddLocationScreen(this))
     }
 
     private fun editLocation(entry: Entry? = currentEntry()) = attempt {
         val location = selectedLocation(entry) ?: error("Select a location first")
-        minecraft.setScreen(LocationEditScreen(this, location))
+        minecraft!!.setScreen(LocationEditScreen(this, location))
     }
 
     private fun deleteLocation(entry: Entry? = currentEntry()) = attempt {
         val location = selectedLocation(entry) ?: error("Select a location first")
-        minecraft.setScreen(ConfirmSpotlightScreen(this,
+        minecraft!!.setScreen(ConfirmSpotlightScreen(this,
             "Delete location ${location.name}?",
             "This permanently deletes this saved location. Other worlds are not changed.") {
             attempt { Spotlight.locations().remove(location.scope, location.id); refresh() }
@@ -569,21 +566,21 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         val location = selectedLocation(entry) ?: error("Select a location first")
         val teleport = commands.firstOrNull { it.id == "spotlight:tp" && it.input == CommandInput.LOCATION }
         val actions = listOf(
-            PaletteMenuAction("Teleport", minecraft.player != null && teleport != null && unavailable(teleport) == null,
+            PaletteMenuAction("Teleport", minecraft!!.player != null && teleport != null && unavailable(teleport) == null,
                 "Enter", "Location") {
                 if (teleport != null) execute(teleport, text = location.id)
             },
             PaletteMenuAction("Edit location", shortcut = "${primaryModifierLabel}+E", group = "Location") { editLocation(entry) },
             PaletteMenuAction("Copy coordinates", group = "More") {
-                minecraft.keyboardHandler.clipboard = "${location.x} ${location.y} ${location.z}"
-                SystemToast.add(minecraft.toastManager, SystemToast.SystemToastId(),
+                minecraft!!.keyboardHandler.clipboard = "${location.x} ${location.y} ${location.z}"
+                SystemToast.add(minecraft!!.toastManager, SystemToast.SystemToastId(),
                     Component.literal("Spotlight: coordinates copied"), Component.literal(location.name))
             },
             PaletteMenuAction("Delete location (confirm)", shortcut = "${primaryModifierLabel}+Shift+D", group = "More") {
                 deleteLocation(entry)
             },
         )
-        minecraft.setScreen(CommandMenuScreen(this, actions))
+        minecraft!!.setScreen(CommandMenuScreen(this, actions))
     }
 
     private fun canFavorite(): Boolean = currentEntry()?.let {
@@ -614,7 +611,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     }
 
     override fun onClose() {
-        if (flow.back()) enterStage() else minecraft.setScreen(parent)
+        if (flow.back()) enterStage() else minecraft!!.setScreen(parent)
     }
 
     override fun tick() {
@@ -628,7 +625,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     }
 
     internal fun openMacroTab(index: Int) {
-        if (index == 2) minecraft.setScreen(MacroListScreen(this))
+        if (index == 2) minecraft!!.setScreen(MacroListScreen(this))
         else switchTab(index == 1)
     }
 
@@ -652,13 +649,13 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteShortcut.ALIAS -> editBinding(false)
             PaletteShortcut.HOTKEY -> editBinding(true)
             PaletteShortcut.FAVORITE -> toggleFavorite()
-            PaletteShortcut.CATALOGS -> minecraft.setScreen(CatalogScreen(this))
+            PaletteShortcut.CATALOGS -> minecraft!!.setScreen(CatalogScreen(this))
             PaletteShortcut.SELECTOR -> if (!openSelector()) showError("Place cursor on a selector in a /command first")
             PaletteShortcut.ADD -> addLocation()
             PaletteShortcut.EDIT -> editLocation()
             PaletteShortcut.DELETE -> deleteLocation()
             PaletteShortcut.SYNC -> attempt { error = Spotlight.syncLocations(); refresh() }
-            PaletteShortcut.CLOSE -> minecraft.setScreen(parent)
+            PaletteShortcut.CLOSE -> minecraft!!.setScreen(parent)
         }
     }
 
@@ -672,7 +669,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteMenuAction("Cycle tabs", shortcut = "${primaryModifierLabel}+Tab / ${primaryModifierLabel}+Shift+Tab", group = "Navigation") { handleShortcut(PaletteShortcut.CYCLE_TABS) },
             PaletteMenuAction("Focus search", group = "Navigation") { setFocused(input) },
             PaletteMenuAction("Back", shortcut = "Esc", group = "Navigation") { onClose() },
-            PaletteMenuAction("Close Spotlight", shortcut = "${primaryModifierLabel}+W", group = "Navigation") { minecraft.setScreen(parent) },
+            PaletteMenuAction("Close Spotlight", shortcut = "${primaryModifierLabel}+W", group = "Navigation") { minecraft!!.setScreen(parent) },
             PaletteMenuAction(if (currentEntry()?.id in preferences?.favorites.orEmpty()) "Unfavorite" else "Favorite",
                 canFavorite(), "${primaryModifierLabel}+F", "Command") { toggleFavorite() },
             PaletteMenuAction("Set alias", cmd != null, "${primaryModifierLabel}+Shift+A", "Command") { editBinding(false, cmd) },
@@ -681,7 +678,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         if (flow.state.stage == PaletteStage.LOCATIONS) {
             val location = selectedLocation(entry) != null
             actions += listOf(
-                PaletteMenuAction("Add location", minecraft.player != null, "${primaryModifierLabel}+N", "Locations") { addLocation() },
+                PaletteMenuAction("Add location", minecraft!!.player != null, "${primaryModifierLabel}+N", "Locations") { addLocation() },
                 PaletteMenuAction("Edit location", location, "${primaryModifierLabel}+E", "Locations") { editLocation(entry) },
                 PaletteMenuAction("Delete location (confirm)", location, "${primaryModifierLabel}+Shift+D", "Locations") { deleteLocation(entry) },
                 PaletteMenuAction("Sync locations", shortcut = "${primaryModifierLabel}+S", group = "Locations") { handleShortcut(PaletteShortcut.SYNC) },
@@ -691,12 +688,14 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             handleShortcut(PaletteShortcut.SELECTOR)
         }
         actions += PaletteMenuAction("Data lists", shortcut = "${primaryModifierLabel}+L", group = "Tools") { handleShortcut(PaletteShortcut.CATALOGS) }
-        minecraft.setScreen(CommandMenuScreen(this, actions))
+        minecraft!!.setScreen(CommandMenuScreen(this, actions))
     }
 
-    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val event = MouseButtonEvent(mouseX, mouseY, button)
+
         if (nowPlaying?.button?.let { it.visible && it.isMouseOver(event.x(), event.y()) } == true)
-            return super.mouseClicked(event, doubleClick)
+            return super.mouseClicked(event.x(), event.y(), event.button())
         if (opensPaletteMenu(event.button(),
                 event.x() >= left && event.x() < left + panelWidth && event.y() >= top && event.y() < bottom,
                 input.isMouseOver(event.x(), event.y()))) {
@@ -714,7 +713,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
                 return true
             }
         }
-        return super.mouseClicked(event, doubleClick)
+        return super.mouseClicked(event.x(), event.y(), event.button())
     }
 
     internal fun handlePaletteShortcut(event: KeyEvent): Boolean {
@@ -724,12 +723,13 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         }
         val shortcut = paletteShortcut(event.key(), primaryModifier(event), event.hasShiftDown(), event.hasAltDown(),
             flow.state.stage == PaletteStage.LOCATIONS) ?: return false
-        if (minecraft.screen !== this) minecraft.setScreen(this)
+        if (minecraft!!.screen !== this) minecraft!!.setScreen(this)
         handleShortcut(shortcut)
         return true
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (handlePaletteShortcut(event)) return true
         when {
             event.key() == InputConstants.KEY_TAB && !event.hasShiftDown() && !event.hasAltDown() &&
@@ -781,12 +781,13 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
                 return true
             }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun charTyped(event: CharacterEvent): Boolean {
+    override fun charTyped(character: Char, modifiers: Int): Boolean {
+        val event = CharacterEvent(character.code, modifiers)
         if (!input.isFocused) setFocused(input)
-        return super.charTyped(event)
+        return super.charTyped(event.codepoint().toChar(), event.modifiers())
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {

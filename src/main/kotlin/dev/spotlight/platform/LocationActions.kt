@@ -4,12 +4,25 @@ import dev.spotlight.core.LocationStore
 import dev.spotlight.core.SavedLocation
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientPacketListener
-import net.minecraft.world.level.storage.LevelData
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.core.BlockPos
+import net.minecraft.resources.ResourceKey
+import net.minecraft.world.level.Level
 import java.util.UUID
 
 object LocationActions {
     private var connection: ClientPacketListener? = null
     private var pendingTicks = 0
+    private var confirmedLevel: ClientLevel? = null
+    private var confirmedConnection: ClientPacketListener? = null
+
+    @JvmStatic
+    fun serverSpawnReceived() {
+        val client = Minecraft.getInstance()
+        confirmedLevel = client.level
+        confirmedConnection = client.connection
+        pendingTicks = 100
+    }
 
     fun current(name: String = "Current location"): SavedLocation {
         val player = requireNotNull(Minecraft.getInstance().player) { "Join a world first" }
@@ -32,7 +45,7 @@ object LocationActions {
         Spotlight.locations().put(location)
     }
 
-    
+
     fun spawn(): SavedLocation? = Spotlight.locations().list(Spotlight.scope()).firstOrNull { it.id == "spawn" }
 
     fun spawnStatus(): String = when {
@@ -44,6 +57,10 @@ object LocationActions {
 
     internal fun tick() {
         val client = Minecraft.getInstance()
+        if (confirmedConnection !== client.connection) {
+            confirmedLevel = null
+            confirmedConnection = null
+        }
         if (connection !== client.connection) {
             connection = client.connection
             pendingTicks = if (connection == null) 0 else 100
@@ -56,10 +73,10 @@ object LocationActions {
                     pendingTicks = 0
                     return
                 }
-                
-                val data: LevelData.RespawnData? = client.level!!.levelData.respawnData
-                if (data != null) {
-                    saveSpawn(Spotlight.locations(), spawnDraft(data, Spotlight.scope()))
+
+                val level = client.level!!
+                if (confirmedLevel === level && confirmedConnection === client.connection) {
+                    saveSpawn(Spotlight.locations(), spawnDraft(level.levelData.spawnPos, level.dimension(), Spotlight.scope()))
                     pendingTicks = 0
                     return
                 }
@@ -71,12 +88,9 @@ object LocationActions {
         }
     }
 
-    internal fun spawnDraft(data: LevelData.RespawnData, scope: String): SavedLocation {
-        val global = data.globalPos()
-        val pos = global.pos()
-        return SavedLocation("spawn", "Spawnpoint location", pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble(),
-            global.dimension().identifier().toString(), scope)
-    }
+    internal fun spawnDraft(pos: BlockPos, dimension: ResourceKey<Level>, scope: String): SavedLocation =
+        SavedLocation("spawn", "Spawnpoint location", pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble(),
+            dimension.location().toString(), scope)
 
     internal fun saveSpawn(store: LocationStore, draft: SavedLocation) {
         if (store.list(draft.scope).none { it.id == draft.id }) store.put(draft)

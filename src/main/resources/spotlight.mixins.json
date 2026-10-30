@@ -2,6 +2,6 @@
   "required": true,
   "package": "dev.spotlight.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["CommandKeyMixin", "OptionInstanceMixin", "VanillaOptionReadsMixin", "OptionSliderMixin", "LightmapMixin", "RegionSelectionMouseMixin", "RegionSelectionAttackMixin", "SoundManagerAccessor", "SoundEngineAccessor", "MusicManagerMixin"],
+  "client": ["CommandKeyMixin", "OptionInstanceMixin", "VanillaOptionReadsMixin", "OptionSliderMixin", "LightmapMixin", "RegionSelectionMouseMixin", "RegionSelectionAttackMixin", "SoundManagerAccessor", "SoundEngineAccessor", "MusicManagerMixin", "WorldSpawnMixin"],
   "injectors": { "defaultRequire": 1 }
 }

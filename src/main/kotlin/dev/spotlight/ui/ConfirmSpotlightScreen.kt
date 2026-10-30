@@ -3,7 +3,6 @@ package dev.spotlight.ui
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 
 internal class ConfirmSpotlightScreen(
@@ -40,20 +39,21 @@ internal class ConfirmSpotlightScreen(
     private fun finish(confirmed: Boolean) {
         if (completed) return
         completed = true
-        minecraft.setScreen(parent)
+        minecraft!!.setScreen(parent)
         if (confirmed) confirm()
     }
 
     override fun onClose() { finish(false) }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if ((event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) &&
             primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) {
             finish(true)
             return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun getNarrationMessage(): Component = Component.literal("${title.string}. $explanation. Cancel selected by default. ${primaryModifierLabel}+Enter confirms deletion. Escape cancels.")

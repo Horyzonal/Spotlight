@@ -12,13 +12,10 @@ import net.minecraft.client.gui.components.AbstractContainerWidget
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.FittingMultiLineTextWidget
-import net.minecraft.client.gui.components.MultiLineEditBox
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.level.GameType
 
@@ -37,7 +34,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     private var formatted: StyledText? = null
     private var validation: String? = null
     private var notice = "Tab / Shift+Tab: navigate · Enter: activate · Esc: close"
-    private lateinit var editor: MultiLineEditBox
+    private lateinit var editor: SpotlightMultiLineEditBox
     private lateinit var preview: FittingMultiLineTextWidget
     private lateinit var status: FittingMultiLineTextWidget
     private lateinit var form: Form
@@ -49,7 +46,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     private val rows = mutableListOf<Row>()
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun init() {
         stops = timelineNormalize(stops)
@@ -58,12 +55,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         applies.clear()
         clears.clear()
 
-        editor = MultiLineEditBox.builder().setX(0).setY(0)
-            .setTextShadow(SpotlightTheme.textShadow())
-            .setTextColor(catalogNativeColor(-2039584, 0xFFF2F5FC))
-            .setCursorColor(catalogNativeColor(-3092272, 0xFFF2F5FC))
-            .setShowBackground(!catalogCustomFrame())
-            .build(font, 100, 80, catalogText("Text input"))
+        editor = SpotlightMultiLineEditBox(font, 0, 0, 100, 80, catalogText("Text input"))
         editor.setCharacterLimit(32768)
         editor.value = text
         editor.setValueListener { text = it; changed() }
@@ -76,7 +68,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         cycle.setTooltip(Tooltip.create(catalogText("Cycle SOLID, GRADIENT, RAINBOW, INTERLEAVED · Enter / Space")))
         val paste = macroButton("Paste input", 0, 0, 100) {
             perform("Pasted clipboard into input") {
-                val value = minecraft.keyboardHandler.clipboard
+                val value = minecraft!!.keyboardHandler.clipboard
                 require(value.length <= 32768) { "Clipboard exceeds input draft limit (32768 UTF-16 units)" }
                 editor.value = value
             }
@@ -84,7 +76,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         paste.setTooltip(Tooltip.create(catalogText("Replace input with clipboard text; clipboard read only on explicit Paste or native paste shortcut")))
         rows += Row("", listOf(cycle, paste), 20)
         timeline = GradientTimeline(font, stops, selectedStop, ::updateStops) { index ->
-            minecraft.setScreen(ColorPickerScreen(this, stops[index].color) { picked ->
+            minecraft!!.setScreen(ColorPickerScreen(this, stops[index].color) { picked ->
                 updateStops(stops.mapIndexed { i, stop -> if (i == index) stop.copy(color = picked) else stop }, index)
             })
         }
@@ -125,7 +117,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         formatField.setResponder { custom = it; changed() }
         formatField.setTooltip(Tooltip.create(catalogText("Per colored run: {text}, {color} = RRGGBB, {hex} = #RRGGBB. Custom output does not include style toggles.")))
         rows += Row("Custom format · {color} has no # · styles omitted", listOf(formatField), 20)
-        
+
         preview = FittingMultiLineTextWidget(0, 0, 100, 72, Component.empty(), font)
         rows += Row("Live preview · actual Minecraft colors and styles", listOf(preview), 72)
         status = catalogDetails(0, 0, 100, 60, Component.empty(), font)
@@ -199,9 +191,9 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     }
 
     private fun itemReason(): String? {
-        val player = minecraft.player ?: return "Join a world first"
-        if (minecraft.level == null || minecraft.connection == null) return "World / connection unavailable"
-        if (minecraft.gameMode?.playerMode != GameType.CREATIVE || !player.abilities.instabuild) return "Creative mode required"
+        val player = minecraft!!.player ?: return "Join a world first"
+        if (minecraft!!.level == null || minecraft!!.connection == null) return "World / connection unavailable"
+        if (minecraft!!.gameMode?.playerMode != GameType.CREATIVE || !player.abilities.instabuild) return "Creative mode required"
         if (player.mainHandItem.isEmpty) return "Hold an item in your main hand"
         if (player.containerMenu !== player.inventoryMenu) return "Close the open container first"
         return null
@@ -235,7 +227,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
     private fun copy(kind: String) {
         val value = formatted ?: return
         perform("Copied $kind to clipboard") {
-            minecraft.keyboardHandler.clipboard = when (kind) {
+            minecraft!!.keyboardHandler.clipboard = when (kind) {
                 "JSON" -> value.toJson()
                 "custom" -> value.toCustom(custom)
                 else -> value.toLegacy()
@@ -249,13 +241,14 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
 
     override fun tick() { updateAvailability() }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event) && !event.hasAltDown() && !event.hasShiftDown()) {
             copy("JSON")
             return true
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -307,9 +300,11 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             setScrollAmount(textEditorScroll(top, widget.height, scrollAmount().toInt(), height, totalHeight).toDouble())
         }
 
-        override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+            val event = MouseButtonEvent(mouseX, mouseY, button)
+
             if (!isMouseOver(event.x(), event.y())) return false
-            return super.mouseClicked(event, doubleClick)
+            return super.mouseClicked(event.x(), event.y(), event.button())
         }
 
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
@@ -323,11 +318,12 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
             return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
         }
 
-        override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
-            
-            if (focused === timeline && isDragging) return timeline.mouseDragged(event, dx, dy)
-            if (!isMouseOver(event.x(), event.y()) && !isOverScrollbar(event.x(), event.y())) return false
-            return super.mouseDragged(event, dx, dy)
+        override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dx: Double, dy: Double): Boolean {
+            val event = MouseButtonEvent(mouseX, mouseY, button)
+
+            if (focused === timeline && isDragging) return timeline.mouseDragged(event.x(), event.y(), event.button(), dx, dy)
+            if (!isMouseOver(event.x(), event.y()) && !(event.x() >= scrollBarX() && event.x() < scrollBarX() + 6 && event.y() >= y && event.y() < bottom)) return false
+            return super.mouseDragged(event.x(), event.y(), event.button(), dx, dy)
         }
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
@@ -341,7 +337,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
                 it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
             }
             graphics.disableScissor()
-            renderScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) {

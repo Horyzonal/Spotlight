@@ -27,13 +27,13 @@ internal fun parseGive(text: String): GiveArguments? {
         }
     }
     if (start < rest.length) tokens += rest.substring(start)
-    
+
     val explicit = tokens.firstOrNull()?.startsWith('@') == true ||
         (tokens.size >= 2 && !tokens[1].matches(Regex("[+-]?[0-9]+")))
     val target = if (explicit) tokens.first() else "@s"
     val args = if (explicit) tokens.drop(1) else tokens
     if (depth != 0 || quote != null || args.size > 2) return null
-    
+
     if (args.firstOrNull()?.any { it in "[{" } == true) return null
     return GiveArguments(target, args.getOrNull(0).orEmpty(), args.getOrNull(1) ?: "1")
 }

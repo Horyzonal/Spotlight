@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.commands.arguments.selector.EntitySelectorParser
 import net.minecraft.commands.arguments.selector.options.EntitySelectorOptions
 import net.minecraft.network.chat.Component
@@ -38,7 +37,7 @@ class SelectorScreen(
     private var choiceCount = 1
 
     init {
-        
+
         val slot = Regex("(?:\\[|,)([a-z_]+)=$").find(original)
         if (slot != null) {
             flag = slot.groupValues[1]
@@ -134,7 +133,7 @@ class SelectorScreen(
             val reader = StringReader(text)
             EntitySelectorParser(reader, true).parse()
             require(!reader.canRead()) { "Unexpected selector suffix" }
-            minecraft.setScreen(parent)
+            minecraft!!.setScreen(parent)
             accept(text)
         } catch (failure: Exception) { showError(failure.message ?: "Invalid selector") }
     }
@@ -146,8 +145,9 @@ class SelectorScreen(
         triggerImmediateNarration(true)
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun onClose() { minecraft!!.setScreen(parent) }
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.isConfirmation && primaryModifier(event)) { apply(); return true }
         val selected = choices.indexOfFirst { it.isFocused }
@@ -166,7 +166,7 @@ class SelectorScreen(
             }
             if (event.isConfirmation && value.isFocused) { setFlag(); return true }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

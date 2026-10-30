@@ -8,7 +8,7 @@ import dev.spotlight.ui.spotlightButton
 import dev.spotlight.ui.catalogText
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
+import dev.spotlight.ui.KeyEvent
 
 
 class Game2048Screen(private val parent: Screen?) : Screen(catalogText("2048")) {
@@ -26,9 +26,10 @@ class Game2048Screen(private val parent: Screen?) : Screen(catalogText("2048")) 
         addRenderableWidget(spotlightButton(backLabel, left + buttonWidth + 8, height - 28, buttonWidth) { onClose() })
     }
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        val event = KeyEvent(keyCode, scanCode, modifiers)
         if (event.isEscape) { onClose(); return true }
         if (event.key() == InputConstants.KEY_R) { game.restart(); return true }
         val direction = when (event.key()) {
@@ -39,7 +40,7 @@ class Game2048Screen(private val parent: Screen?) : Screen(catalogText("2048")) 
             else -> null
         }
         if (direction != null) { game.move(direction); return true }
-        return super.keyPressed(event)
+        return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

@@ -70,7 +70,8 @@ object CraftingRecipes {
         return skipped.toMap()
     }
 
-    private data class ServerSnapshot(val views: List<CraftingRecipeView>, val unsupported: Map<String, String>)
+    private data class ServerSnapshot(val views: List<CraftingRecipeView>, val unsupported: Map<String, String>,
+                                      val recipeIds: Set<String> = emptySet())
     private var snapshot = ServerSnapshot(emptyList(), emptyMap())
     private var session: Any? = null
     private var serverSession: Any? = null
@@ -140,7 +141,7 @@ object CraftingRecipes {
                     val unsupported = linkedMapOf<String, String>()
                     for (holder in server.recipeManager.recipes) {
                         if (holder.value() !is CraftingRecipe) continue
-                        val id = holder.id().identifier().toString()
+                        val id = holder.id().location().toString()
                         try {
                             val displays = holder.value().display()
                             if (displays.isEmpty()) unsupported["[S] $id"] = "Crafting recipe provides no displays"
@@ -149,7 +150,8 @@ object CraftingRecipes {
                             unsupported["[S] $id"] = "Recipe display failed: ${exception.message ?: exception.javaClass.name}"
                         }
                     }
-                    future.complete(ServerSnapshot(views.toList(), unsupported.toMap()))
+                    future.complete(ServerSnapshot(views.toList(), unsupported.toMap(),
+                        server.recipeManager.recipes.mapTo(linkedSetOf()) { it.id().location().toString() }))
                 } catch (exception: Exception) {
                     future.completeExceptionally(exception)
                 }
@@ -176,7 +178,7 @@ object CraftingRecipes {
                 return@execute
             }
 
-            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.registries).create(SlotDisplayContext.CONTEXT)
+            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.lookup).create(SlotDisplayContext.CONTEXT)
             val views = mutableListOf<CraftingRecipeView>()
             val unsupported = loaded.unsupported.toMutableMap()
             var offset = 0
@@ -203,7 +205,7 @@ object CraftingRecipes {
                     CompletableFuture.delayedExecutor(1, java.util.concurrent.TimeUnit.MILLISECONDS)
                         .execute { client.schedule(Runnable { chunk() }) }
                 } else {
-                    localSnapshot = ServerSnapshot(views.toList(), unsupported.toMap())
+                    localSnapshot = ServerSnapshot(views.toList(), unsupported.toMap(), loaded.entries.mapTo(linkedSetOf()) { it.id })
                     localStatus = "[C] ready: ${views.size} local views, ${unsupported.size} skipped; local tags/default registries; " +
                         "vanilla then mod ID order, not server pack order; no world packs or generated recipes"
                     onUpdate()
@@ -214,6 +216,17 @@ object CraftingRecipes {
     }
 
 
+    fun catalog(): List<CommandSuggestion> {
+        val client = Minecraft.getInstance()
+        check(client.isSameThread) { "Recipe catalog requires the client thread" }
+        syncSession(client)
+        if (localStatus == "[C] not refreshed" || serverStatus == "Server index not refreshed") refresh {}
+        return (localSnapshot.recipeIds + snapshot.recipeIds).map { id ->
+            CommandSuggestion(id, id, if (id in snapshot.recipeIds) "Integrated-server recipe"
+                else "Local data recipe; server availability unknown", 0, 0, SelectionKind.RECIPES)
+        }
+    }
+
     fun list(): List<CraftingRecipeView> {
         val client = Minecraft.getInstance()
         check(client.isSameThread) { "Recipe search requires the client thread" }
@@ -221,7 +234,17 @@ object CraftingRecipes {
         skipped = emptyMap()
         skipped = localSnapshot.unsupported + snapshot.unsupported
 
-        val views = (localSnapshot.views + snapshot.views).map { view -> view.copy(
+        val displayErrors = skipped.toMutableMap()
+        val context = client.level?.let { SlotDisplayContext.fromLevel(it) }
+        // ponytail: client displays lack recipe keys; only integrated-server snapshots supply executable IDs.
+        val knownDisplays = if (context == null) emptyList() else client.player?.recipeBook?.collections.orEmpty()
+            .flatMap { it.recipes }.distinctBy { it.id() }
+            .filter { it.display() is ShapedCraftingRecipeDisplay || it.display() is ShapelessCraftingRecipeDisplay }
+            .flatMap { entry ->
+                resolve("display:${entry.id().index()}", entry.display(), RecipeSource.C, context, displayErrors)
+            }
+        skipped = displayErrors.toMap()
+        val views = (localSnapshot.views + snapshot.views + knownDisplays).map { view -> view.copy(
             ingredients = view.ingredients.map { alternatives -> alternatives.map { it.copy() } }, result = view.result.copy(),
         ) }
         return mergeRecipeViews(views)

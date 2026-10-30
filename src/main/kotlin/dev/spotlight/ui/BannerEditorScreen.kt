@@ -11,10 +11,8 @@ import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
-import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.model.geom.ModelLayers
-import net.minecraft.client.model.`object`.banner.BannerFlagModel
+import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.core.Holder
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
@@ -48,22 +46,22 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     private lateinit var form: Form
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun init() {
         if (!loaded) {
             loaded = true
             try {
-                val registry = minecraft.connection?.registryAccess()?.lookup(Registries.BANNER_PATTERN)?.orElse(null)
+                val registry = minecraft!!.connection?.registryAccess()?.lookup(Registries.BANNER_PATTERN)?.orElse(null)
                     ?: error("Banner pattern registry unavailable; join a world and reopen editor")
-                patterns = registry.listElements().toList().sortedBy { it.key().identifier().toString() }
+                patterns = registry.listElements().toList().sortedBy { it.key().location().toString() }
                 check(patterns.isNotEmpty()) { "Banner pattern registry unavailable or empty" }
             } catch (error: Exception) {
                 failure = error.message ?: error.javaClass.simpleName
             }
         }
         rows.clear()
-        val flag = BannerFlagModel(minecraft.entityModels.bakeLayer(ModelLayers.STANDING_BANNER_FLAG))
+        val flag = minecraft!!.entityModels.bakeLayer(ModelLayers.STANDING_BANNER_FLAG).getChild("flag")
         rows += listOf(ColorPicker("Base color", baseIcons, { base }) { base = it; refresh() })
         rows += listOf(ColorPicker("Next layer color", dyeIcons, { dye }) { dye = it; refresh() })
         val search = SpotlightEditBox(font, 0, 0, 100, 20, catalogText("Search registry patterns"))
@@ -84,7 +82,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
                 graphics.enableScissor(x, y, right, bottom)
                 graphics.themeText(font, catalogClip(font, "Current draft", width), x + 4, y + 4, SpotlightTheme.color(0xFFF2F5FC))
                 val bannerWidth = minOf(64, (width - 12).coerceAtLeast(0), ((height - 24) / 2).coerceAtLeast(0))
-                if (bannerWidth > 0) graphics.submitBannerPatternRenderState(flag, base, BannerPatternLayers(layers.toList()),
+                if (bannerWidth > 0) graphics.renderBanner(flag, base, BannerPatternLayers(layers.toList()),
                     x + (width - bannerWidth) / 2, y + 20, x + (width + bannerWidth) / 2, y + 20 + bannerWidth * 2)
                 graphics.disableScissor()
             }
@@ -115,10 +113,10 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
 
     private fun unavailableReason(): String? = when {
         failure != null -> failure
-        minecraft.player == null || minecraft.level == null -> "Join a world first"
-        minecraft.connection?.connection?.isConnected != true -> "Server connection unavailable"
-        minecraft.gameMode?.playerMode != GameType.CREATIVE || minecraft.player?.abilities?.instabuild != true -> "Creative mode required to give"
-        minecraft.player?.containerMenu !== minecraft.player?.inventoryMenu -> "Close the open container first"
+        minecraft!!.player == null || minecraft!!.level == null -> "Join a world first"
+        minecraft!!.connection?.connection?.isConnected != true -> "Server connection unavailable"
+        minecraft!!.gameMode?.playerMode != GameType.CREATIVE || minecraft!!.player?.abilities?.instabuild != true -> "Creative mode required to give"
+        minecraft!!.player?.containerMenu !== minecraft!!.player?.inventoryMenu -> "Close the open container first"
         else -> null
     }
 
@@ -134,7 +132,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
     }
 
     private fun filtered() = patterns.filter { pattern ->
-        val text = "${pattern.key().identifier()} ${BannerPatternLayers.Layer(pattern, dye).description().string}".lowercase()
+        val text = "${pattern.key().location()} ${BannerPatternLayers.Layer(pattern, dye).description().string}".lowercase()
         var index = 0
         query.lowercase().all { character ->
             val found = text.indexOf(character, index)
@@ -176,22 +174,25 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         override fun children(): List<AbstractWidget> = swatches
         override fun contentHeight() = height
         override fun scrollRate() = 0.0
-        override fun keyPressed(event: KeyEvent): Boolean {
+        override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+            val event = KeyEvent(keyCode, scanCode, modifiers)
             val offset = when (event.key()) {
                 InputConstants.KEY_LEFT -> -1
                 InputConstants.KEY_RIGHT -> 1
                 InputConstants.KEY_UP -> -columns()
                 InputConstants.KEY_DOWN -> columns()
-                else -> return super.keyPressed(event)
+                else -> return super.keyPressed(event.key(), event.scancode(), event.modifiers())
             }
             val index = (DyeColor.entries.indexOf(current()) + offset).coerceIn(0, swatches.lastIndex)
             setFocused(swatches[index])
             choose(swatches[index].color)
             return true
         }
-        override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+            val event = MouseButtonEvent(mouseX, mouseY, button)
+
             layoutSwatches()
-            return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+            return event.button() == InputConstants.MOUSE_BUTTON_LEFT && isMouseOver(event.x(), event.y()) && super.mouseClicked(event.x(), event.y(), event.button())
         }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
             layoutSwatches()
@@ -205,8 +206,9 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
         }
         private inner class Swatch(val color: DyeColor, private val stack: ItemStack) : AbstractWidget(0, 0, 20, 20, stack.hoverName) {
             init { setTooltip(Tooltip.create(message)) }
-            override fun onClick(event: MouseButtonEvent, doubleClick: Boolean) { choose(color) }
-            override fun keyPressed(event: KeyEvent): Boolean {
+            override fun onClick(mouseX: Double, mouseY: Double) { choose(color) }
+            override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+                val event = KeyEvent(keyCode, scanCode, modifiers)
                 if (!event.isConfirmation && event.key() != InputConstants.KEY_SPACE) return false
                 choose(color)
                 return true
@@ -254,8 +256,8 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
             if (top < scrollAmount()) setScrollAmount(top.toDouble())
             else if (top + widget.height > scrollAmount() + height) setScrollAmount((top + widget.height - height).toDouble())
         }
-        override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean =
-            isMouseOver(event.x(), event.y()) && super.mouseClicked(event, doubleClick)
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean =
+            isMouseOver(mouseX, mouseY) && super.mouseClicked(mouseX, mouseY, button)
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
             if (!isMouseOver(mouseX, mouseY)) return false
             if (patternGrid.isMouseOver(mouseX, mouseY) && patternGrid.mouseScrolled(mouseX, mouseY, horizontal, vertical)) return true
@@ -269,7 +271,7 @@ class BannerEditorScreen(private val parent: Screen?) : Screen(catalogText("Bann
                 it.render(graphics, if (inside) mouseX else -1, if (inside) mouseY else -1, delta)
             }
             graphics.disableScissor()
-            renderScrollbar(graphics, mouseX, mouseY)
+            renderScrollbar(graphics)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) { (focused as? AbstractWidget)?.updateNarration(output) }
     }

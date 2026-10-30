@@ -33,7 +33,7 @@ class SpotlightSettingsScreen(private val parent: Screen?) : Screen(catalogText(
 
     private fun label() = "Replace command key: ${if (Spotlight.spotlightSettings?.replaceCommandKey == true) "ON" else "OFF"}"
 
-    override fun onClose() { minecraft.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))

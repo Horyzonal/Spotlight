@@ -48,7 +48,7 @@ internal class NowPlayingWidget(font: Font, x: Int, y: Int, width: Int, onPress:
         val description = song?.let {
             listOfNotNull(it.title, it.artist?.takeIf(String::isNotBlank), if (it.paused) "Paused" else "Playing").joinToString("\n")
         } ?: "No music"
-        
+
         button.setTooltip(Tooltip.create(Component.literal("$description\nOpen Current song")))
     }
 }

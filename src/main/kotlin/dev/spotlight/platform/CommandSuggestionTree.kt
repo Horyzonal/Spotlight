@@ -62,7 +62,7 @@ internal fun singleTokenCommandArgument(type: ArgumentType<*>): Boolean = when (
     is StringArgumentType -> type.type == StringArgumentType.StringType.SINGLE_WORD
     is BoolArgumentType, is IntegerArgumentType, is LongArgumentType, is FloatArgumentType, is DoubleArgumentType,
     is EntityArgument, is GameProfileArgument, is ResourceArgument<*>, is ResourceKeyArgument<*>,
-    is ResourceOrTagArgument<*>, is ResourceOrTagKeyArgument<*>, is ResourceSelectorArgument<*>,
+    is ResourceOrTagArgument<*>, is ResourceOrTagKeyArgument<*>,
     is ItemArgument, is BlockStateArgument, is GameModeArgument, is DimensionArgument, is TimeArgument -> true
     else -> false
 }
@@ -87,7 +87,7 @@ internal fun <S> completeCommandOnSpace(
     val end = cursor - 1
     val queryText = text.substring(0, end)
     val start = commandTokenStart(queryText)
-    if (start <= 1) return null 
+    if (start <= 1) return null
     val query = queryText.substring(start)
     if (!plainCommandToken(query)) return null
     val children = commandSuggestionChildren(dispatcher, source, queryText, start)

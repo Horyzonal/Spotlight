@@ -33,7 +33,7 @@ internal data class SelectorModel(val base: String, val options: List<SelectorOp
     fun set(key: String, value: String): SelectorModel {
         require(key.matches(Regex("[a-z_]+"))) { "Invalid selector flag" }
         require(value.isNotBlank()) { "Enter flag value" }
-        
+
         val parsed = parse("$base[$key=$value]")
         require(parsed.options.size == 1) { "Enter one flag value" }
         val index = options.indexOfFirst { it.key == key }

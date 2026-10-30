@@ -22,12 +22,12 @@ internal object CommandHotkeys {
         "CTRL" to listOf(InputConstants.KEY_LCONTROL, InputConstants.KEY_RCONTROL),
         "ALT" to listOf(InputConstants.KEY_LALT, InputConstants.KEY_RALT),
         "SHIFT" to listOf(InputConstants.KEY_LSHIFT, InputConstants.KEY_RSHIFT),
-        "SUPER" to listOf(InputConstants.KEY_LSUPER, InputConstants.KEY_RSUPER),
+        "SUPER" to listOf(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SUPER, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SUPER),
     )
 
     fun tick() {
         val client = Minecraft.getInstance()
-        fun down(code: Int) = InputConstants.isKeyDown(client.window, code)
+        fun down(code: Int) = InputConstants.isKeyDown(client.window.window, code)
         val activeModifiers = modifiers.filterValues { keys -> keys.any(::down) }.keys
         val pressed = Spotlight.settings().hotkeys.filterValues { chord ->
             val parts = chord.split('+')

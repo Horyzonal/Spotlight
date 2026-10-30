@@ -11,7 +11,7 @@ internal fun registerBiome() {
         val level = requireNotNull(client.level) { "Join a world first" }
         val pos = requireNotNull(client.player) { "Join a world first" }.blockPosition()
         check(level.getChunk(pos.x shr 4, pos.z shr 4, ChunkStatus.FULL, false) != null) { "Current chunk is not loaded" }
-        val id = level.getBiome(pos).unwrapKey().map { it.identifier().toString() }.orElse("Unregistered biome")
+        val id = level.getBiome(pos).unwrapKey().map { it.location().toString() }.orElse("Unregistered biome")
         reportDebug("Biome", "$id at ${pos.x}, ${pos.y}, ${pos.z}")
     }
 }
