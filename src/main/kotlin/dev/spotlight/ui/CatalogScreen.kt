@@ -60,7 +60,15 @@ internal fun catalogDetails(x: Int, y: Int, width: Int, height: Int, message: Co
     object : FittingMultiLineTextWidget(x, y, width, height, message, font) {
         override fun getInnerHeight(): Int = font.wordWrapHeight(this.message, (this.width - 8).coerceAtLeast(1))
 
+        override fun mouseScrolled(mouseX: Double, mouseY: Double, vertical: Double): Boolean {
+            if (!active || !visible || !isMouseOver(mouseX, mouseY)) return false
+            val before = scrollAmount()
+            super.mouseScrolled(mouseX, mouseY, vertical)
+            return before != scrollAmount()
+        }
+
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+            setScrollAmount(scrollAmount())
             if (scrollbarVisible()) super.renderWidget(graphics, mouseX, mouseY, delta)
             else {
                 renderBackground(graphics)
