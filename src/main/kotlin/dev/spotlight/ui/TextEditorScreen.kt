@@ -60,7 +60,6 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         editor.value = text
         editor.setValueListener { text = it; changed() }
         rows += Row("Text · multiline · up to 4096 code points / 8192 UTF-16 units", listOf(editor), 80)
-
         preview = StyledTextPreview(0, 0, 100, 72, font)
         rows += Row("Live preview · actual Minecraft colors and styles", listOf(preview), 72)
 
@@ -313,7 +312,7 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
             if (!isMouseOver(mouseX, mouseY)) return false
             val child = children().firstOrNull { it.isMouseOver(mouseX, mouseY) }
-            if (child is net.minecraft.client.gui.components.AbstractScrollArea && child.maxScrollAmount() > 0) {
+            if (child is net.minecraft.client.gui.components.AbstractScrollArea && child.active && child.visible && child.maxScrollAmount() > 0) {
                 val before = child.scrollAmount()
                 child.mouseScrolled(mouseX, mouseY, horizontal, vertical)
                 if (before != child.scrollAmount()) return true

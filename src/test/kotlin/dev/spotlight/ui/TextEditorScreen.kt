@@ -6,6 +6,8 @@ import dev.spotlight.core.TextStyle
 
 internal object TextEditorScreenCheck {
     @JvmStatic fun main(args: Array<String>) {
+        check(TextEditorScreen::class.java.getDeclaredField("preview").type == StyledTextPreview::class.java)
+        check(net.minecraft.client.gui.components.AbstractTextAreaWidget::class.java.isAssignableFrom(StyledTextPreview::class.java))
         check(textEditorColumns(620, 5) == 3)
         check(textEditorColumns(240, 5) == 1)
         check(textEditorColumns(1, 1) == 1)
