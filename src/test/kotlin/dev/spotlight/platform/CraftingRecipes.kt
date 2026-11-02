@@ -48,6 +48,22 @@ object RecipeIndexCheck {
         check(mergeRecipeViews(listOf(client, client.copy(width = 1, height = 2))).size == 2)
         val alias = server.copy(id = "test:alias", recipeIds = setOf("test:alias"))
         check(mergeRecipeViews(listOf(server, alias, client)).single().recipeIds == setOf("test:recipe", "test:alias"))
+        check(mergeRecipeViews(listOf(client, client.copy(station = RecipeStation.STONECUTTING))).size == 2)
+        check(mergeRecipeViews(listOf(client, client.copy(fuel = listOf(a)))).size == 2)
+        check(mergeRecipeViews(listOf(client, client.copy(stationItems = listOf(b)))).size == 2)
+        val nativeContext = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)).withParameter(SlotDisplayContext.FUEL_VALUES, net.minecraft.world.level.block.entity.FuelValues.Builder(registries, net.minecraft.world.flag.FeatureFlags.VANILLA_SET).add(net.minecraft.world.item.Items.COAL, 1600).build()).create(SlotDisplayContext.CONTEXT)
+        val unsupported = linkedMapOf<String, String>()
+        fun slot(item: net.minecraft.world.item.Item) = net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(item)
+        val furnace = net.minecraft.world.item.crafting.display.FurnaceRecipeDisplay(slot(net.minecraft.world.item.Items.STONE),
+            net.minecraft.world.item.crafting.display.SlotDisplay.AnyFuel.INSTANCE, slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.FURNACE), 200, 0f)
+        val furnaceView = CraftingRecipes.resolve("test:furnace", furnace, RecipeSource.C, nativeContext, unsupported).single()
+        check(furnaceView.station == RecipeStation.FURNACE && furnaceView.ingredients.size == 1 && furnaceView.fuel.isNotEmpty())
+        val stonecutting = net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay(slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.STONECUTTER))
+        check(CraftingRecipes.resolve("test:stonecutting", stonecutting, RecipeSource.C, nativeContext, unsupported).single().station == RecipeStation.STONECUTTING)
+        val smithing = net.minecraft.world.item.crafting.display.SmithingRecipeDisplay(slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.DIRT), slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.SMITHING_TABLE))
+        check(CraftingRecipes.resolve("test:smithing", smithing, RecipeSource.C, nativeContext, unsupported).single().ingredients.size == 3)
+        check(unsupported.isEmpty())
+
         val root = java.nio.file.Files.createTempDirectory("spotlight-local-recipes")
         try {
             fun pack(name: String, recipes: Map<String, String>): net.minecraft.server.packs.PackResources {
@@ -85,7 +101,7 @@ object RecipeIndexCheck {
             check(loaded.unsupported.keys.containsAll(listOf("[C] test:bad", "[C] test:large")))
             check(loaded.entries.any { it.id == "test:nested/local" })
             val recipe = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:same" }, loaded)
-            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.registries).create(SlotDisplayContext.CONTEXT)
+            val context = ContextMap.Builder().withParameter(SlotDisplayContext.REGISTRIES, loaded.registries).withParameter(SlotDisplayContext.FUEL_VALUES, net.minecraft.world.level.block.entity.FuelValues.Builder(registries, net.minecraft.world.flag.FeatureFlags.VANILLA_SET).add(net.minecraft.world.item.Items.COAL, 1600).build()).create(SlotDisplayContext.CONTEXT)
             check(recipe.display().single().result().resolveForStacks(context).single().item === net.minecraft.world.item.Items.DIRT)
             val tagged = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:tagged" }, loaded)
             check((tagged.display().single() as ShapelessCraftingRecipeDisplay).ingredients().single()

@@ -11,6 +11,7 @@ import com.mojang.brigadier.StringReader
 import dev.spotlight.platform.CommandSuggestion
 import dev.spotlight.platform.CommandSuggestions
 import dev.spotlight.platform.SelectionKind
+import dev.spotlight.platform.ItemFacts
 import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
@@ -45,6 +46,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     private var error: String? = null
     private var themeWarning: String? = null
     private lateinit var input: EditBox
+
 
     private var selected = 0
     private var offset = 0
@@ -83,6 +85,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             hints.take(hintLimit - 1) + font.split(Component.literal("${primaryModifierLabel}+K Actions"), hintWidth).take(1)
         val footerHeight = footerLines.size * font.lineHeight + 22
         visibleRows = ((height - 90 - footerHeight) / rowHeight).coerceIn(1, 9)
+
         panelHeight = minOf(height, 86 + visibleRows * rowHeight + footerHeight)
         left = (width - panelWidth) / 2
         top = ((height - panelHeight) / 2).coerceAtLeast(0)
@@ -145,6 +148,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             footerTop, footerLayout.widgetWidth) { minecraft.setScreen(CurrentSongScreen(this)) }.also {
             addRenderableWidget(it.button)
         }
+
         refresh()
         results.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let {
             selected = it
@@ -339,7 +343,24 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         if (selected >= offset + visibleRows) offset = selected - visibleRows + 1
     }
 
+    private fun itemStack(entry: Entry?): ItemStack? {
+        if (entry == null) return null
+        val suggestion = suggestions[entry.id]
+        val id = if (suggestion?.kind == SelectionKind.ITEMS) suggestion.iconId ?: suggestion.value
+            else if (entry.id.startsWith("item:")) entry.itemId else null
+        if (id == null) return null
+        return try {
+            stacks.getOrPut(id) { Spotlight.stack(id) }.takeUnless { it.isEmpty }
+        } catch (failure: Exception) {
+            error = "Cannot load item: ${failure.message ?: failure.javaClass.simpleName}"
+            null
+        }
+    }
+
     private fun detail(entry: Entry): String {
+        itemStack(entry)?.let { stack ->
+            return listOfNotNull(ItemFacts.summary(stack), entry.detail.takeIf { it.isNotBlank() }).joinToString(" · ")
+        }
         val cmd = command(entry.id)
         return cmd?.let(::unavailable) ?: if (flow.state.stage == PaletteStage.QUANTITY) {
             if (parseQuantity(input.value) == null) "Enter a whole number from 1 to 2304"
@@ -399,6 +420,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
 
     private fun updateSelection() {
         val entry = currentEntry()
+
 
         input.message = Component.literal((when (flow.state.stage) {
             PaletteStage.QUANTITY -> "Quantity, 1 to 2304"
@@ -790,6 +812,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+
         if (mouseX >= left && mouseX < left + panelWidth && mouseY >= listTop && mouseY < listTop + visibleRows * rowHeight) {
             val next = (offset - if (vertical > 0) 1 else if (vertical < 0) -1 else 0)
                 .coerceIn(0, (results.size - visibleRows).coerceAtLeast(0))
@@ -830,7 +853,9 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
             PaletteStage.LOCATIONS -> "Locations"
         }
         graphics.themeText(font, clipped(heading, (panelWidth - 24).coerceAtLeast(0)), left + 12, top + 12, SpotlightTheme.color(0xFFF2F5FC))
+        graphics.disableScissor()
         super.render(graphics, mouseX, mouseY, delta)
+        graphics.enableScissor(left + 4, top, left + panelWidth - 4, bottom)
         if (results.isEmpty() && listTop + 20 < footerTop) graphics.themeText(font, argumentHint() ?: if (input.value.trim() == "/seed") "Custom seed copies known full seed · singleplayer only" else if (input.value.startsWith('/')) "Enter runs valid command · Tab completes · ${primaryModifierLabel}+E edits target" else "No matches. Try an item ID or shorter query.", left + 15, listTop + 8, SpotlightTheme.color(0xFF9DADC3))
         val status = error ?: themeWarning ?: argumentHint() ?: (if (flow.state.stage == PaletteStage.LOCATIONS) Spotlight.locationSyncStatus() else null) ?: currentEntry()?.let(::detail) ?: "Search commands and every loaded item"
         graphics.fill(left + 8, footerTop - 3, left + panelWidth - 8, footerTop - 2, SpotlightTheme.color(0xFF243146))
@@ -842,7 +867,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         }
         graphics.disableScissor()
         if (results.size > visibleRows) {
-            val track = visibleRows * rowHeight - 2
+            val track = minOf(visibleRows * rowHeight - 2, footerTop - listTop - 4).coerceAtLeast(1)
             val thumb = (track * visibleRows / results.size).coerceAtLeast(6).coerceAtMost(track)
             val y = listTop + (track - thumb) * offset / (results.size - visibleRows)
             graphics.fill(left + panelWidth - 9, listTop, left + panelWidth - 7, listTop + track, SpotlightTheme.color(0xFF243146))
