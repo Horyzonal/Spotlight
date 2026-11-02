@@ -5,17 +5,26 @@ import com.mojang.blaze3d.vertex.BufferUploader
 import com.mojang.blaze3d.vertex.DefaultVertexFormat
 import com.mojang.blaze3d.vertex.Tesselator
 import com.mojang.blaze3d.vertex.VertexFormat
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent
+import org.joml.Matrix4f
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.LevelRenderer
 import net.minecraft.world.phys.AABB
 
-internal fun drawWorldOutline(context: WorldRenderContext, box: AABB, color: Int, width: Float) {
-    val poses = context.matrixStack() ?: return
-    val camera = context.camera().position
+internal fun drawWorldOutline(context: RenderLevelStageEvent, box: AABB, color: Int, width: Float) {
+    val poses = context.poseStack
+    val camera = context.camera.position
+    val projection = Matrix4f(RenderSystem.getProjectionMatrix())
+    val sorting = RenderSystem.getVertexSorting()
+    val modelView = RenderSystem.getModelViewStack()
     val lines = RenderType.lines()
     poses.pushPose()
+    modelView.pushMatrix()
     try {
+        poses.mulPose(context.modelViewMatrix)
+        modelView.identity()
+        RenderSystem.applyModelViewMatrix()
+        RenderSystem.setProjectionMatrix(context.projectionMatrix, sorting)
         poses.translate(-camera.x, -camera.y, -camera.z)
         val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL)
         LevelRenderer.renderLineBox(poses, buffer, box,
@@ -35,5 +44,8 @@ internal fun drawWorldOutline(context: WorldRenderContext, box: AABB, color: Int
         }
     } finally {
         poses.popPose()
+        modelView.popMatrix()
+        RenderSystem.applyModelViewMatrix()
+        RenderSystem.setProjectionMatrix(projection, sorting)
     }
 }

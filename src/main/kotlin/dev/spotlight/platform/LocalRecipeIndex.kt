@@ -3,7 +3,7 @@ package dev.spotlight.platform
 import com.google.gson.JsonElement
 import com.mojang.serialization.JsonOps
 import com.mojang.serialization.Lifecycle
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.ModList
 import net.minecraft.client.Minecraft
 import net.minecraft.core.HolderLookup
 import net.minecraft.core.MappedRegistry
@@ -36,13 +36,11 @@ internal object LocalRecipeIndex {
     fun packs(client: Minecraft): List<PackResources> = buildList {
         add(client.vanillaPackResources)
 
-        for (mod in FabricLoader.getInstance().allMods.sortedBy { it.metadata.id }) {
-            if (mod.metadata.id == "minecraft") continue
-            for ((index, root) in mod.rootPaths.withIndex()) {
-
-                val id = "spotlight-local:${mod.metadata.id}:$index"
-                add(PathPackResources(PackLocationInfo(id, Component.literal(id), PackSource.BUILT_IN, Optional.empty()), root))
-            }
+        for ((index, info) in ModList.get().modFiles.withIndex()) {
+            if (info.requiredLanguageLoaders().any { it.languageName() == "minecraft" }) continue
+            val root = info.file.findResource("data").parent
+            val id = "spotlight-local:${info.mods.joinToString(",") { it.modId }}:$index"
+            add(PathPackResources(PackLocationInfo(id, Component.literal(id), PackSource.BUILT_IN, Optional.empty()), root))
         }
     }
 
@@ -87,8 +85,10 @@ internal object LocalRecipeIndex {
                 require(reader.peek() == JsonToken.END_DOCUMENT) { "Trailing JSON content" }
                 require(json != null && json.isJsonObject) { "Recipe must be a JSON object" }
 
-                require(!json.isJsonObject || !json.asJsonObject.has("fabric:load_conditions")) {
-                    "Conditional local recipe needs Fabric reload context"
+                for (key in listOf("fabric:load_conditions", "neoforge:conditions")) {
+                    require(!json.asJsonObject.has(key)) {
+                        "Unsupported local condition $key: reload context unavailable"
+                    }
                 }
                 entries += Entry(id, json)
             } catch (exception: Exception) {

@@ -1,27 +1,37 @@
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath 'org.tomlj:tomlj:1.1.1' }
+}
+
 plugins {
-    id 'net.fabricmc.fabric-loom-remap'
+    id 'net.neoforged.moddev'
     id 'org.jetbrains.kotlin.jvm'
 }
 
 repositories {
     mavenCentral()
+    maven {
+        name = 'KotlinForForge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+        content { includeGroup 'thedarkcolour' }
+    }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    modImplementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
+    implementation "thedarkcolour:kotlinforforge-neoforge:${kotlinforforge_version}"
 }
 
 base {
-    archivesName = "spotlight-mc${minecraft_version}"
+    archivesName = "spotlight-neoforge-mc${minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 
 kotlin {
     jvmToolchain(25)
-        compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
     compilerOptions.freeCompilerArgs.add("-Xjdk-release=21")
 }
 
@@ -31,19 +41,50 @@ tasks.withType(JavaCompile).configureEach {
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
+    filesMatching('META-INF/neoforge.mods.toml') {
         expand version: project.version
     }
 }
 
-loom {
+neoForge {
+    version = neoforge_version
+    addModdingDependenciesTo sourceSets.test
+    mods {
+        spotlight {
+            sourceSet sourceSets.main
+        }
+    }
+    unitTest {
+        enable()
+        testedMod = mods.spotlight
+    }
     runs {
         client {
-            runDir "run/${minecraft_version}"
+            client()
+            gameDirectory = project.file("run/neoforge-${minecraft_version}")
             if (project.hasProperty('clientDebug')) {
-                vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
+                jvmArgument '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
             }
         }
+    }
+}
+
+tasks.withType(JavaExec).configureEach {
+    if (name.endsWith('Check')) {
+        dependsOn tasks.named('prepareNeoForgeTestFiles')
+        doFirst {
+            def entrypoint = mainClass.get()
+            def testTask = tasks.named('test').get()
+            workingDir = testTask.workingDir
+            systemProperties testTask.systemProperties
+            jvmArgs testTask.jvmArgs
+            testTask.jvmArgumentProviders.each { jvmArgs it.asArguments() }
+            mainClass = 'dev.spotlight.validation.NeoForgeCheckLauncher'
+            args entrypoint
+        }
+    }
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -333,16 +374,16 @@ tasks.named('jar') {
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Validate release contents, licenses, entrypoints and Mixin classes.'
-    dependsOn tasks.named('remapJar'), tasks.named('testClasses')
-    inputs.file(tasks.named('remapJar').flatMap { it.archiveFile })
+    dependsOn tasks.named('jar'), tasks.named('testClasses')
+    inputs.file(tasks.named('jar').flatMap { it.archiveFile })
     doLast {
-        def archive = tasks.named('remapJar').get().archiveFile.get().asFile
+        def archive = tasks.named('jar').get().archiveFile.get().asFile
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
             def names = zip.entries().collect { it.name }.toSet()
             def requireEntry = { String name ->
                 if (!names.contains(name)) throw new GradleException("Release JAR missing ${name}")
             }
-            ['fabric.mod.json', 'LICENSE', 'THIRD_PARTY_NOTICES'].each(requireEntry)
+            ['META-INF/neoforge.mods.toml', 'LICENSE', 'THIRD_PARTY_NOTICES'].each(requireEntry)
             ['LICENSE', 'THIRD_PARTY_NOTICES'].each { name ->
                 zip.getInputStream(zip.getEntry(name)).withCloseable {
                     if (it.bytes != project.file(name).bytes) throw new GradleException("Release JAR changed ${name}")
@@ -353,7 +394,9 @@ tasks.register('releaseCheck') {
                 if (file.isFile()) requireEntry(resources.toPath().relativize(file.toPath()).toString().replace('\\', '/'))
             }
             def unwanted = names.findAll { name ->
-                name.startsWith('net/minecraft/') ||
+                name.startsWith('net/minecraft/') || name.startsWith('net/fabricmc/') ||
+                                    name.startsWith('kotlin/') || name.startsWith('thedarkcolour/') ||
+                                    name == 'fabric.mod.json' || name.endsWith('.jar') ||
                     name ==~ /dev\/.*Check(?:Kt)?(?:\$.*)?\.class/ ||
                     name ==~ /.*(?:^|\/)(?:\.DS_Store|\._[^\/]*|\.gradle|\.kotlin|\.idea|\.vscode|build|bin|run|logs|crash-reports|\.env(?:\..*)?)(?:\/.*)?/ ||
                     name.endsWith('.hprof') || name.endsWith('.sh') || name.endsWith('.bat') ||
@@ -368,7 +411,8 @@ tasks.register('releaseCheck') {
             names.findAll { !it.endsWith('/') && !it.endsWith('.jar') }.each { name ->
                 zip.getInputStream(zip.getEntry(name)).withCloseable {
                     def content = new String(it.bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
-                    if (content.contains('-agentlib:jdwp') || content.contains('-Xrunjdwp')) unwanted.add(name)
+                    if (content.contains('-agentlib:jdwp') || content.contains('-Xrunjdwp') ||
+                                            content.contains('net/fabricmc/') || content =~ /net\/minecraft\/class_\d+/) unwanted.add(name)
                 }
             }
             if (unwanted) throw new GradleException("Release JAR contains development or Minecraft files: ${unwanted}")
@@ -379,23 +423,54 @@ tasks.register('releaseCheck') {
                 }
             }
             def requireClass = { String name -> requireEntry(name.replace('.', '/') + '.class') }
-            def metadata = readJson('fabric.mod.json')
-            if (metadata.version != project.version.toString() || metadata.license != 'MIT' || metadata.authors != ['Horyzonal']) {
-                throw new GradleException('Release metadata version, license or authors mismatch')
+            def metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml')).withCloseable {
+                org.tomlj.Toml.parse(it)
             }
-            metadata.entrypoints.values().flatten().each { entry ->
-                requireClass((entry instanceof Map ? entry.value : entry).split('::', 2)[0])
+            if (metadata.hasErrors()) throw new GradleException("Invalid NeoForge metadata: ${metadata.errors()}")
+            def mod = metadata.getArray('mods').getTable(0)
+            if (metadata.getString('modLoader') != 'kotlinforforge' || metadata.getString('loaderVersion') != '[5.12,6)' ||
+                metadata.getString('license') != 'MIT' || mod.getString('modId') != 'spotlight' ||
+                mod.getString('version') != project.version.toString() || mod.getString('authors') != 'Horyzonal' ||
+                mod.getString('displayTest') != 'IGNORE_ALL_VERSION') {
+                throw new GradleException('Release metadata loader, version, license, authors or client compatibility mismatch')
             }
-            metadata.mixins.each { entry ->
-                def config = readJson(entry instanceof Map ? entry.config : entry)
+            def dependencies = metadata.getArray('dependencies.spotlight')
+            ['minecraft': '[1.21.1]', 'neoforge': '[21.1.265,21.2)', 'kotlinforforge': '[5.12.0,6)'].each { id, range ->
+                def dependency = (0..<dependencies.size()).collect { dependencies.getTable(it) }.find { it.getString('modId') == id }
+                if (dependency == null || dependency.getString('type') != 'required' ||
+                    dependency.getString('versionRange') != range || dependency.getString('side') != 'CLIENT') {
+                    throw new GradleException("Release dependency missing or mismatched: ${id}")
+                }
+            }
+            requireClass('dev.spotlight.platform.SpotlightClient')
+            def entrypoint = zip.getInputStream(zip.getEntry('dev/spotlight/platform/SpotlightClient.class')).withCloseable {
+                new String(it.bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+            }
+            if (!entrypoint.contains('Lnet/neoforged/fml/common/Mod;') || !entrypoint.contains('Lnet/neoforged/api/distmarker/Dist;') ||
+                !entrypoint.contains('CLIENT') || !entrypoint.contains('spotlight')) {
+                throw new GradleException('Release entrypoint must declare @Mod(value = "spotlight", dist = Dist.CLIENT)')
+            }
+            names.findAll { it.endsWith('.class') }.each { name ->
+                zip.getInputStream(zip.getEntry(name)).withCloseable { stream ->
+                    def data = new DataInputStream(stream)
+                    if (data.readInt() != (int) 0xCAFEBABE) throw new GradleException("Invalid class: ${name}")
+                    data.readUnsignedShort()
+                    if (data.readUnsignedShort() != 65) throw new GradleException("Class must target Java 21: ${name}")
+                }
+            }
+            def mixins = metadata.getArray('mixins')
+            if (mixins == null || mixins.size() != 1 || mixins.getTable(0).getString('config') != 'spotlight.mixins.json') {
+                throw new GradleException('Release mixin registration mismatch')
+            }
+            (0..<mixins.size()).each { index ->
+                def config = readJson(mixins.getTable(index).getString('config'))
                 ['mixins', 'client', 'server'].each { side ->
                     (config[side] ?: []).each { requireClass(config.package ? "${config.package}.${it}" : it) }
                 }
                 if (config.plugin) requireClass(config.plugin)
                 if (config.refmap) requireEntry(config.refmap)
             }
-            if (metadata.accessWidener) requireEntry(metadata.accessWidener)
-            (metadata.jars ?: []).each { requireEntry(it.file) }
+
             logger.lifecycle("Release JAR validated: ${archive.name} (${names.size()} entries)")
         }
     }
@@ -403,6 +478,29 @@ tasks.register('releaseCheck') {
 
 tasks.named('check') {
     dependsOn 'releaseCheck'
+}
+
+[
+    neoForgeHooksCheck: 'dev.spotlight.platform.NeoForgeHooksCheck',
+    musicPreferencesCheck: 'dev.spotlight.core.MusicPreferencesCheck',
+    musicNavigationCheck: 'dev.spotlight.ui.MusicNavigationCheck',
+    nbtCompletionCheck: 'dev.spotlight.core.NbtCompletionCheck',
+    clientItemStorageCheck: 'dev.spotlight.platform.ClientItemStorageCheck',
+    itemFactsCheck: 'dev.spotlight.platform.ItemFactsCheck',
+
+    headDatabaseCheck: 'dev.spotlight.platform.HeadDatabaseCheck',
+    remoteHeadsCheck: 'dev.spotlight.platform.NewRemoteHeadsCheck',
+    customEnchantmentsCheck: 'dev.spotlight.platform.CustomEnchantmentsCheck',
+    enchantmentCompatibilityCheck: 'dev.spotlight.ui.EnchantmentCompatibilityCheck',
+].each { taskName, entrypoint ->
+    tasks.register(taskName, JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = entrypoint
+        enableAssertions = true
+    }
+    tasks.named('check') { dependsOn taskName }
 }
 
 tasks.named('test') {

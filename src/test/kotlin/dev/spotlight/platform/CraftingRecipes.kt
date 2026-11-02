@@ -63,7 +63,13 @@ object RecipeIndexCheck {
             val first = pack("vanilla", mapOf("same" to vanilla, "nested/local" to vanilla))
             val second = pack("mod", mapOf("same" to mod, "bad" to "{", "large" to " ".repeat(512 * 1024 + 1),
                 "missing_tag" to vanilla.replace("\"item\":\"minecraft:stone\"", "\"tag\":\"test:missing\""),
-                                "trailing" to "$vanilla {}", "lenient" to "{type:'minecraft:crafting_shapeless'}", "null" to "null"))
+                "trailing" to "$vanilla {}", "lenient" to "{type:'minecraft:crafting_shapeless'}", "null" to "null",
+                "fabric_condition" to vanilla.dropLast(1) + """, "fabric:load_conditions":[]}""",
+                "neo_condition" to vanilla.dropLast(1) + """, "neoforge:conditions":[{"type":"neoforge:false"}]}""",
+                "unknown_condition" to vanilla.dropLast(1) + """, "neoforge:conditions":[{"type":"test:unknown"}]}"""))
+            val sharedFileRecipe = root.resolve("mod/data/other_mod/recipe/shared_file.json")
+            java.nio.file.Files.createDirectories(sharedFileRecipe.parent)
+            java.nio.file.Files.writeString(sharedFileRecipe, vanilla)
             val tags = root.resolve("mod/data/test/tags/item/local.json")
             java.nio.file.Files.createDirectories(tags.parent)
             java.nio.file.Files.writeString(tags, """{"values":["minecraft:stone"]}""")
@@ -82,6 +88,11 @@ object RecipeIndexCheck {
             check(globalStone.tags().toList().none { it.location().toString() == "test:local" })
             check(loaded.unsupported.keys.containsAll(listOf("[C] test:bad", "[C] test:large", "[C] test:trailing", "[C] test:lenient", "[C] test:null")))
             check(loaded.entries.any { it.id == "test:nested/local" })
+            check(loaded.entries.any { it.id == "other_mod:shared_file" })
+            for (id in listOf("fabric_condition", "neo_condition", "unknown_condition")) {
+                check(loaded.entries.none { it.id == "test:$id" })
+                check(loaded.unsupported.getValue("[C] test:$id").contains("Unsupported local condition"))
+            }
             val recipe = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:same" }, loaded)
             check(recipe.getResultItem(loaded.lookup).item === net.minecraft.world.item.Items.DIRT)
             val tagged = LocalRecipeIndex.decode(loaded.entries.single { it.id == "test:tagged" }, loaded)
@@ -119,6 +130,20 @@ object RecipeIndexCheck {
             check(unsupported.containsKey("[C] minecraft:map_extending"))
             println("Vanilla recipes: ${shipped.entries.size}; crafting: $crafting; static views: $resolved; unsupported: ${unsupported.size}")
             println("Unsupported vanilla crafting: ${unsupported.keys.joinToString()}")
+            val expandedUnsupported = linkedMapOf<String, String>()
+            val expanded = shipped.entries.flatMap { entry ->
+                CraftingRecipes.resolve(entry.id, LocalRecipeIndex.decode(entry, shipped), RecipeSource.C, shipped.lookup, expandedUnsupported)
+            }
+            for (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING, RecipeStation.STONECUTTING, RecipeStation.SMITHING)) {
+                val views = expanded.filter { it.station == station }
+                check(views.isNotEmpty()) { "Missing native station: $station; $expandedUnsupported" }
+                check(views.all { it.width in 1..3 && it.height == 1 && it.ingredients.size == it.width && it.ingredients.all { alternatives -> alternatives.isNotEmpty() } })
+                check(views.all { it.stationItems.size == 1 && !it.stationItems.single().isEmpty })
+                if (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING)) check(views.all { it.fuel.isNotEmpty() })
+            }
+            check(expanded.filter { it.station == RecipeStation.SMITHING }.all { it.width == 3 })
+            check(mergeRecipeViews(listOf(client, client.copy(station = RecipeStation.STONECUTTING))).size == 2)
+            println("Expanded native recipes: ${expanded.groupingBy { it.station }.eachCount()}")
             check(LocalRecipeIndex.decode(shipped.entries.single { it.id == "minecraft:crafting_table" }, shipped) is CraftingRecipe)
             checkGlobalBindings()
             val reloaded = LocalRecipeIndex.load(listOf(first, second))

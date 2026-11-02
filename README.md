@@ -18,6 +18,10 @@ Though most features can be used by the keyboard, there are a few commands for t
 - UUID grabber
 - Alias commands like gmc, gms
 - Quickly displaying F3 informations
+- Local native client chest, 41-slot kits and item archive with live fuzzy search
+- Head database, player skulls, wiki search and custom enchantments
+- Installed NeoForge mods with native config screens
+- NBT completion, recipe tools and inline item facts; no palette side panel or storage tracker
 - Music player
 - Games (like uh snake and the dino from chrome)
 
@@ -34,14 +38,23 @@ A: idk
 
 ## Build and install
 
+This branch is the direct **NeoForge 1.21.1** port, version **1.0.0**. Requires **Java 21**, **NeoForge 21.1.265+ within 21.1**, and **Kotlin for Forge 5.12.0+ within 5.x**. Install Kotlin for Forge separately; Fabric API/Fabric Language Kotlin are not used. Client-only; no server installation required. Creative/server permission requirements remain unchanged.
 
 ```sh
-scripts/dev clean build
+scripts/dev build
+scripts/dev runClient
 ```
 
-Production artifact: `build/libs/spotlight-mc1.21.1-0.1.0.jar`.
+Gradle/compiler use JDK 25; game bytecode targets Java 21. If Java 21 discovery fails, pass `-Dorg.gradle.java.installations.paths=/path/to/jdk21`.
 
-Development client uses `run/1.21.1/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port targets Minecraft 1.21.1 with Fabric Loader 0.20.1 and Fabric API 0.116.17+1.21.1. Build uses JDK 25; Java and Kotlin target Java 21 bytecode. Checks and client startup were exercised on Java 21. Other Minecraft versions require separate builds.
+Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.0.jar`. Development runtime: `run/neoforge-1.21.1/`.
+
+Feature code is retained from patched Fabric 1.21.1, including live text preview fixes. NeoForge supplies lifecycle/keybind/render/client-command events. All 41 assertion entrypoints run through native NeoForge loader-aware test harness; release checks reject Fabric references/test classes and verify metadata/mixins. Loader-backed assertions pass; graphical client startup, exhaustive UI/audio and mod-interoperability parity remain to be manually verified for this release.
+
+Installed command extensions use Java ServiceLoader: implement `dev.spotlight.platform.SpotlightExtension` and list provider class in `META-INF/services/dev.spotlight.platform.SpotlightExtension`. Providers load after built-ins on client setup thread. Fabric entrypoint metadata is not used. Optional map adapters remain separate; no built-in Xaero/JourneyMap adapter is claimed.
+
+Local recipe index reads vanilla plus discovered NeoForge mod-file resources. Conditional/dynamic recipes needing reload context are reported as unsupported rather than evaluated with invented context. This branch does not target Forge 1.20.1; that port is separate.
+
 
 ## Attributions
 When I don't have inspiration, I just steal from other mods.

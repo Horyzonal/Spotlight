@@ -1,0 +1,11 @@
+allprojects {
+    afterEvaluate {
+        tasks.register('enchantmentCompatibilityCheck', JavaExec) {
+            dependsOn testClasses
+            classpath = sourceSets.test.runtimeClasspath
+            mainClass = 'dev.spotlight.ui.EnchantmentCompatibilityCheck'
+            javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+            enableAssertions = true
+        }
+    }
+}

@@ -12,7 +12,8 @@ import net.minecraft.world.level.storage.LevelResource
 import java.security.MessageDigest
 import java.util.UUID
 import dev.spotlight.ui.SpotlightScreen
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.loading.FMLPaths
+import java.util.ServiceLoader
 import net.minecraft.client.Minecraft
 
 import net.minecraft.client.gui.screens.Screen
@@ -43,7 +44,7 @@ object Spotlight {
     private val registeredCommands = mutableListOf<SpotlightCommand>()
     val commands: List<SpotlightCommand> = Collections.unmodifiableList(registeredCommands)
     private val savedPreferences by lazy {
-        Preferences(FabricLoader.getInstance().configDir.resolve("spotlight.properties"))
+        Preferences(FMLPaths.CONFIGDIR.get().resolve("spotlight.properties"))
     }
 
     fun register(command: SpotlightCommand) {
@@ -79,7 +80,7 @@ object Spotlight {
 
     internal fun initializeSpotlightSettings() {
         try {
-            spotlightSettings = SpotlightSettings(FabricLoader.getInstance().configDir.resolve("spotlight/settings.properties"))
+            spotlightSettings = SpotlightSettings(FMLPaths.CONFIGDIR.get().resolve("spotlight/settings.properties"))
         } catch (failure: Exception) {
             spotlightSettingsError = "Cannot load Spotlight settings: ${failure.message}. Original preserved."
             notifySpotlight(spotlightSettingsError!!)
@@ -127,7 +128,7 @@ object Spotlight {
     }
 
     fun macroCommands(): List<SpotlightCommand> = MacroRuntime.commands()
-    fun allCommands(): List<SpotlightCommand> = commands + macroCommands() + serverCommands()
+    fun allCommands(): List<SpotlightCommand> = commands + macroCommands() + serverCommands() + ClientItemStorage.kitCommands()
 
     fun openCommand(id: String) {
         val command = allCommands().firstOrNull { it.id == id } ?: error("Unknown command: $id")
@@ -165,6 +166,11 @@ object Spotlight {
 }
 
 
+fun Spotlight.loadExtensions() {
+    ServiceLoader.load(SpotlightExtension::class.java, SpotlightExtension::class.java.classLoader)
+        .forEach { it.registerCommands() }
+}
+
 internal fun notifySpotlight(message: String) {
     val client = Minecraft.getInstance()
     SystemToast.add(client.toasts, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
@@ -172,7 +178,7 @@ internal fun notifySpotlight(message: String) {
 }
 
 private fun <T> loadStore(name: String, create: (java.nio.file.Path) -> T): T {
-    val directory = FabricLoader.getInstance().configDir
+    val directory = FMLPaths.CONFIGDIR.get()
     return try { create(directory.resolve("spotlight-$name.dat")) } catch (failure: Exception) {
         notifySpotlight("Cannot load $name: ${failure.message}. Original preserved; recovery store used.")
         create(directory.resolve("spotlight-$name-recovery-${UUID.randomUUID()}.dat"))

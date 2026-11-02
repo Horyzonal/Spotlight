@@ -1,7 +1,8 @@
 package dev.spotlight.platform
 
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.neoforge.client.event.ClientTickEvent
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.fml.loading.FMLPaths
 import net.minecraft.client.Minecraft
 import net.minecraft.client.OptionInstance
 import org.slf4j.LoggerFactory
@@ -52,7 +53,7 @@ internal class ExtendedOptionsStore(private val path: Path) {
                 fov?.let { setProperty("fov", it.toString()) }
             }
             Files.newBufferedWriter(temporary).use { properties.store(it, "Spotlight extended options") }
-            
+
             Files.move(temporary, path, ATOMIC_MOVE, REPLACE_EXISTING)
             this.gamma = gamma
             this.fov = fov
@@ -79,12 +80,12 @@ object ExtendedOptions {
         if (initialized) return
         initialized = true
         try {
-            store = ExtendedOptionsStore(FabricLoader.getInstance().configDir.resolve("spotlight-extended-options.properties"))
+            store = ExtendedOptionsStore(FMLPaths.CONFIGDIR.get().resolve("spotlight-extended-options.properties"))
         } catch (failure: Exception) {
             loadFailure = failure
             LoggerFactory.getLogger("spotlight").error("Cannot load extended options; original preserved", failure)
             var reported = false
-            ClientTickEvents.END_CLIENT_TICK.register {
+            NeoForge.EVENT_BUS.addListener { _: ClientTickEvent.Post ->
                 if (!reported) {
                     reported = true
                     notifySpotlight("Cannot load extended options: ${failure.message}. Original preserved; overrides disabled.")

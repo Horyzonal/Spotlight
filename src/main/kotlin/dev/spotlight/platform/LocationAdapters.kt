@@ -3,7 +3,7 @@ package dev.spotlight.platform
 import dev.spotlight.core.LocationAdapter
 import dev.spotlight.core.LocationStore
 import dev.spotlight.core.LocationSync
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.loading.FMLPaths
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
@@ -24,7 +24,7 @@ internal object LocationAdapters {
         if (adapters.isEmpty()) return status().also(::notifySpotlight)
         val scope = Spotlight.scope()
         val store = Spotlight.locations()
-        val directory = FabricLoader.getInstance().configDir
+        val directory = FMLPaths.CONFIGDIR.get()
         val results = adapters.map { (id, adapter) ->
             try {
                 val basePath = directory.resolve("spotlight-sync-$id.dat")
@@ -36,7 +36,7 @@ internal object LocationAdapters {
                 if (merged == null) "$id: ${result.conflicts.size} conflicts; no writes"
                 else {
                     check(adapter.compareAndSet(scope, remote, merged)) { "Map changed during sync; retry" }
-                    
+
                     merged.forEach(store::put)
                     local.filter { old -> merged.none { it.id == old.id } }.forEach { store.remove(scope, it.id) }
                     val temporary = Files.createTempFile(directory, ".spotlight-sync-", ".dat")
@@ -47,7 +47,7 @@ internal object LocationAdapters {
                         val nextBase = LocationStore(temporary)
                         nextBase.list(scope).forEach { nextBase.remove(scope, it.id) }
                         merged.forEach(nextBase::put)
-                        
+
                         if (Files.exists(temporary)) Files.move(temporary, basePath, ATOMIC_MOVE, REPLACE_EXISTING)
                     } finally { Files.deleteIfExists(temporary) }
                     "$id: synced ${merged.size} locations"

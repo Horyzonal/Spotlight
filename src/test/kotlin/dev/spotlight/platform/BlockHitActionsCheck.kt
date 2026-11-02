@@ -24,6 +24,11 @@ object BlockHitActionsCheck {
         rejected { resolve(scope = "other-world") }
         rejected { resolve(dimension = "minecraft:the_nether") }
         rejected { resolve(world = Any()) }
+        rejected {
+            cache.resolve(token.toString(), "other-world", hit.dimension, level) {
+                error("Stale-world token must not inspect blocks")
+            }
+        }
         rejected { resolve(block = null) }
         rejected { resolve(block = "minecraft:stone") }
         rejected { resolve("$token; say injected") }
@@ -39,6 +44,8 @@ object BlockHitActionsCheck {
         check(resolve(newest.toString()) === hit)
         cache.clear()
         rejected { resolve(newest.toString()) }
+        val reconnected = cache.put(hit.copy(level = WeakReference(Any())))
+        rejected { resolve(reconnected.toString()) }
         val expired = cache.put(hit.copy(level = WeakReference<Any>(null)))
         rejected { resolve(expired.toString()) }
         println("BlockHitActionsCheck passed: tokens, 32-entry bound, stale world/dimension/registry, clear, command safety")

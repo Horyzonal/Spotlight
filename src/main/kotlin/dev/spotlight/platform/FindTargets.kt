@@ -1,7 +1,8 @@
 package dev.spotlight.platform
 
 import dev.spotlight.core.Entry
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent
+import net.neoforged.neoforge.common.NeoForge
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
@@ -41,8 +42,9 @@ internal object FindTargets {
     private var expires = 0L
 
     fun initialize() {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register { context ->
-            if (Minecraft.getInstance().level === highlightLevel && System.nanoTime() < expires) {
+        NeoForge.EVENT_BUS.addListener { context: RenderLevelStageEvent ->
+            if (context.stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS &&
+                Minecraft.getInstance().level === highlightLevel && System.nanoTime() < expires) {
                 highlights.forEach { drawWorldOutline(context, it, 0xff55ffff.toInt(), 2f) }
             }
         }

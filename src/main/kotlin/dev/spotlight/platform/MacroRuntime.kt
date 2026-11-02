@@ -5,7 +5,7 @@ import dev.spotlight.core.MacroArgumentType
 import dev.spotlight.core.MacroStore
 import dev.spotlight.core.MacroTemplates
 import dev.spotlight.ui.MacroRunScreen
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.loading.FMLPaths
 import net.minecraft.client.Minecraft
 
 import java.security.MessageDigest
@@ -13,7 +13,7 @@ import java.util.Locale
 
 object MacroRuntime {
     private val savedStore by lazy {
-        MacroStore(FabricLoader.getInstance().configDir.resolve("spotlight-macros.dat"))
+        MacroStore(FMLPaths.CONFIGDIR.get().resolve("spotlight-macros.dat"))
     }
 
     fun store(): MacroStore = savedStore
@@ -23,7 +23,7 @@ object MacroRuntime {
         val arguments = MacroTemplates.arguments(template).associate {
             it.name to if (it.type == MacroArgumentType.LOCATION) "0 0 0" else "0"
         }
-        
+
         MacroTemplates.expand(template, arguments, object : Map<String, String> by emptyMap() {
             override fun get(key: String): String {
                 referenced += key
