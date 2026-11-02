@@ -34,16 +34,24 @@ A: idk
 
 ## Build and install
 
+Forge/legacy NeoForge port for **Minecraft 1.20.1**, version **1.0.0**. Requires **Java 17**, **Kotlin for Forge 4.12.0**, and either **Forge 47.4.28** or **legacy NeoForge 47.1.106**. Install only one loader. Client-only; Fabric API and Fabric Language Kotlin are not used. NeoForge 1.21.x builds are not compatible with this version.
 
 ```sh
-scripts/dev clean build
+scripts/dev build
+scripts/dev runClient
+scripts/dev -Ploader=neoforge build
+scripts/dev -Ploader=neoforge runClient
 ```
 
-Production artifact: `build/libs/spotlight-mc1.20.1-0.1.0.jar`.
+Shared production JAR: `build/libs/spotlight-forge-mc1.20.1-1.0.0.jar`. NeoForge build writes same artifact under `build/neoforge/libs/`; validated outputs are byte-identical. Both builds run all 40 assertion entrypoints through native loader setup, plus release/reobfuscation checks.
 
-Targets **Minecraft 1.20.1 / Java 17**, Fabric Loader, Fabric API **0.92.11+1.20.1**, and Fabric Language Kotlin. Gradle/build tools use JDK 25; mod bytecode and verification programs target Java 17. Development runtime is isolated under `run/1.20.1/`; never downgrade newer worlds without backups.
+Gradle 8.14.3 requires supported build JDK 17–24; bytecode targets Java 17. Development instances are isolated under `run/forge-1.20.1` and `run/neoforge-1.20.1`.
 
-This port uses legacy item NBT for names, lore, banners, shields and Unbreakable while preserving unrelated data. Local crafting index reads shipped vanilla/mod recipes; custom serializers requiring newer/native reload contexts remain explicitly unsupported instead of being guessed. Integrated-server recipe index remains available separately. Build checks and bounded Java 17 startup passed; full UI/multiplayer acceptance remains manual.
+Earlier 0.1.1 client startup smoke tests initialized rendering/audio with Kotlin for Forge. Version 1.0.0 checks use native loader/Mixin setup without starting Minecraft. Full in-world, audio/UI and multiplayer parity remains manual acceptance. On this Mac Forge's early splash initially failed primary-monitor detection; only disposable dev config disabled early window. Production mod does not change user display settings.
+
+Extensions use `META-INF/services/dev.spotlight.platform.SpotlightExtension` providers, not Fabric entrypoints. Optional map adapters remain separate. Local recipe index reads vanilla and discovered mod-file packs; conditional resources requiring reload context are reported unsupported.
+
+Version 1.0.0 includes local client chest, 41-slot kits, replace/delete/archive and live search, online heads, wiki search, enchantment editors, legacy NBT completion, all vanilla recipe workstations, persistent endless music, native installed-mod settings and inline item facts. No extra item panel or storage tracker. Online heads and wiki contact remote services only when requested; cached/offline data remain available.
 
 ## Attributions
 When I don't have inspiration, I just steal from other mods.

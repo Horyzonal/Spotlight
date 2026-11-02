@@ -4,10 +4,11 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import dev.spotlight.core.SavedLocation
 import dev.spotlight.ui.LocationEditScreen
 import dev.spotlight.ui.SpotlightTheme
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent
+import net.minecraftforge.client.event.RegisterClientCommandsEvent
+import net.minecraftforge.common.MinecraftForge
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
@@ -23,16 +24,16 @@ internal object BlockHitActions {
     private val hits = HitCache()
 
     fun initialize() {
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> hits.clear() }
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            val root = ClientCommandManager.literal("spotlight:hit")
+        MinecraftForge.EVENT_BUS.addListener<ClientPlayerNetworkEvent.LoggingOut> { hits.clear() }
+        MinecraftForge.EVENT_BUS.addListener<RegisterClientCommandsEvent> { event ->
+            val root = Commands.literal("spotlight:hit")
             listOf("highlight", "location").forEach { action ->
-                root.then(ClientCommandManager.literal(action).then(
-                    ClientCommandManager.argument("token", StringArgumentType.word()).executes { context ->
+                root.then(Commands.literal(action).then(
+                    Commands.argument("token", StringArgumentType.word()).executes { context ->
                         run(context.source, action, StringArgumentType.getString(context, "token"))
                     }))
             }
-            dispatcher.register(root)
+            event.dispatcher.register(root)
         }
     }
 
@@ -56,9 +57,9 @@ internal object BlockHitActions {
         return "/spotlight:hit $action $token"
     }
 
-    private fun run(source: FabricClientCommandSource, action: String, token: String): Int {
+    private fun run(source: CommandSourceStack, action: String, token: String): Int {
         try {
-            val client = source.client
+            val client = Minecraft.getInstance()
             val level = requireNotNull(client.level) { "Join a world first" }
             require(client.player != null) { "Join a world first" }
             val hit = hits.resolve(token, Spotlight.scope(), Spotlight.dimension(), level) { target ->
@@ -69,7 +70,7 @@ internal object BlockHitActions {
             when (action) {
                 "highlight" -> {
                     FindTargets.highlightBlock(BlockPos(hit.x, hit.y, hit.z))
-                    source.sendFeedback(Component.literal("Highlighting ${hit.name} at ${hit.x}, ${hit.y}, ${hit.z} for 15s"))
+                    source.sendSuccess({ Component.literal("Highlighting ${hit.name} at ${hit.x}, ${hit.y}, ${hit.z} for 15s") }, false)
                 }
                 "location" -> {
                     val draft = SavedLocation(UUID.randomUUID().toString(), "${hit.name} (${hit.x}, ${hit.y}, ${hit.z})",
@@ -83,7 +84,7 @@ internal object BlockHitActions {
         } catch (failure: IllegalArgumentException) {
             val message = failure.message ?: "Invalid block hit"
             notifySpotlight(message)
-            source.sendError(Component.literal(message))
+            source.sendFailure(Component.literal(message))
             return 0
         }
     }

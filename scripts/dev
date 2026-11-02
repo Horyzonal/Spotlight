@@ -5,14 +5,14 @@ if [ ! -f settings.gradle ]; then
     exit 1
 fi
 if [ -z "${JAVA_HOME:-}" ]; then
-    for home in .jdk/Contents/Home .jdk "$HOME/Library/Application Support/PrismLauncher/java/java-runtime-epsilon/jre.bundle/Contents/Home"; do
+    for home in .jdk/Contents/Home .jdk "$HOME/Library/Application Support/PrismLauncher/java/java-runtime-gamma/jre.bundle/Contents/Home" /Library/Java/JavaVirtualMachines/jdk-23.jdk/Contents/Home; do
         if [ -x "$home/bin/javac" ]; then
             JAVA_HOME="$home"
             break
         fi
     done
 fi
-: "${JAVA_HOME:?Set JAVA_HOME to JDK 25 or newer; /usr/bin/java has no default runtime.}"
+: "${JAVA_HOME:?Set JAVA_HOME to JDK 17–24; Gradle 8.14.3 does not support JDK 25.}"
 export JAVA_HOME
 PATH="$JAVA_HOME/bin:$PATH"
 export PATH

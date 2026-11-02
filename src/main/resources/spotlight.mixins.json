@@ -1,7 +1,9 @@
 {
   "required": true,
+  "minVersion": "0.8",
   "package": "dev.spotlight.mixin",
   "compatibilityLevel": "JAVA_17",
+  "refmap": "spotlight.refmap.json",
   "client": ["CommandKeyMixin", "OptionInstanceMixin", "VanillaOptionReadsMixin", "OptionSliderMixin", "LightmapMixin", "RegionSelectionMouseMixin", "RegionSelectionAttackMixin", "SoundManagerAccessor", "SoundEngineAccessor", "MusicManagerMixin", "WorldSpawnMixin", "ClientSuggestionProviderAccessor"],
   "injectors": { "defaultRequire": 1 }
 }

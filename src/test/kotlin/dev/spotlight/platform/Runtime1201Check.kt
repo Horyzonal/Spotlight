@@ -38,6 +38,9 @@ object Runtime1201Check {
     @JvmStatic fun main(args: Array<String>) = checkAll()
 
         fun checkAll() {
+        val visitor = Class.forName("net.minecraft.client.Options\$3", false, javaClass.classLoader)
+        check(visitor.declaredMethods.any { it.name.contains("spotlight\$vanillaValue") &&
+            !java.lang.reflect.Modifier.isStatic(it.modifiers) })
         val minecraft = NativeClass("net.minecraft.client.Minecraft")
         val chat = Call("net/minecraft/client/Minecraft", "openChatScreen", "(Ljava/lang/String;)V")
         minecraft.method("openChatScreen(Ljava/lang/String;)V")

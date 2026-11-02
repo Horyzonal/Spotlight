@@ -2,7 +2,7 @@ package dev.spotlight.platform
 
 import com.google.gson.JsonElement
 
-import net.fabricmc.loader.api.FabricLoader
+import net.minecraftforge.fml.ModList
 import net.minecraft.client.Minecraft
 
 import net.minecraft.core.RegistryAccess
@@ -33,13 +33,9 @@ internal object LocalRecipeIndex {
     fun packs(client: Minecraft): List<PackResources> = buildList {
         add(client.vanillaPackResources)
 
-        for (mod in FabricLoader.getInstance().allMods.sortedBy { it.metadata.id }) {
-            if (mod.metadata.id == "minecraft") continue
-            for ((index, root) in mod.rootPaths.withIndex()) {
-
-                val id = "spotlight-local:${mod.metadata.id}:$index"
-                add(PathPackResources(id, root, false))
-            }
+        for ((index, info) in ModList.get().modFiles.withIndex()) {
+            val root = info.file.findResource("data").parent
+            add(PathPackResources("spotlight-local:${info.file.fileName}:$index", root, false))
         }
     }
 
@@ -69,6 +65,11 @@ internal object LocalRecipeIndex {
 
                 require(!json.isJsonObject || !json.asJsonObject.has("fabric:load_conditions")) {
                     "Conditional local recipe needs Fabric reload context"
+                }
+                for (condition in listOf("forge:conditions", "neoforge:conditions")) {
+                    require(!json.asJsonObject.has(condition)) {
+                        "Conditional local recipe needs loader reload context ($condition)"
+                    }
                 }
                 entries += Entry(id, json)
             } catch (exception: Exception) {

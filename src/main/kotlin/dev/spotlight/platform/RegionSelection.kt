@@ -2,7 +2,8 @@ package dev.spotlight.platform
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.ui.SpotlightTheme
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
+import net.minecraftforge.client.event.RenderLevelStageEvent
+import net.minecraftforge.common.MinecraftForge
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
@@ -136,8 +137,8 @@ object RegionSelection {
     }
 
     fun initialize() {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register { context ->
-            if (active()) {
+        MinecraftForge.EVENT_BUS.addListener<RenderLevelStageEvent> { context ->
+            if (context.stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS && active()) {
                 val state = session!!.state
                 val color = SpotlightTheme.color(0xFF81B8FF)
                 fun draw(bounds: Pair<RegionPoint, RegionPoint>, width: Float) {

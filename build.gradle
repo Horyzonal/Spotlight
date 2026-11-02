@@ -1,28 +1,48 @@
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath 'com.electronwill.night-config:toml:3.6.6' }
+}
+
 plugins {
-    id 'net.fabricmc.fabric-loom-remap'
+    id 'net.neoforged.moddev.legacyforge'
     id 'org.jetbrains.kotlin.jvm'
 }
 
 repositories {
     mavenCentral()
+    maven { url = 'https://thedarkcolour.github.io/KotlinForForge/' }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    modImplementation "net.fabricmc:fabric-language-kotlin:${fabric_kotlin_version}"
+    implementation "thedarkcolour:kotlinforforge:${kff_version}"
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 base {
-    archivesName = "spotlight-mc${minecraft_version}"
+    archivesName = "spotlight-forge-mc${minecraft_version}"
 }
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(17)
     compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     compilerOptions.freeCompilerArgs.add("-Xjdk-release=17")
+}
+
+tasks.withType(JavaExec).configureEach {
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+tasks.register('buildClasspath') {
+    group = 'help'
+    description = 'Write resolved main/test classpaths for porting and loader harnesses.'
+    dependsOn 'createMinecraftArtifacts'
+    doLast {
+        def directory = layout.buildDirectory.dir('classpath').get().asFile
+        directory.mkdirs()
+        new File(directory, 'main.txt').text = sourceSets.main.compileClasspath.asPath
+        new File(directory, 'test.txt').text = sourceSets.test.runtimeClasspath.asPath
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -31,20 +51,44 @@ tasks.withType(JavaCompile).configureEach {
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
+    filesMatching('META-INF/mods.toml') {
         expand version: project.version
     }
 }
 
-loom {
+sourceSets {
+    launcher
+}
+configurations.launcherImplementation.extendsFrom configurations.implementation
+
+if (!(loader in ['forge', 'neoforge'])) throw new GradleException('Use -Ploader=forge or -Ploader=neoforge')
+layout.buildDirectory = file(loader == 'forge' ? 'build' : 'build/neoforge')
+legacyForge {
+    enable {
+        if (project.loader == 'neoforge') neoForgeVersion = project.neoforge_version
+        else forgeVersion = project.forge_version
+        disableRecompilation = true
+    }
     runs {
         client {
-            runDir "run/${minecraft_version}"
+            client()
+
+            gameDirectory = file("run/${project.loader}-${minecraft_version}")
             if (project.hasProperty('clientDebug')) {
-                vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
+                jvmArgument '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
             }
         }
     }
+    addModdingDependenciesTo sourceSets.test
+    addModdingDependenciesTo sourceSets.launcher
+    mods {
+        spotlight { sourceSet sourceSets.main }
+    }
+}
+
+mixin {
+    add sourceSets.main, 'spotlight.refmap.json'
+    config 'spotlight.mixins.json'
 }
 
 tasks.register('coreCheck', JavaExec) {
@@ -328,21 +372,22 @@ tasks.withType(Jar).configureEach {
 
 tasks.named('jar') {
     from('LICENSE', 'THIRD_PARTY_NOTICES')
+    manifest.attributes('MixinConfigs': 'spotlight.mixins.json')
 }
 
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Validate release contents, licenses, entrypoints and Mixin classes.'
-    dependsOn tasks.named('remapJar'), tasks.named('testClasses')
-    inputs.file(tasks.named('remapJar').flatMap { it.archiveFile })
+    dependsOn tasks.named('reobfJar'), tasks.named('testClasses')
+    inputs.file(tasks.named('reobfJar').flatMap { it.archiveFile })
     doLast {
-        def archive = tasks.named('remapJar').get().archiveFile.get().asFile
+        def archive = tasks.named('reobfJar').get().archiveFile.get().asFile
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
             def names = zip.entries().collect { it.name }.toSet()
             def requireEntry = { String name ->
                 if (!names.contains(name)) throw new GradleException("Release JAR missing ${name}")
             }
-            ['fabric.mod.json', 'LICENSE', 'THIRD_PARTY_NOTICES'].each(requireEntry)
+            ['META-INF/mods.toml', 'LICENSE', 'THIRD_PARTY_NOTICES'].each(requireEntry)
             ['LICENSE', 'THIRD_PARTY_NOTICES'].each { name ->
                 zip.getInputStream(zip.getEntry(name)).withCloseable {
                     if (it.bytes != project.file(name).bytes) throw new GradleException("Release JAR changed ${name}")
@@ -379,24 +424,122 @@ tasks.register('releaseCheck') {
                 }
             }
             def requireClass = { String name -> requireEntry(name.replace('.', '/') + '.class') }
-            def metadata = readJson('fabric.mod.json')
-            if (metadata.version != project.version.toString() || metadata.license != 'MIT' || metadata.authors != ['Horyzonal']) {
-                throw new GradleException('Release metadata version, license or authors mismatch')
+            def metadata = zip.getInputStream(zip.getEntry("META-INF/mods.toml")).withCloseable {
+                new com.electronwill.nightconfig.toml.TomlParser().parse(new InputStreamReader(it, "UTF-8"))
             }
-            metadata.entrypoints.values().flatten().each { entry ->
-                requireClass((entry instanceof Map ? entry.value : entry).split('::', 2)[0])
+            def mod = metadata.get("mods").find { it.get("modId") == "spotlight" }
+            if (mod == null || mod.get("version") != project.version.toString() ||
+                metadata.get("license") != "MIT" || mod.get("authors") != "Horyzonal") {
+                throw new GradleException("Release metadata mismatch")
             }
-            metadata.mixins.each { entry ->
-                def config = readJson(entry instanceof Map ? entry.config : entry)
-                ['mixins', 'client', 'server'].each { side ->
-                    (config[side] ?: []).each { requireClass(config.package ? "${config.package}.${it}" : it) }
+            requireClass("dev.spotlight.platform.SpotlightClient")
+            def entrypoint = zip.getInputStream(zip.getEntry('dev/spotlight/platform/SpotlightClient.class')).withCloseable {
+                new String(it.bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+            }
+            if (!entrypoint.contains('Lnet/minecraftforge/fml/common/Mod;')) {
+                throw new GradleException('SpotlightClient missing Forge @Mod entrypoint')
+            }
+            if (metadata.get('modLoader') != 'kotlinforforge' || metadata.get('loaderVersion') != '[4.12,5)') {
+                throw new GradleException('Release Kotlin language loader mismatch')
+            }
+            def dependencies = metadata.get('dependencies.spotlight')
+            ['forge': '[47.1,48)', 'minecraft': '[1.20.1]', 'kotlinforforge': '[4.12,5)'].each { id, range ->
+                if (!dependencies.any { it.get('modId') == id && it.get('versionRange') == range && it.get('mandatory') == true }) {
+                    throw new GradleException("Release dependency mismatch: ${id}")
                 }
-                if (config.plugin) requireClass(config.plugin)
-                if (config.refmap) requireEntry(config.refmap)
             }
-            if (metadata.accessWidener) requireEntry(metadata.accessWidener)
-            (metadata.jars ?: []).each { requireEntry(it.file) }
+            def config = readJson("spotlight.mixins.json")
+            ["mixins", "client", "server"].each { side ->
+                (config[side] ?: []).each { requireClass(config.package ? "${config.package}.${it}" : it) }
+            }
+            if (config.plugin) requireClass(config.plugin)
+            requireEntry("spotlight.refmap.json")
+            def refmap = readJson('spotlight.refmap.json')
+            if (!refmap.mappings || !groovy.json.JsonOutput.toJson(refmap).find(/(?:m|f)_\d+_/)) {
+                throw new GradleException('Missing production SRG Mixin mappings')
+            }
+            if (config.refmap != 'spotlight.refmap.json') throw new GradleException('Mixin config missing production refmap')
+            names.findAll { it.endsWith(".class") }.each { name ->
+                zip.getInputStream(zip.getEntry(name)).withCloseable {
+                    def bytes = it.bytes
+                    if (java.nio.ByteBuffer.wrap(bytes).getShort(6) != 61) throw new GradleException("Not Java 17: ${name}")
+                    if (new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1).contains("net/fabricmc/")) {
+                        throw new GradleException("Fabric reference: ${name}")
+                    }
+                }
+            }
+            if (names.contains("fabric.mod.json")) throw new GradleException("Fabric metadata in Forge release")
             logger.lifecycle("Release JAR validated: ${archive.name} (${names.size()} entries)")
+        }
+    }
+}
+
+tasks.register('prepareKotlinLoader', Copy) {
+    from configurations.runtimeClasspath.files.findAll { it.name == "kotlinforforge-${kff_version}-all.jar" }
+    into file("run/${project.loader}-${minecraft_version}/mods")
+}
+
+tasks.named('prepareClientRun') { dependsOn 'prepareKotlinLoader' }
+
+def launcherJar = tasks.register('launcherJar', Jar) {
+    from sourceSets.launcher.output
+    archiveClassifier = 'test-launcher'
+    destinationDirectory = layout.buildDirectory.dir('test-launcher')
+}
+
+[
+    musicPreferencesCheck: 'dev.spotlight.core.MusicPreferencesCheck',
+    musicNavigationCheck: 'dev.spotlight.ui.MusicNavigationCheck',
+    nbtCompletionCheck: 'dev.spotlight.core.NbtCompletionCheck',
+    clientItemStorageCheck: 'dev.spotlight.platform.ClientItemStorageCheck',
+    itemFactsCheck: 'dev.spotlight.platform.ItemFactsCheck',
+
+    headDatabaseCheck: 'dev.spotlight.platform.HeadDatabaseCheck',
+    remoteHeadsCheck: 'dev.spotlight.platform.NewRemoteHeadsCheck',
+    customEnchantmentsCheck: 'dev.spotlight.platform.CustomEnchantmentsCheck',
+    enchantmentCompatibilityCheck: 'dev.spotlight.ui.EnchantmentCompatibilityCheck',
+].each { taskName, entrypoint ->
+    tasks.register(taskName, JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = entrypoint
+        enableAssertions = true
+    }
+    tasks.named('check') { dependsOn taskName }
+}
+
+tasks.withType(JavaExec).configureEach {
+    if (name.endsWith('Check') && name != 'coreCheck') {
+        def checkMain = mainClass.get()
+        dependsOn 'prepareClientRun', launcherJar
+        mainClass = 'cpw.mods.bootstraplauncher.BootstrapLauncher'
+        doFirst {
+            def moddev = layout.buildDirectory.dir('moddev').get().asFile
+            def legacy = new File(moddev, 'clientLegacyClasspath.txt').readLines().findAll { !it.contains('/thedarkcolour/') }
+
+            def checkLegacy = new File(moddev, 'checkLegacyClasspath.txt')
+            checkLegacy.text = (legacy + [launcherJar.get().archiveFile.get().asFile.absolutePath]).join(System.lineSeparator())
+            def vm = new File(moddev, 'clientRunVmArgs.txt').readLines().findAll { it && !it.startsWith('#') && it != '-XstartOnFirstThread' }
+            vm = vm.findAll { !it.startsWith('-DlegacyClassPath.file=') }
+            jvmArgs vm
+            systemProperty 'legacyClassPath.file', checkLegacy.absolutePath
+            systemProperty 'spotlight.check.main', checkMain
+            systemProperty 'fml.earlyprogresswindow', 'false'
+            def program = new File(moddev, 'clientRunProgramArgs.txt').readLines().findAll { it && !it.startsWith('#') }
+            program.remove(0)
+            program[program.indexOf('--launchTarget') + 1] = 'spotlightclientchecks'
+            def checkGame = layout.buildDirectory.dir('check-run').get().asFile
+            checkGame.mkdirs()
+            copy {
+                from configurations.runtimeClasspath.files.findAll { it.name == "kotlinforforge-${kff_version}-all.jar" }
+                into new File(checkGame, 'mods')
+            }
+            workingDir checkGame
+            program[program.indexOf('--gameDir') + 1] = checkGame.absolutePath
+            args = program
+
+            environment 'MOD_CLASSES', ((sourceSets.main.output.classesDirs.files + [sourceSets.main.output.resourcesDir] + sourceSets.test.output.classesDirs.files).collect { "spotlight%%${it.absolutePath}" } ).join(File.pathSeparator)
         }
     }
 }
@@ -406,7 +549,6 @@ tasks.named('check') {
 }
 
 tasks.named('test') {
-    failOnNoDiscoveredTests = false
 }
 
 tasks.named('check') {

@@ -2,40 +2,62 @@ package dev.spotlight.platform
 
 import com.mojang.blaze3d.platform.InputConstants
 import dev.spotlight.ui.SpotlightScreen
-import net.fabricmc.api.ClientModInitializer
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.KeyMapping
+import net.minecraft.client.Minecraft
+import net.minecraftforge.api.distmarker.Dist
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent
+import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.event.TickEvent
+import net.minecraftforge.fml.DistExecutor
+import net.minecraftforge.fml.common.Mod
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
+import thedarkcolour.kotlinforforge.forge.MOD_BUS
 
+@Mod("spotlight")
+class SpotlightClient {
+    init {
+        DistExecutor.safeRunWhenOn(Dist.CLIENT) { ClientHooks }
+    }
 
-class SpotlightClient : ClientModInitializer {
     companion object {
         @JvmStatic
         fun shouldReplaceCommandKey(): Boolean = Spotlight.spotlightSettings?.replaceCommandKey == true
     }
-    override fun onInitializeClient() {
-        ExtendedOptions.initialize()
-        BlockHitActions.initialize()
-        registerBuiltIns()
-        Spotlight.initializeSpotlightSettings()
-        Spotlight.settings()
-        Spotlight.locations()
-        FindTargets.initialize()
-        RegionSelection.initialize()
-        FabricLoader.getInstance().getEntrypoints("spotlight", SpotlightExtension::class.java)
-            .forEach { it.registerCommands() }
-        val key = KeyBindingHelper.registerKeyBinding(KeyMapping(
-            "key.spotlight.open", InputConstants.Type.KEYSYM, InputConstants.KEY_GRAVE,
-            "key.category.spotlight.controls",
-        ))
-        ClientTickEvents.END_CLIENT_TICK.register { client ->
-            LocationActions.tick()
-            FindTargets.tick()
-            RegionSelection.tick()
-            CommandHotkeys.tick()
-            while (key.consumeClick()) {
-                if (client.screen !is SpotlightScreen) Spotlight.open()
+
+    private object ClientHooks : DistExecutor.SafeRunnable {
+        private lateinit var key: KeyMapping
+
+        override fun run() {
+            key = KeyMapping("key.spotlight.open", InputConstants.Type.KEYSYM, InputConstants.KEY_GRAVE,
+                "key.category.spotlight.controls")
+            MOD_BUS.addListener<RegisterKeyMappingsEvent> { it.register(key) }
+            MOD_BUS.addListener<FMLClientSetupEvent> { event ->
+                event.enqueueWork {
+                    ExtendedOptions.initialize()
+                    registerBuiltIns()
+                    Spotlight.initializeSpotlightSettings()
+                    Spotlight.settings()
+                    Spotlight.locations()
+                    Spotlight.loadExtensions()
+                }
+            }
+            BlockHitActions.initialize()
+            FindTargets.initialize()
+            RegionSelection.initialize()
+            MinecraftForge.EVENT_BUS.addListener<net.minecraftforge.client.event.ScreenEvent.Init.Post> { event ->
+                dev.spotlight.ui.InventoryStorageButtons.attach(event)
+            }
+            MinecraftForge.EVENT_BUS.addListener<TickEvent.ClientTickEvent> { event ->
+                if (event.phase == TickEvent.Phase.END) {
+                    LocationActions.tick()
+                    FindTargets.tick()
+                    RegionSelection.tick()
+                    CommandHotkeys.tick()
+                    ClientItemStorage.tick()
+                    while (key.consumeClick()) {
+                        if (Minecraft.getInstance().screen !is SpotlightScreen) Spotlight.open()
+                    }
+                }
             }
         }
     }

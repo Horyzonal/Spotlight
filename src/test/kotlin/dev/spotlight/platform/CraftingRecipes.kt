@@ -70,7 +70,20 @@ object RecipeIndexCheck {
             java.nio.file.Files.writeString(root.resolve("mod/data/test/recipes/tagged.json"), vanilla.replace("\"item\":\"minecraft:stone\"", "\"tag\":\"test:local\""))
             val custom = LocalRecipeIndex.Entry("test:custom", com.google.gson.JsonParser.parseString(
                 vanilla.replace("minecraft:crafting_shapeless", "test:custom")))
+            for (condition in listOf("fabric:load_conditions", "forge:conditions", "neoforge:conditions")) {
+                java.nio.file.Files.writeString(root.resolve("mod/data/test/recipes/${condition.substringBefore(':')}_conditional.json"),
+                    vanilla.dropLast(1) + " ,\"$condition\":[]}")
+            }
+            val otherNamespace = root.resolve("mod/data/other/recipes/extra.json")
+            java.nio.file.Files.createDirectories(otherNamespace.parent)
+            java.nio.file.Files.writeString(otherNamespace, vanilla)
             val loaded = LocalRecipeIndex.load(listOf(first, second))
+            for (loader in listOf("fabric", "forge", "neoforge")) {
+                val id = "test:${loader}_conditional"
+                check(loaded.entries.none { it.id == id })
+                check(loaded.unsupported.getValue("[C] $id").contains("reload context"))
+            }
+            check(loaded.entries.any { it.id == "other:extra" })
             check(runCatching { LocalRecipeIndex.decode(custom, loaded) }.exceptionOrNull()?.message ==
                 "Unknown recipe serializer: test:custom")
             check("[C] tag test:cycle" in loaded.unsupported)
@@ -121,11 +134,35 @@ object RecipeIndexCheck {
             check(unsupported.containsKey("[C] minecraft:map_extending"))
             println("Vanilla recipes: ${shipped.entries.size}; crafting: $crafting; static views: $resolved; unsupported: ${unsupported.size}")
             println("Unsupported vanilla crafting: ${unsupported.keys.joinToString()}")
+            val expandedUnsupported = linkedMapOf<String, String>()
+            val expanded = shipped.entries.flatMap { entry ->
+                CraftingRecipes.resolve(entry.id, LocalRecipeIndex.decode(entry, shipped), RecipeSource.C, shipped.registries, expandedUnsupported)
+            }
+            for (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING, RecipeStation.STONECUTTING, RecipeStation.SMITHING)) {
+                val views = expanded.filter { it.station == station }
+                check(views.isNotEmpty()) { "Missing native station: $station; $expandedUnsupported" }
+                check(views.all { it.width in 1..3 && it.height == 1 && it.ingredients.size == it.width && it.ingredients.all { alternatives -> alternatives.isNotEmpty() } })
+                check(views.all { it.stationItems.size == 1 && !it.stationItems.single().isEmpty })
+                if (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING)) check(views.all { it.fuel.isNotEmpty() })
+            }
+            check(expanded.filter { it.station == RecipeStation.SMITHING }.all { it.width == 3 })
+            check(mergeRecipeViews(listOf(client, client.copy(station = RecipeStation.STONECUTTING))).size == 2)
+            println("Expanded native recipes: ${expanded.groupingBy { it.station }.eachCount()}")
             check(LocalRecipeIndex.decode(shipped.entries.single { it.id == "minecraft:crafting_table" }, shipped) is CraftingRecipe)
             checkGlobalBindings()
             val reloaded = LocalRecipeIndex.load(listOf(first, second))
             check(LocalRecipeIndex.decode(reloaded.entries.single { it.id == "test:tagged" }, reloaded) is CraftingRecipe)
             checkGlobalBindings()
+            val archive = root.resolve("mod.zip")
+            java.nio.file.FileSystems.newFileSystem(java.net.URI.create("jar:${archive.toUri()}"), mapOf("create" to "true")).use { fs ->
+                val file = fs.getPath("/data/archive/recipes/local.json")
+                java.nio.file.Files.createDirectories(file.parent)
+                java.nio.file.Files.writeString(file, vanilla)
+                val pack = net.minecraft.server.packs.PathPackResources("archive", file.root, false)
+                check(LocalRecipeIndex.load(listOf(pack)).entries.single().id == "archive:local")
+                check(fs.isOpen)
+                check(LocalRecipeIndex.load(listOf(pack)).entries.single().id == "archive:local")
+            }
         } finally {
             java.nio.file.Files.walk(root).use { paths -> paths.sorted(java.util.Comparator.reverseOrder()).forEach { java.nio.file.Files.delete(it) } }
         }

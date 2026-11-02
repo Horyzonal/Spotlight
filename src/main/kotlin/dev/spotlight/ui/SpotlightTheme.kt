@@ -4,7 +4,7 @@ import dev.spotlight.core.Theme
 import dev.spotlight.core.ThemeConfig
 import dev.spotlight.core.ThemeLibrary
 import dev.spotlight.core.ThemeReport
-import net.fabricmc.loader.api.FabricLoader
+import net.minecraftforge.fml.loading.FMLPaths
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
@@ -19,7 +19,7 @@ object SpotlightTheme {
     @Volatile private var fontId: ResourceLocation? = null
     @Volatile private var shadow: Boolean = Theme.defaults.textShadow()
 
-    private val themeLibrary by lazy { ThemeLibrary(FabricLoader.getInstance().configDir) }
+    private val themeLibrary by lazy { ThemeLibrary(FMLPaths.CONFIGDIR.get()) }
 
     fun library(): ThemeLibrary = themeLibrary
 
@@ -47,7 +47,7 @@ object SpotlightTheme {
     @Synchronized
     fun reload(): ThemeReport {
         val report = try {
-            Theme.load(FabricLoader.getInstance().configDir.resolve("spotlight-theme.properties"))
+            Theme.load(FMLPaths.CONFIGDIR.get().resolve("spotlight-theme.properties"))
         } catch (failure: Exception) {
             ThemeReport(Theme.defaults, listOf("Cannot resolve theme config: ${failure.message ?: failure.javaClass.simpleName}"))
         }

@@ -5,14 +5,14 @@ import com.mojang.blaze3d.vertex.BufferUploader
 import com.mojang.blaze3d.vertex.DefaultVertexFormat
 import com.mojang.blaze3d.vertex.Tesselator
 import com.mojang.blaze3d.vertex.VertexFormat
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
+import net.minecraftforge.client.event.RenderLevelStageEvent
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.LevelRenderer
 import net.minecraft.world.phys.AABB
 
-internal fun drawWorldOutline(context: WorldRenderContext, box: AABB, color: Int, width: Float) {
-    val poses = context.matrixStack() ?: return
-    val camera = context.camera().position
+internal fun drawWorldOutline(context: RenderLevelStageEvent, box: AABB, color: Int, width: Float) {
+    val poses = context.poseStack
+    val camera = context.camera.position
     val lines = RenderType.lines()
     poses.pushPose()
     try {
