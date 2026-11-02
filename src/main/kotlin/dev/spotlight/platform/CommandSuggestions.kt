@@ -153,7 +153,11 @@ object CommandSuggestions {
         val source = connection.suggestionsProvider
         val reader = StringReader(text).also { it.cursor = 1 }
         val parsed = dispatcher.parse(reader, source)
-        val (ranked, knownRows, inferredKind) = localSuggestions(dispatcher, source, text)
+        val local = localSuggestions(dispatcher, source, text)
+                val ranked = (NbtSuggestions.request(dispatcher, source, text) + local.ranked)
+                    .distinctBy { Triple(it.start, it.end, it.value) }.take(LIMIT)
+                val knownRows = local.knownRows
+                val inferredKind = local.inferredKind
 
 
 
