@@ -119,6 +119,20 @@ object RecipeIndexCheck {
             check(unsupported.containsKey("[C] minecraft:map_extending"))
             println("Vanilla recipes: ${shipped.entries.size}; crafting: $crafting; static views: $resolved; unsupported: ${unsupported.size}")
             println("Unsupported vanilla crafting: ${unsupported.keys.joinToString()}")
+            val expandedUnsupported = linkedMapOf<String, String>()
+            val expanded = shipped.entries.flatMap { entry ->
+                CraftingRecipes.resolve(entry.id, LocalRecipeIndex.decode(entry, shipped), RecipeSource.C, shipped.lookup, expandedUnsupported)
+            }
+            for (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING, RecipeStation.STONECUTTING, RecipeStation.SMITHING)) {
+                val views = expanded.filter { it.station == station }
+                check(views.isNotEmpty()) { "Missing native station: $station; $expandedUnsupported" }
+                check(views.all { it.width in 1..3 && it.height == 1 && it.ingredients.size == it.width && it.ingredients.all { alternatives -> alternatives.isNotEmpty() } })
+                check(views.all { it.stationItems.size == 1 && !it.stationItems.single().isEmpty })
+                if (station in listOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING)) check(views.all { it.fuel.isNotEmpty() })
+            }
+            check(expanded.filter { it.station == RecipeStation.SMITHING }.all { it.width == 3 })
+            check(mergeRecipeViews(listOf(client, client.copy(station = RecipeStation.STONECUTTING))).size == 2)
+            println("Expanded native recipes: ${expanded.groupingBy { it.station }.eachCount()}")
             check(LocalRecipeIndex.decode(shipped.entries.single { it.id == "minecraft:crafting_table" }, shipped) is CraftingRecipe)
             checkGlobalBindings()
             val reloaded = LocalRecipeIndex.load(listOf(first, second))
