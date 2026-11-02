@@ -69,7 +69,7 @@ object Spotlight {
     private val savedSettings by lazy { loadStore("commands", ::CommandSettings) }
     private val savedLocations by lazy { loadStore("locations", ::LocationStore) }
     var requestedCommandId: String? = null
-    
+
     var requestedQuery: String? = null
 
     var spotlightSettings: SpotlightSettings? = null
@@ -127,7 +127,7 @@ object Spotlight {
     }
 
     fun macroCommands(): List<SpotlightCommand> = MacroRuntime.commands()
-    fun allCommands(): List<SpotlightCommand> = commands + macroCommands() + serverCommands()
+    fun allCommands(): List<SpotlightCommand> = commands + macroCommands() + serverCommands() + ClientItemStorage.kitCommands()
 
     fun openCommand(id: String) {
         val command = allCommands().firstOrNull { it.id == id } ?: error("Unknown command: $id")

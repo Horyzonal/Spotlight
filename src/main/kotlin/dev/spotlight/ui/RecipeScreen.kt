@@ -2,6 +2,7 @@ package dev.spotlight.ui
 
 import dev.spotlight.platform.CraftingRecipeView
 import dev.spotlight.platform.CraftingRecipes
+import dev.spotlight.platform.RecipeStation
 import dev.spotlight.platform.commandMatch
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
@@ -20,12 +21,13 @@ internal fun recipeIngredientAt(cell: Int, width: Int, height: Int, shapeless: B
     return if (index < size) index else -1
 }
 
-class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting recipes")) {
+class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Recipes by workstation")) {
     private var opened = false
     private var recipes = emptyList<CraftingRecipeView>()
     private var matches = emptyList<CraftingRecipeView>()
     private var selected = 0
     private var query = ""
+    private var station: RecipeStation? = null
     private var ticks = 0L
     private var missing = emptyList<Boolean>()
     private var missingCount = 0
@@ -51,10 +53,24 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
         val panelWidth = minOf(760, available)
         val left = (width - panelWidth) / 2
         footerY = (height - margin - 20).coerceAtLeast(0)
-        search = addRenderableWidget(SpotlightEditBox(font, left, margin, panelWidth, minOf(20, height.coerceAtLeast(1)), catalogText("Search crafting recipes")))
+        search = addRenderableWidget(SpotlightEditBox(font, left, margin, panelWidth, minOf(20, height.coerceAtLeast(1)), catalogText("Search recipe names or IDs")))
         search.value = query
         search.setResponder { query = it; filter() }
-        val top = margin + 26
+        val stations = listOf(null) + RecipeStation.entries
+        val stationWidth = (panelWidth / stations.size).coerceAtLeast(1)
+        stations.forEachIndexed { index, value ->
+            addRenderableWidget(catalogButton("${if (station == value) "> " else ""}${value?.label ?: "All"}", left + index * stationWidth, margin + 24, stationWidth) {
+                station = value; rebuildWidgets(); filter()
+            })
+        }
+        val tabWidth = (panelWidth / 2).coerceAtLeast(1)
+        addRenderableWidget(catalogButton("Loom / banner tool (not recipes)", left, margin + 46, tabWidth) {
+            minecraft.setScreen(BannerEditorScreen(this))
+        })
+        addRenderableWidget(catalogButton("Enchantment compatibility", left + tabWidth, margin + 46, tabWidth) {
+            minecraft.setScreen(EnchantmentCompatibilityScreen(this))
+        })
+        val top = margin + 72
         val wide = panelWidth >= 480
         listX = left
         listWidth = if (wide) panelWidth / 2 - 4 else panelWidth
@@ -99,7 +115,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
     }
 
     private fun filter(previous: CraftingRecipeView? = current) {
-        matches = recipes.map { recipe ->
+        matches = recipes.filter { station == null || it.station == station }.map { recipe ->
             minOf(commandMatch(query, recipe.title), commandMatch(query, recipe.id),
                 recipe.recipeIds.minOfOrNull { commandMatch(query, it) } ?: Int.MAX_VALUE) to recipe
         }.filter { it.first != Int.MAX_VALUE }.sortedBy { it.first }.map { it.second }
@@ -108,7 +124,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
                 previous != null && recipe.recipeIds.any { it in previous.recipeIds } &&
                     ItemStack.isSameItemSameComponents(recipe.result, previous.result)
             }.takeIf { it >= 0 } ?: matches.indexOfFirst { recipe ->
-                previous != null && recipe.width == previous.width && recipe.height == previous.height &&
+                previous != null && recipe.station == previous.station && recipe.width == previous.width && recipe.height == previous.height &&
                     recipe.shapeless == previous.shapeless && recipe.result.count == previous.result.count &&
                     ItemStack.isSameItemSameComponents(recipe.result, previous.result) &&
                     recipe.ingredients.size == previous.ingredients.size && recipe.ingredients.indices.all { index ->
@@ -173,10 +189,10 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
         graphics.enableScissor(detailX, minOf(detailY, contentBottom), detailX + detailWidth, contentBottom)
         val recipe = current
         if (recipe == null) {
-            text(graphics, if (recipes.isEmpty()) "No crafting recipes available" else "No matching recipes", detailX, detailY, detailWidth)
+            text(graphics, if (recipes.isEmpty()) "No supported recipe displays available" else "No matching recipes", detailX, detailY, detailWidth)
         } else {
             text(graphics, recipe.result.hoverName.string, detailX, detailY, detailWidth)
-            text(graphics, "${recipe.sourceTag} ${if (recipe.shapeless) "Shapeless" else "Shaped ${recipe.width}×${recipe.height}"} · ${selected + 1}/${matches.size}", detailX, detailY + 13, detailWidth, 0xFF9DADC3)
+            text(graphics, "${recipe.sourceTag} ${recipe.station.label} · ${if (recipe.shapeless) "Shapeless" else "Shaped ${recipe.width}×${recipe.height}"} · ${selected + 1}/${matches.size}", detailX, detailY + 13, detailWidth, 0xFF9DADC3)
             val slot = if (height < 290 || detailWidth < 160) 18 else 22
             val gridY = detailY + 26
             fun item(stack: ItemStack, x: Int, y: Int, absent: Boolean) {
@@ -189,6 +205,7 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
                     mouseX in detailX until detailX + detailWidth && mouseY in detailY until contentBottom)
                     graphics.setTooltipForNextFrame(font, stack, mouseX, mouseY)
             }
+            recipe.stationItems.firstOrNull()?.let { item(it, detailX + slot * 4 + 24, gridY, false) }
             repeat(9) { cell ->
                 val index = recipeIngredientAt(cell, recipe.width, recipe.height, recipe.shapeless, recipe.ingredients.size)
                 val alternatives = recipe.ingredients.getOrNull(index)
@@ -198,9 +215,10 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Crafting r
             text(graphics, "→", detailX + slot * 3 + 4, gridY + slot + 6, 16)
             item(recipe.result, detailX + slot * 3 + 24, gridY + slot, false)
             text(graphics, "×${recipe.result.count}", detailX + slot * 4 + 26, gridY + slot + 6, (detailWidth - slot * 4 - 26).coerceAtLeast(0))
-            text(graphics, if (missingCount == 0) "Ready to craft (one recipe)" else "Missing $missingCount ingredients", detailX, gridY + slot * 3 + 3, detailWidth,
+            if (recipe.fuel.isNotEmpty()) item(recipe.fuel[((ticks / 20) % recipe.fuel.size).toInt()], detailX, gridY + slot, missing.getOrNull(recipe.ingredients.size) == true)
+            text(graphics, if (missingCount == 0) "Displayed inputs available" else "Missing $missingCount displayed inputs", detailX, gridY + slot * 3 + 3, detailWidth,
                 if (missingCount == 0) 0xFFF2F5FC else 0xFFFFB4A9)
-            text(graphics, "Inventory estimate only · No auto-crafting", detailX, gridY + slot * 3 + 16, detailWidth, 0xFF9DADC3)
+            text(graphics, if (recipe.station in setOf(RecipeStation.FURNACE, RecipeStation.BLASTING, RecipeStation.SMOKING, RecipeStation.CUSTOM)) "Fuel example only; burn duration not estimated" else "Inventory estimate only · No auto-crafting", detailX, gridY + slot * 3 + 16, detailWidth, 0xFF9DADC3)
             text(graphics, recipe.recipeIds.minOrNull() ?: "Recipe ID unavailable in client display", detailX, gridY + slot * 3 + 29, detailWidth, 0xFF9DADC3)
         }
         graphics.disableScissor()

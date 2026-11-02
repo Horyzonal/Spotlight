@@ -24,10 +24,10 @@ object CommandSuggestions {
 
     fun isValidIp(value: String): Boolean = validCommandIp(value)
 
-    
+
     fun executionText(text: String): String = text.trimEnd(' ')
 
-    
+
     fun expandAlias(text: String, cursor: Int): Pair<String, Int>? {
         val client = Minecraft.getInstance()
         val connection = client.connection ?: return null
@@ -40,16 +40,16 @@ object CommandSuggestions {
         }
     }
 
-    
+
     fun argumentHint(text: String): String? {
         val connection = Minecraft.getInstance().connection ?: return null
         return commandArgumentHint(connection.commands, connection.suggestionsProvider, text)
     }
 
-    
+
     fun catalog(kind: SelectionKind): List<CommandSuggestion> = CommandCatalog.catalog(kind)
 
-    
+
     fun completeOnSpace(text: String, cursor: Int, candidates: List<CommandSuggestion> = emptyList()): Pair<String, Int>? {
         expandAlias(text, cursor)?.let { return it }
         val connection = Minecraft.getInstance().connection ?: return null
@@ -76,7 +76,7 @@ object CommandSuggestions {
         var inferredKind: SelectionKind? = null
         for (node in children) {
             if (node is LiteralCommandNode) {
-                
+
                 val rule = if (dispatcher.getPath(node).toList().dropLast(1).lastOrNull() == "gamerule") {
                     catalog(SelectionKind.GAMERULES).firstOrNull {
                         it.value == node.literal || it.value.removePrefix("minecraft:") == node.literal
@@ -105,7 +105,7 @@ object CommandSuggestions {
                 else kind?.let { catalog(it) }.orEmpty()
             } else when (type) {
                 is EntityArgument -> catalog(SelectionKind.PLAYERS) + catalog(SelectionKind.ENTITIES).filter {
-                    
+
                     val playersOnly = metadata.get("type")?.asString == "players"
                     val single = metadata.get("amount")?.asString == "single"
                     (!playersOnly || it.value != "@e") && (!single || it.value !in setOf("@a", "@e"))
@@ -120,7 +120,7 @@ object CommandSuggestions {
                 else -> kind?.let { catalog(it) }.orEmpty()
             }
             candidates.forEach { knownRows[it.value] = it }
-            
+
             if (!query.startsWith('@') && !query.startsWith('"') && !query.startsWith('\'') &&
                 '[' !in query && '{' !in query) {
                 local += candidates.map { it.copy(start = start, end = text.length) }
@@ -140,7 +140,7 @@ object CommandSuggestions {
         return LocalSuggestions(ranked, knownRows, inferredKind)
     }
 
-    
+
     fun request(text: String, accept: (List<CommandSuggestion>) -> Unit) {
         val client = Minecraft.getInstance()
         if (!client.isSameThread) {
@@ -153,10 +153,14 @@ object CommandSuggestions {
         val source = connection.suggestionsProvider
         val reader = StringReader(text).also { it.cursor = 1 }
         val parsed = dispatcher.parse(reader, source)
-        val (ranked, knownRows, inferredKind) = localSuggestions(dispatcher, source, text)
-        
-        
-        
+        val local = localSuggestions(dispatcher, source, text)
+                val ranked = (NbtSuggestions.request(dispatcher, source, text) + local.ranked)
+                    .distinctBy { Triple(it.start, it.end, it.value) }.take(LIMIT)
+                val knownRows = local.knownRows
+                val inferredKind = local.inferredKind
+
+
+
         val future = try { boundedCommandCompletion(dispatcher.getCompletionSuggestions(parsed)) }
             catch (_: com.mojang.brigadier.exceptions.CommandSyntaxException) { null }
         accept(ranked)
@@ -198,7 +202,7 @@ object CommandSuggestions {
             else -> when (provider) {
                 "minecraft:available_sounds" -> SelectionKind.SOUNDS
                 "minecraft:summonable_entities" -> SelectionKind.ENTITY_TYPES
-                
+
                 else -> when (name) {
                     "ip" -> SelectionKind.IP
                     else -> null

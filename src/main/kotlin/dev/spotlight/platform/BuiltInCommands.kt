@@ -1,5 +1,14 @@
 package dev.spotlight.platform
 
+import dev.spotlight.commands.registerHeads
+import dev.spotlight.commands.registerCustomEnchantments
+import dev.spotlight.commands.registerKits
+import dev.spotlight.commands.registerClientChest
+import dev.spotlight.commands.registerItemArchive
+import dev.spotlight.commands.registerMods
+import dev.spotlight.commands.registerWiki
+
+
 import dev.spotlight.commands.registerUnbreakable
 
 import dev.spotlight.commands.registerFov
@@ -97,4 +106,12 @@ internal fun registerBuiltIns() {
     registerCurrentSong()
     registerThemes()
     registerUnbreakable()
+    registerKits()
+    registerClientChest()
+    registerItemArchive()
+    registerMods()
+    registerWiki()
+
+    registerHeads()
+    registerCustomEnchantments()
 }
