@@ -12,7 +12,7 @@ object RecipeIndexCheck {
         net.minecraft.SharedConstants.tryDetectVersion()
         net.minecraft.server.Bootstrap.bootStrap()
         val registries = net.minecraft.data.registries.VanillaRegistries.createWorldLookup()
-        
+
         BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach { it.apply() }
         val globalBindings = BuiltInRegistries.REGISTRY.flatMap { registry ->
             registry.listElements().toList().map { holder ->
@@ -51,6 +51,22 @@ object RecipeIndexCheck {
         check(mergeRecipeViews(listOf(client, client.copy(width = 1, height = 2))).size == 2)
         val alias = server.copy(id = "test:alias", recipeIds = setOf("test:alias"))
         check(mergeRecipeViews(listOf(server, alias, client)).single().recipeIds == setOf("test:recipe", "test:alias"))
+        check(mergeRecipeViews(listOf(client, client.copy(station = RecipeStation.STONECUTTING))).size == 2)
+        check(mergeRecipeViews(listOf(client, client.copy(fuel = listOf(a)))).size == 2)
+        check(mergeRecipeViews(listOf(client, client.copy(stationItems = listOf(b)))).size == 2)
+        val nativeContext = ContextMap.builder().set(SlotDisplayContext.REGISTRIES, net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)).build()
+        val unsupported = linkedMapOf<String, String>()
+        fun slot(item: net.minecraft.world.item.Item) = net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(item)
+        val furnace = net.minecraft.world.item.crafting.display.FurnaceRecipeDisplay(slot(net.minecraft.world.item.Items.STONE),
+            net.minecraft.world.item.crafting.display.SlotDisplay.AnyFuel.INSTANCE, slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.FURNACE), 200, 0f)
+        val furnaceView = CraftingRecipes.resolve("test:furnace", furnace, RecipeSource.C, nativeContext, unsupported).single()
+        check(furnaceView.station == RecipeStation.FURNACE && furnaceView.ingredients.size == 1 && furnaceView.fuel.isNotEmpty())
+        val stonecutting = net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay(slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.STONECUTTER))
+        check(CraftingRecipes.resolve("test:stonecutting", stonecutting, RecipeSource.C, nativeContext, unsupported).single().station == RecipeStation.STONECUTTING)
+        val smithing = net.minecraft.world.item.crafting.display.SmithingRecipeDisplay(slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.DIRT), slot(net.minecraft.world.item.Items.COBBLESTONE), slot(net.minecraft.world.item.Items.STONE), slot(net.minecraft.world.item.Items.SMITHING_TABLE))
+        check(CraftingRecipes.resolve("test:smithing", smithing, RecipeSource.C, nativeContext, unsupported).single().ingredients.size == 3)
+        check(unsupported.isEmpty())
+
         val root = java.nio.file.Files.createTempDirectory("spotlight-local-recipes")
         try {
             fun pack(name: String, recipes: Map<String, String>): net.minecraft.server.packs.PackResources {

@@ -397,6 +397,28 @@ tasks.named('check') {
     dependsOn 'releaseCheck'
 }
 
+[
+    musicPreferencesCheck: 'dev.spotlight.core.MusicPreferencesCheck',
+    musicNavigationCheck: 'dev.spotlight.ui.MusicNavigationCheck',
+    nbtCompletionCheck: 'dev.spotlight.core.NbtCompletionCheck',
+    clientItemStorageCheck: 'dev.spotlight.platform.ClientItemStorageCheck',
+    itemFactsCheck: 'dev.spotlight.platform.ItemFactsCheck',
+
+    headDatabaseCheck: 'dev.spotlight.platform.HeadDatabaseCheck',
+    remoteHeadsCheck: 'dev.spotlight.platform.NewRemoteHeadsCheck',
+    customEnchantmentsCheck: 'dev.spotlight.platform.CustomEnchantmentsCheck',
+    enchantmentCompatibilityCheck: 'dev.spotlight.ui.EnchantmentCompatibilityCheck',
+].each { taskName, entrypoint ->
+    tasks.register(taskName, JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = entrypoint
+        enableAssertions = true
+    }
+    tasks.named('check') { dependsOn taskName }
+}
+
 tasks.named('test') {
     failOnNoDiscoveredTests = false
 }
