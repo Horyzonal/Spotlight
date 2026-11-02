@@ -24,6 +24,12 @@ class SpotlightClient : ClientModInitializer {
         Spotlight.locations()
         FindTargets.initialize()
         RegionSelection.initialize()
+
+
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            dev.spotlight.ui.InventoryStorageButtons.attach(screen)
+        }
+
         FabricLoader.getInstance().getEntrypoints("spotlight", SpotlightExtension::class.java)
             .forEach { it.registerCommands() }
         val key = KeyMappingHelper.registerKeyMapping(KeyMapping(
@@ -35,6 +41,8 @@ class SpotlightClient : ClientModInitializer {
             FindTargets.tick()
             RegionSelection.tick()
             CommandHotkeys.tick()
+            ClientItemStorage.tick()
+
             while (key.consumeClick()) {
                 if (client.gui.screen() !is SpotlightScreen) Spotlight.open()
             }
