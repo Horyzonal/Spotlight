@@ -39,11 +39,19 @@ A: idk
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc1.21.4-0.1.0.jar`.
+Production artifact: `build/libs/spotlight-mc1.21.4-1.0.1.jar`.
 
 Development client uses `run/1.21.4/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port targets Minecraft 1.21.4 with Fabric Loader 0.20.1 and Fabric API 0.119.4+1.21.4. Build uses JDK 25; Java and Kotlin target Java 21 bytecode. Checks and client startup were exercised on Java 21. Other Minecraft versions require separate builds.
 
+```sh
+scripts/dev build check --offline
+scripts/dev remoteHeadsCheck --offline -PliveHeads
+```
+
 ## Attributions
+
+[![Minecraft Heads](docs/images/minecraft-heads.webp)](https://minecraft-heads.com/)
+
 When I don't have inspiration, I just steal from other mods.
 
 thank you
