@@ -6,8 +6,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
-import dev.spotlight.core.Entry
-import dev.spotlight.core.Fuzzy
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
@@ -110,16 +108,35 @@ internal class HeadFile(private val directory: Path) {
 }
 
 object HeadDatabase {
-    data class Head(val id: String, val title: String, val source: String, val tags: List<String>, val raw: CompoundTag)
+    class Head private constructor(val id: String, val title: String, val source: String, val tags: List<String>, itemId: String, raw: () -> CompoundTag) {
+        constructor(id: String, title: String, source: String, tags: List<String>, raw: CompoundTag) :
+            this(id, title, source, tags, raw.getString("id"), { raw })
+        internal constructor(head: RemoteHead) : this("minecraft-heads:${head.id}:${head.texture.hashCode()}", head.name, "Minecraft Heads", head.tags, "minecraft:player_head", { ClientItemStorage.encode(remoteStack(head)) }) {
+            remoteHead = head
+        }
+        private var remoteHead: RemoteHead? = null
+        val raw by lazy(raw)
+        private val detail = "$source ${tags.joinToString(" ")} $itemId"
+        internal val fields by lazy { listOf(title, id, detail).filter { it.isNotBlank() }.map { SearchField(it.lowercase(Locale.ROOT).trim()) } }
+        fun stack(): ItemStack = remoteHead?.let(::remoteStack) ?: ClientItemStorage.decode(raw)
+    }
+    internal class SearchField(val text: String) {
+        val words = text.split(WORD_BREAK).filter { it.isNotEmpty() }
+    }
+    private val WORD_BREAK = Regex("[^\\p{L}\\p{N}]+")
+    private val QUERY_BREAK = Regex("\\s+")
     private val client get() = Minecraft.getInstance()
     private val files by lazy { HeadFile(FabricLoader.getInstance().configDir.resolve("spotlight")) }
-    private val remote by lazy { RemoteHeads(FabricLoader.getInstance().configDir.resolve("spotlight")) }
-    val remoteStatus get() = remote.status
-    fun refreshRemote(): CompletableFuture<*> = remote.refresh()
+    @Volatile private var remoteReady = false
+    private val remote by lazy { RemoteHeads(FabricLoader.getInstance().configDir.resolve("spotlight")).also { remoteReady = true } }
+    val remoteStatus get() = if (remoteReady) remote.status else "Loading head database…"
+    val categories get() = RemoteHeads.CATEGORIES
+    fun refreshRemote(category: String? = null, force: Boolean = true): CompletableFuture<*> =
+        CompletableFuture.supplyAsync { remote.refresh(category, force) }.thenCompose { it }
     private var remoteSnapshot: List<RemoteHead>? = null
     private var remoteEntries: List<Head> = emptyList()
     internal fun remoteStack(head: RemoteHead): ItemStack {
-        val profile = GameProfile(head.id, "HeadDB").apply { properties.put("textures", Property("textures", head.texture)) }
+        val profile = GameProfile(head.id, "MinecraftHeads").apply { properties.put("textures", Property("textures", head.texture)) }
         return profileStack(profile).apply { set(DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal(head.name)) }
     }
     private val vanilla get() = listOf(Items.SKELETON_SKULL, Items.WITHER_SKELETON_SKULL, Items.ZOMBIE_HEAD, Items.CREEPER_HEAD, Items.DRAGON_HEAD, Items.PIGLIN_HEAD)
@@ -129,28 +146,92 @@ object HeadDatabase {
         set(DataComponents.PROFILE, ResolvableProfile(profile))
     }
     fun hasTexture(profile: GameProfile) = profile.properties.containsKey("textures")
-    fun entries(): List<Head> {
-        requireNotNull(client.connection) { "Join a world first" }
-        val saved = files.load().map { Head("saved:${it.name}", it.name, "Saved", it.tags, it.raw.copy()) }
-        val builtIn = vanilla.map { item ->
-            val stack = ItemStack(item)
-            val raw = ClientItemStorage.encode(stack)
-            Head("vanilla:${raw.getString("id")}", stack.hoverName.string, "Vanilla", listOf("mob"), raw)
+    fun entries(online: Boolean = false, category: String? = null): List<Head> {
+        if (online) {
+            val snapshot = remote.heads(category)
+            if (snapshot !== remoteSnapshot && snapshot != remoteSnapshot) {
+                remoteEntries = snapshot.map(::Head)
+                remoteSnapshot = snapshot
+            }
+            return remoteEntries
         }
-        val profiles = (client.connection!!.onlinePlayers.map { it.profile } + client.gameProfile).distinctBy { it.id }
+        requireNotNull(client.connection) { "Join a world first" }
+
+        val profiles = (client.connection!!.onlinePlayers.map { it.profile } + client.gameProfile +
+                    client.level!!.entitiesForRendering().filterIsInstance<net.minecraft.world.entity.player.Player>().map { it.gameProfile }).distinctBy { it.id }
         val online = profiles.map { profile ->
             Head("online:${profile.id}", profile.name, "Online", listOf("player", if (hasTexture(profile)) "textured" else "default skin"), ClientItemStorage.encode(profileStack(profile)))
         }
-        val snapshot = remote.heads
-        if (snapshot !== remoteSnapshot) {
-            remoteEntries = snapshot.map { Head("headdb:${it.id}", it.name, "HeadDB.org", listOf("remote", "custom"), ClientItemStorage.encode(remoteStack(it))) }
-            remoteSnapshot = snapshot
-        }
-        return saved + builtIn + online + remoteEntries
+        val player = requireNotNull(client.player)
+        val stacks = (0 until player.inventory.containerSize).map { player.inventory.getItem(it) } +
+            player.containerMenu.slots.map { it.item } + player.containerMenu.carried +
+            client.level!!.entitiesForRendering().filterIsInstance<net.minecraft.world.entity.LivingEntity>().flatMap { entity ->
+                net.minecraft.world.entity.EquipmentSlot.entries.map { entity.getItemBySlot(it) }
+            }
+        val observed = stacks.filter { !it.isEmpty && (it.`is`(Items.PLAYER_HEAD) || vanilla.contains(it.item)) }
+            .map { it.copy().apply { count = 1 } }.map(ClientItemStorage::encode).distinct()
+            .mapIndexed { index, raw -> Head("visible:$index", ClientItemStorage.decode(raw).hoverName.string, "Visible inventory / equipment", listOf("loaded", "head"), raw) }
+        return online + observed
     }
-    fun search(query: String, entries: List<Head>): List<Head> {
-        val indexed = entries.associateBy { it.id }
-        return Fuzzy.search(query, entries.map { Entry(it.id, it.title, "${it.source} ${it.tags.joinToString(" ")} ${it.raw.getString("id")}") }, limit = entries.size).map { indexed.getValue(it.id) }
+    fun search(query: String, entries: List<Head>, cancelled: () -> Boolean = { false }): List<Head> {
+        val words = query.lowercase(Locale.ROOT).trim().split(QUERY_BREAK).filter { it.isNotEmpty() }
+        if (words.isEmpty()) return entries
+        val ranked = java.util.TreeMap<Int, MutableList<Head>>()
+        entries.forEachIndexed { index, head ->
+            if (index % 256 == 0 && cancelled()) return emptyList()
+            var total = 0
+            for (word in words) {
+                var best = Int.MAX_VALUE
+                for (field in head.fields) best = minOf(best, score(word, field))
+                if (best == Int.MAX_VALUE) return@forEachIndexed
+                total += best
+            }
+            ranked.getOrPut(total) { ArrayList() }.add(head)
+        }
+        return ArrayList<Head>().apply { ranked.values.forEach(::addAll) }
+    }
+    private fun score(query: String, field: SearchField): Int {
+        val text = field.text
+        if (query == text) return 0
+        if (text.startsWith(query)) return 10
+        if (query in field.words) return 15
+        if (field.words.any { it.startsWith(query) }) return 20
+        if (query in text) return 30
+        var position = 0
+        var first = -1
+        var last = -1
+        for (character in query) {
+            position = text.indexOf(character, position)
+            if (position < 0) break
+            if (first < 0) first = position
+            last = position++
+        }
+        if (position >= 0) return 40 + (last - first + 1 - query.length).coerceAtMost(15)
+        val tolerance = if (query.length >= 6) 2 else if (query.length >= 3) 1 else 0
+        if (tolerance == 0) return Int.MAX_VALUE
+        var distance = Int.MAX_VALUE
+        for (word in field.words) {
+            if (kotlin.math.abs(query.length - word.length) <= tolerance) distance = minOf(distance, editDistance(query, word))
+        }
+        if (kotlin.math.abs(query.length - text.length) <= tolerance) distance = minOf(distance, editDistance(query, text))
+        return if (distance <= tolerance) 60 + distance else Int.MAX_VALUE
+    }
+    private fun editDistance(left: String, right: String): Int {
+        var previous = IntArray(right.length + 1) { it }
+        var beforePrevious = IntArray(right.length + 1)
+        var current = IntArray(right.length + 1)
+        for (i in left.indices) {
+            current[0] = i + 1
+            for (j in right.indices) {
+                current[j + 1] = minOf(current[j] + 1, previous[j + 1] + 1, previous[j] + if (left[i] == right[j]) 0 else 1)
+                if (i > 0 && j > 0 && left[i] == right[j - 1] && left[i - 1] == right[j]) current[j + 1] = minOf(current[j + 1], beforePrevious[j - 1] + 1)
+            }
+            val reuse = beforePrevious
+            beforePrevious = previous
+            previous = current
+            current = reuse
+        }
+        return previous[right.length]
     }
     fun saveHeld(name: String, tags: String) {
         val stack = requireNotNull(client.player) { "Join a world first" }.mainHandItem.copy().apply { count = 1 }
