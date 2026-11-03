@@ -1,63 +1,87 @@
 package dev.spotlight.platform
 
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.nio.file.Files
 import java.util.Base64
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 object NewRemoteHeadsCheck {
-    private val id = "91eded74-d02c-31aa-a218-360bd3fdb780"
-    private val value = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmI4MDk4ODlkYTM2YWRmNTYxODU4MWJiZjdiNjZkMmQ4ODM5ZTJlYjcyNTRjMzMzMmU0ZjNhMjMwZmEifX19"
-    private fun fixture(texture: String = value, name: String = "Cup"): String = JsonObject().apply {
-        add(id, JsonObject().apply {
-            addProperty("uuid", id); addProperty("name", name); addProperty("value", texture)
-            addProperty("command", "/op attacker")
-        })
-    }.toString()
     @JvmStatic fun main(args: Array<String>) {
-        val json = fixture()
-        val head = RemoteHeads.parse(json).single()
-        check(head.name == "Cup" && head.id.toString() == id)
+        val json = requireNotNull(javaClass.getResource("/heads/alphabet.json")).readText()
+        val head = RemoteHeads.parse(json).first()
+        check(head.name == "? Block" && "Punctuation Mark" in head.tags)
         val decoded = Base64.getDecoder().decode(head.texture).toString(Charsets.UTF_8)
-        check(decoded.contains("https://textures.minecraft.net/texture/"))
-        check(!decoded.contains("http://"))
-        listOf("file:///etc/passwd", "https://example.org/texture/${"a".repeat(64)}", "https://textures.minecraft.net.evil.org/texture/${"a".repeat(64)}", "https://textures.minecraft.net/texture/nope").forEach { url ->
+        check(decoded.contains("https://textures.minecraft.net/texture/") && !decoded.contains("http://"))
+        fun mutated(key: String, value: String): String = JsonParser.parseString(json).asJsonArray.apply {
+            get(0).asJsonObject.addProperty(key, value)
+        }.toString()
+        listOf("file:///etc/passwd", "https://example.org/texture/${"a".repeat(64)}", "https://textures.minecraft.net.evil.org/texture/${"a".repeat(64)}", "https://textures.minecraft.net/texture/nope", "https://textures.minecraft.net/texture/${"a".repeat(64)}?x=1").forEach { url ->
             val bad = Base64.getEncoder().encodeToString("""{"textures":{"SKIN":{"url":"$url"}}}""".toByteArray())
-            check(runCatching { RemoteHeads.parse(fixture(bad)) }.isFailure)
+            check(runCatching { RemoteHeads.parse(mutated("value", bad)) }.isFailure)
         }
-        listOf("", " ", "a".repeat(129), "bad\nname", "§kname").forEach { check(runCatching { RemoteHeads.parse(fixture(name = it)) }.isFailure) }
-        listOf("{}", "[]", "broken", " ".repeat(RemoteHeads.MAX_BYTES + 1), fixture("!"), json.replace(id, "1-1-1-1-1")).forEach {
+        listOf("", " ", "a".repeat(129), "bad\nname").forEach { check(runCatching { RemoteHeads.parse(mutated("name", it)) }.isFailure) }
+        listOf("{}", "[]", "broken", " ".repeat(RemoteHeads.MAX_BYTES + 1), mutated("value", "!"), mutated("uuid", "1-1-1-1-1"), mutated("tags", "a".repeat(4097)), json.replace("\"tags\":", "\"not_tags\":")).forEach {
             check(runCatching { RemoteHeads.parse(it) }.isFailure)
         }
-        val duplicate = JsonParser.parseString(json).asJsonObject
-        val other = duplicate.getAsJsonObject(id).deepCopy()
-        val otherId = "31e712ab-7878-31ea-a398-0c86dab7b333"
-        other.addProperty("uuid", otherId)
-        duplicate.add(otherId, other)
-        check(RemoteHeads.parse(duplicate.toString()).size == 1)
+        check(RemoteHeads.parse(mutated("name", "Aqua (#55FFFF / §b)")).first().name == "Aqua (#55FFFF / &b)")
+        check(RemoteHeads.failureMessage(java.util.concurrent.CompletionException(IllegalArgumentException("Category rejected"))) == "Category rejected")
+        val duplicate = JsonParser.parseString(json).asJsonArray
+        duplicate.add(duplicate[0].deepCopy().apply { asJsonObject.addProperty("uuid", "31e712ab-7878-31ea-a398-0c86dab7b333") })
+        check(RemoteHeads.parse(duplicate.toString()).size == RemoteHeads.parse(json).size)
         val directory = Files.createTempDirectory("spotlight-remote-heads-check")
         try {
+            Files.writeString(directory.resolve("remote-heads.json"), "unrelated legacy data")
             val remote = RemoteHeads(directory)
             check(remote.heads.isEmpty())
-            remote.accept(json)
-            check(remote.heads == listOf(head))
-            check(RemoteHeads(directory).heads == listOf(head))
-            check(runCatching { remote.accept("broken") }.isFailure)
-            check(remote.heads == listOf(head))
-            check(Files.readString(directory.resolve("remote-heads.json")) == json)
-            Files.writeString(directory.resolve("remote-heads.json"), "broken")
-            check(RemoteHeads(directory).heads.isEmpty())
-            Files.delete(directory.resolve("remote-heads.json"))
-            Files.createSymbolicLink(directory.resolve("remote-heads.json"), directory.resolve("private.json"))
-            check(runCatching { remote.accept(json) }.isFailure)
+            remote.accept("alphabet", json)
+            check(remote.heads.first() == head)
+            check(RemoteHeads(directory).heads == remote.heads)
+            check(runCatching { remote.accept("alphabet", "broken") }.isFailure)
+            check(remote.heads.first() == head)
+            check(Files.readString(directory.resolve("minecraft-heads-alphabet.json")) == json)
+            check(Files.readString(directory.resolve("remote-heads.json")) == "unrelated legacy data")
+            check(runCatching { remote.accept("../escape", json) }.isFailure)
+            Files.createSymbolicLink(directory.resolve("minecraft-heads-blocks.json"), directory.resolve("private.json"))
+            check(runCatching { remote.accept("blocks", json) }.isFailure)
             check(!Files.exists(directory.resolve("private.json")))
-            Files.delete(directory.resolve("remote-heads.json"))
+            check(remote.heads.first() == head)
+            Files.delete(directory.resolve("minecraft-heads-blocks.json"))
+            Files.delete(directory.resolve("minecraft-heads-alphabet.json"))
+            Files.createSymbolicLink(directory.resolve("minecraft-heads-alphabet.json"), directory.resolve("private.json"))
+            check(runCatching { remote.accept("alphabet", json) }.isFailure)
+            check(remote.heads.first() == head && !Files.exists(directory.resolve("private.json")))
+            Files.delete(directory.resolve("minecraft-heads-alphabet.json"))
+            remote.accept("alphabet", json)
+            val requests = mutableListOf<String>()
+            val first = CompletableFuture<String>()
+            val controlled = RemoteHeads(directory) { category ->
+                synchronized(requests) { requests += category }
+                if (category == "alphabet") first else CompletableFuture.completedFuture(json)
+            }
+            val all = controlled.refresh()
+            check(runCatching { controlled.refresh("blocks").join() }.isFailure)
+            check(!all.isDone)
+            check(synchronized(requests) { requests.all { it == "alphabet" } })
+            first.complete(json)
+            all.get(20, TimeUnit.SECONDS)
+            check(requests == RemoteHeads.CATEGORIES)
+            check(controlled.heads.size == RemoteHeads.parse(json).size)
+            controlled.refresh("alphabet", force = true).get(5, TimeUnit.SECONDS)
+            check(requests == RemoteHeads.CATEGORIES)
+            controlled.refresh(force = false).get(5, TimeUnit.SECONDS)
+            check(requests == RemoteHeads.CATEGORIES)
+            val failed = RemoteHeads(directory) { CompletableFuture.completedFuture("broken") }
+            val before = failed.heads
+            check(runCatching { failed.refresh("alphabet").get(5, TimeUnit.SECONDS) }.isFailure)
+            check(failed.heads == before && failed.status.contains("failed") && failed.status.contains("Prior category caches retained"))
+            Files.writeString(directory.resolve("minecraft-heads-alphabet.json"), "broken")
+            check(RemoteHeads(directory).heads("alphabet").isEmpty())
             if (args.contains("--live")) {
-                val result = remote.refresh().get(25, TimeUnit.SECONDS)
+                val result = remote.refresh("alphabet").get(30, TimeUnit.SECONDS)
                 check(result.isNotEmpty() && result.size <= RemoteHeads.MAX_HEADS)
-                check(RemoteHeads(directory).heads == result)
-                println("Live HeadDB HTTP 200: ${result.size} validated, distinct textures; cache round-trip passed")
+                check(RemoteHeads(directory).heads("alphabet") == result)
+                println("Live legacy alphabet HTTP 200: ${result.size} validated distinct textures; cache round-trip passed")
             }
         } finally {
             Files.walk(directory).use { it.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
@@ -67,9 +91,8 @@ object NewRemoteHeadsCheck {
         val registries = net.minecraft.data.registries.VanillaRegistries.createLookup()
         val stack = HeadDatabase.remoteStack(head)
         check(stack.`is`(net.minecraft.world.item.Items.PLAYER_HEAD))
-        check(stack.hoverName.string == "Cup")
-        val profile = stack.get(net.minecraft.core.component.DataComponents.PROFILE)!!
-        check(HeadDatabase.hasTexture(profile.partialProfile()))
-        println("NewRemoteHeadsCheck passed: verified fixture, bounds, URL allowlist, HTTPS, deduplication, atomic cache, native head; commands ignored")
+        check(stack.hoverName.string == head.name)
+        check(HeadDatabase.hasTexture(stack.get(net.minecraft.core.component.DataComponents.PROFILE)!!.partialProfile()))
+        println("NewRemoteHeadsCheck passed: live-derived array fixture, tags, bounds, texture allowlist, HTTPS, duplicates, isolated atomic caches, sequential loads, failures, single-flight, native head")
     }
 }
