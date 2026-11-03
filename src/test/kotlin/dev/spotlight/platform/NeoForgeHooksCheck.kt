@@ -23,7 +23,7 @@ object NeoForgeHooksCheck {
         val other = unsafe.allocateInstance(net.minecraft.client.gui.screens.TitleScreen::class.java) as Screen
         InventoryStorageButtons.attach(ScreenEvent.Init.Post(other, listeners, { error("Non-inventory button") }, {}))
         val spotlight = InstalledMods.search("spotlight").single { it.id == "spotlight" }
-        check(spotlight.version == "1.0.0")
+        check(spotlight.version == "1.0.1")
         check(InstalledMods.search("SPOTLIGHT").any { it.id == "spotlight" })
         check(!InstalledMods.hasConfigScreen("missing:mod"))
         check(InstalledMods.configScreen("missing:mod", other) == null)

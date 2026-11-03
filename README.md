@@ -38,7 +38,7 @@ A: idk
 
 ## Build and install
 
-This branch is the direct **NeoForge 1.21.1** port, version **1.0.0**. Requires **Java 21**, **NeoForge 21.1.265+ within 21.1**, and **Kotlin for Forge 5.12.0+ within 5.x**. Install Kotlin for Forge separately; Fabric API/Fabric Language Kotlin are not used. Client-only; no server installation required. Creative/server permission requirements remain unchanged.
+This branch is the direct **NeoForge 1.21.1** port, version **1.0.1**. Requires **Java 21**, **NeoForge 21.1.265+ within 21.1**, and **Kotlin for Forge 5.12.0+ within 5.x**. Install Kotlin for Forge separately; Fabric API/Fabric Language Kotlin are not used. Client-only; no server installation required. Creative/server permission requirements remain unchanged.
 
 ```sh
 scripts/dev build
@@ -47,7 +47,7 @@ scripts/dev runClient
 
 Gradle/compiler use JDK 25; game bytecode targets Java 21. If Java 21 discovery fails, pass `-Dorg.gradle.java.installations.paths=/path/to/jdk21`.
 
-Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.0.jar`. Development runtime: `run/neoforge-1.21.1/`.
+Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.1.jar`. Development runtime: `run/neoforge-1.21.1/`.
 
 Feature code is retained from patched Fabric 1.21.1, including live text preview fixes. NeoForge supplies lifecycle/keybind/render/client-command events. All 41 assertion entrypoints run through native NeoForge loader-aware test harness; release checks reject Fabric references/test classes and verify metadata/mixins. Loader-backed assertions pass; graphical client startup, exhaustive UI/audio and mod-interoperability parity remain to be manually verified for this release.
 
@@ -56,7 +56,21 @@ Installed command extensions use Java ServiceLoader: implement `dev.spotlight.pl
 Local recipe index reads vanilla plus discovered NeoForge mod-file resources. Conditional/dynamic recipes needing reload context are reported as unsupported rather than evaluated with invented context. This branch does not target Forge 1.20.1; that port is separate.
 
 
+## Head database
+
+Opening `heads` loads Minecraft Heads V1 categories automatically, with separate `server_heads` for client-visible heads. Category caches remain available offline. Online refresh contacts minecraft-heads.com; downloads run sequentially with a one-second request interval and a 60-second refresh cooldown. Search runs in the background; previews load lazily within a per-tick budget.
+
+```sh
+scripts/dev build check --offline
+scripts/dev remoteHeadsCheck --offline -PliveHeads
+```
+
+`-PliveHeads` explicitly enables network validation; omit for offline checks.
+
 ## Attributions
+
+[![Minecraft Heads](docs/images/minecraft-heads.webp)](https://minecraft-heads.com/)
+
 When I don't have inspiration, I just steal from other mods.
 
 thank you

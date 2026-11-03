@@ -81,6 +81,7 @@ tasks.withType(JavaExec).configureEach {
             testTask.jvmArgumentProviders.each { jvmArgs it.asArguments() }
             mainClass = 'dev.spotlight.validation.NeoForgeCheckLauncher'
             args entrypoint
+            if (name == 'remoteHeadsCheck' && project.hasProperty('liveHeads')) args '--live'
         }
     }
     javaLauncher = javaToolchains.launcherFor {
