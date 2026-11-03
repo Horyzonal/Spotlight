@@ -16,7 +16,7 @@ public final class LoaderCheck {
             throw new AssertionError("Native loader did not construct Spotlight and Kotlin For Forge");
         }
         String check = System.getProperty("spotlight.check.main");
-        Class.forName(check).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+        Class.forName(check).getMethod("main", String[].class).invoke(null, (Object) (Boolean.getBoolean("spotlight.check.liveHeads") ? new String[]{"--live"} : new String[0]));
         System.out.println("Loader check passed: " + check);
         System.exit(0);
     }

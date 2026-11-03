@@ -39,7 +39,7 @@ object ItemFactsCheck {
         check(InstalledMods.webLink("file:///tmp/test") == null)
         check(InstalledMods.webLink("https://example.org/issues") != null)
         val installed = InstalledMods.search("spotlight").single { it.id == "spotlight" }
-        check(installed.name == "Spotlight" && installed.version == "1.0.0")
+        check(installed.name == "Spotlight" && installed.version == "1.0.1")
         check(InstalledMods.search("kotlinforforge").any { it.id == "kotlinforforge" })
         check(!InstalledMods.hasConfigScreen("spotlight:missing"))
 

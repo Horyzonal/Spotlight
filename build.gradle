@@ -537,9 +537,10 @@ tasks.withType(JavaExec).configureEach {
             }
             workingDir checkGame
             program[program.indexOf('--gameDir') + 1] = checkGame.absolutePath
+            if (name == 'remoteHeadsCheck' && project.hasProperty('liveHeads')) systemProperty 'spotlight.check.liveHeads', 'true'
             args = program
 
-            environment 'MOD_CLASSES', ((sourceSets.main.output.classesDirs.files + [sourceSets.main.output.resourcesDir] + sourceSets.test.output.classesDirs.files).collect { "spotlight%%${it.absolutePath}" } ).join(File.pathSeparator)
+            environment 'MOD_CLASSES', ((sourceSets.main.output.classesDirs.files + [sourceSets.main.output.resourcesDir, sourceSets.test.output.resourcesDir] + sourceSets.test.output.classesDirs.files).collect { "spotlight%%${it.absolutePath}" } ).join(File.pathSeparator)
         }
     }
 }
