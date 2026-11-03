@@ -43,7 +43,15 @@ scripts/dev build
 Production artifact: `build/libs/spotlight-1.0.1.jar`. 
 
 
+```sh
+scripts/dev build check --offline
+scripts/dev remoteHeadsCheck --offline -PliveHeads
+```
+
 ## Attributions
+
+[![Minecraft Heads](docs/images/minecraft-heads.webp)](https://minecraft-heads.com/)
+
 When I don't have inspiration, I just steal from other mods.
 
 thank you
