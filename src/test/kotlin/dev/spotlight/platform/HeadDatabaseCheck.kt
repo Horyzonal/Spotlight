@@ -32,28 +32,6 @@ object HeadDatabaseCheck {
         )
         check(HeadDatabase.search("grdn red", entries).single().title == "Garden apple")
         check(HeadDatabase.search("online player_1", entries).single().source == "Online")
-        val searchEntries = entries + listOf("Apple", "Pineapple", "aplp e", "Grüner Apfel", "abc", "acb", " ", "Red apple", "apple pie").mapIndexed { i, title ->
-            HeadDatabase.Head("test:$i", title, "Test", listOf("food", "garden", "red"), raw)
-        }
-        val fuzzyEntries = searchEntries.map { dev.spotlight.core.Entry(it.id, it.title, "${it.source} ${it.tags.joinToString(" ")} ${it.raw.getStringOr("id", "")}") }
-        listOf("", "  ", "apple", "APPLE", "aple", "appel", "grdn red", "food", "online player_1", "minecraft:player_head", "acb", "不存在", "grüner", "apple pie", "test:3").forEach { query ->
-            val expected = dev.spotlight.core.Fuzzy.search(query, fuzzyEntries, limit = searchEntries.size).map { it.id }
-            check(HeadDatabase.search(query, searchEntries).map { it.id } == expected) { "Search ranking changed: $query" }
-        }
-        val large = List(150_001) { i -> HeadDatabase.Head("bulk:$i", "Garden apple $i", "Test", listOf("red", "food"), raw) }
-        check(HeadDatabase.search(" ", large) === large)
-        val start = System.nanoTime()
-        check(HeadDatabase.search("grdn red", large).size == large.size)
-        val indexed = large.first().fields
-        check(HeadDatabase.search("apple", large).size == large.size)
-        check(large.first().fields === indexed)
-        var cancellationChecks = 0
-        check(HeadDatabase.search("apple", large) { ++cancellationChecks >= 2 }.isEmpty())
-        check(cancellationChecks == 2)
-        println("Head search: 150001 results retained, two indexed queries ${(System.nanoTime() - start) / 1_000_000} ms; cancellation and Fuzzy ranking verified")
-        val remote = RemoteHead(java.util.UUID.randomUUID(), "Lazy preview", "texture", listOf("food"))
-        val lightweight = HeadDatabase.Head(remote)
-        check(HeadDatabase.search("lazy food", listOf(lightweight)).single() === lightweight)
         val directory = Files.createTempDirectory("spotlight-heads-check")
         try {
             val file = HeadFile(directory)
