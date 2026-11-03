@@ -34,17 +34,25 @@ A: idk
 
 ## Build and install
 
-This branch targets **Minecraft Java 26.2**. Requires **Java 25**, Fabric Loader, Fabric API **0.161.0+26.2**, and Fabric Language Kotlin. Exact versions are pinned in `gradle.properties`. 
+This branch targets **Minecraft Java 26.2**. Requires **Java 25**, Fabric Loader, Fabric API **0.161.0+26.2**, and Fabric Language Kotlin. Exact versions are pinned in `gradle.properties`.
 
 ```sh
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc26.2-0.1.0.jar`.
+Production artifact: `build/libs/spotlight-mc26.2-1.0.1.jar`.
 
 Development client uses `run/26.2/` to avoid opening 26.3 worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port uses native 26.2 GLFW input and APIs; binary compatibility with 26.3 is not claimed.
 
+```sh
+scripts/dev build check --offline
+scripts/dev remoteHeadsCheck --offline -PliveHeads
+```
+
 ## Attributions
+
+[![Minecraft Heads](docs/images/minecraft-heads.webp)](https://minecraft-heads.com/)
+
 When I don't have inspiration, I just steal from other mods.
 
 thank you

@@ -420,6 +420,7 @@ tasks.named('check') {
         classpath = sourceSets.test.runtimeClasspath
         mainClass = entrypoint
         enableAssertions = true
+        if (taskName == 'remoteHeadsCheck' && project.hasProperty('liveHeads')) args '--live'
     }
     tasks.named('check') { dependsOn taskName }
 }
