@@ -8,6 +8,7 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
+- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
@@ -39,7 +40,7 @@ A: idk
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc1.20.1-1.0.1.jar`.
+Production artifact: `build/libs/spotlight-mc1.20.1-1.0.2.jar`.
 
 Targets **Minecraft 1.20.1 / Java 17**, Fabric Loader, Fabric API **0.92.11+1.20.1**, and Fabric Language Kotlin. Gradle/build tools use JDK 25; mod bytecode and verification programs target Java 17. Development runtime is isolated under `run/1.20.1/`; never downgrade newer worlds without backups.
 
