@@ -114,7 +114,7 @@ internal object PlatformCheck {
         check(creativePlan(listOf(ItemStack.EMPTY, ItemStack.EMPTY), stone, 32) { 16 }.all { it.second.count == 16 })
         registerBuiltIns()
         check(Spotlight.commands.drop(1).map { it.id.removePrefix("spotlight:") } == listOf(
-            "fov", "gamma", "find_entities", "find_blocks", "tp", "sync_locations", "add_location", "spawn_location", "copy_item_id",
+            "about", "fov", "gamma", "find_entities", "find_blocks", "tp", "sync_locations", "add_location", "spawn_location", "copy_item_id",
             "creative_give", "find_inventory", "copy_coordinates", "seed", "uuid", "ping",
                         "gamemode_survival", "gamemode_creative", "gamemode_adventure", "gamemode_spectator", "settings", "minecraft_settings", "extensions_catalog",
             "light_level", "biome", "chunk_info", "dimension_info", "world_time", "heightmap",

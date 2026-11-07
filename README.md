@@ -8,6 +8,7 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
+- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
@@ -40,7 +41,7 @@ This branch targets **Minecraft Java 26.2**. Requires **Java 25**, Fabric Loader
 scripts/dev clean build
 ```
 
-Production artifact: `build/libs/spotlight-mc26.2-1.0.1.jar`.
+Production artifact: `build/libs/spotlight-mc26.2-1.0.2.jar`.
 
 Development client uses `run/26.2/` to avoid opening 26.3 worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port uses native 26.2 GLFW input and APIs; binary compatibility with 26.3 is not claimed.
 
