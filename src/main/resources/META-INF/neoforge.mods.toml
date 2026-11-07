@@ -6,7 +6,9 @@ license="MIT"
 modId="spotlight"
 version="${version}"
 displayName="Spotlight"
-authors="Horyzonal"
+authors="Horyzon"
+displayURL="https://codeberg.org/horyzon/Spotlight/"
+modUrl="https://codeberg.org/horyzon/Spotlight/"
 displayTest="IGNORE_ALL_VERSION"
 description='''Keyboard-first Minecraft command palette with fuzzy search, macros, item and recipe tools, locations, region selection, text and banner editors, music controls, themes and mini-games.'''
 

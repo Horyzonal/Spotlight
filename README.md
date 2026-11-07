@@ -8,6 +8,7 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
+- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
@@ -38,7 +39,7 @@ A: idk
 
 ## Build and install
 
-This branch is the direct **NeoForge 1.21.1** port, version **1.0.1**. Requires **Java 21**, **NeoForge 21.1.265+ within 21.1**, and **Kotlin for Forge 5.12.0+ within 5.x**. Install Kotlin for Forge separately; Fabric API/Fabric Language Kotlin are not used. Client-only; no server installation required. Creative/server permission requirements remain unchanged.
+This branch is the direct **NeoForge 1.21.1** port, version **1.0.2**. Requires **Java 21**, **NeoForge 21.1.265+ within 21.1**, and **Kotlin for Forge 5.12.0+ within 5.x**. Install Kotlin for Forge separately; Fabric API/Fabric Language Kotlin are not used. Client-only; no server installation required. Creative/server permission requirements remain unchanged.
 
 ```sh
 scripts/dev build
@@ -47,7 +48,7 @@ scripts/dev runClient
 
 Gradle/compiler use JDK 25; game bytecode targets Java 21. If Java 21 discovery fails, pass `-Dorg.gradle.java.installations.paths=/path/to/jdk21`.
 
-Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.1.jar`. Development runtime: `run/neoforge-1.21.1/`.
+Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.2.jar`. Development runtime: `run/neoforge-1.21.1/`.
 
 Feature code is retained from patched Fabric 1.21.1, including live text preview fixes. NeoForge supplies lifecycle/keybind/render/client-command events. All 41 assertion entrypoints run through native NeoForge loader-aware test harness; release checks reject Fabric references/test classes and verify metadata/mixins. Loader-backed assertions pass; graphical client startup, exhaustive UI/audio and mod-interoperability parity remain to be manually verified for this release.
 

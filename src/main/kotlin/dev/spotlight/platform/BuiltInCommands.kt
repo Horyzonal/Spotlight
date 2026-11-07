@@ -1,5 +1,6 @@
 package dev.spotlight.platform
 
+import dev.spotlight.commands.registerAbout
 import dev.spotlight.commands.registerHeads
 import dev.spotlight.commands.registerCustomEnchantments
 import dev.spotlight.commands.registerKits
@@ -59,6 +60,7 @@ import dev.spotlight.commands.registerCurrentSong
 import dev.spotlight.commands.registerThemes
 
 internal fun registerBuiltIns() {
+    registerAbout()
     registerFov()
     registerGamma()
     registerEntities()

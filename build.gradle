@@ -431,9 +431,22 @@ tasks.register('releaseCheck') {
             def mod = metadata.getArray('mods').getTable(0)
             if (metadata.getString('modLoader') != 'kotlinforforge' || metadata.getString('loaderVersion') != '[5.12,6)' ||
                 metadata.getString('license') != 'MIT' || mod.getString('modId') != 'spotlight' ||
-                mod.getString('version') != project.version.toString() || mod.getString('authors') != 'Horyzonal' ||
+                mod.getString('version') != project.version.toString() || mod.getString('authors') != 'Horyzon' ||
                 mod.getString('displayTest') != 'IGNORE_ALL_VERSION') {
                 throw new GradleException('Release metadata loader, version, license, authors or client compatibility mismatch')
+            }
+            if (mod.getString('displayURL') != 'https://codeberg.org/horyzon/Spotlight/' ||
+                mod.getString('modUrl') != 'https://codeberg.org/horyzon/Spotlight/') {
+                throw new GradleException('Spotlight homepage or repository metadata mismatch')
+            }
+            requireClass('dev.spotlight.commands.AboutKt')
+            requireClass('dev.spotlight.ui.AboutScreen')
+            requireEntry('assets/spotlight/textures/gui/pfp.png')
+            zip.getInputStream(zip.getEntry('assets/spotlight/textures/gui/pfp.png')).withCloseable {
+                def image = javax.imageio.ImageIO.read(it)
+                if (image == null || image.width != 800 || image.height != 800) {
+                    throw new GradleException('Spotlight profile image must be an 800x800 PNG')
+                }
             }
             def dependencies = metadata.getArray('dependencies.spotlight')
             ['minecraft': '[1.21.1]', 'neoforge': '[21.1.265,21.2)', 'kotlinforforge': '[5.12.0,6)'].each { id, range ->
