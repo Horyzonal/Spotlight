@@ -33,7 +33,8 @@ class AboutScreen(private val parent: Screen?) : Screen(catalogText("About Spotl
         addRenderableWidget(catalogButton("Back", left + 12, top + 188, panelWidth - 24) { onClose() })
     }
 
-    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(g, mouseX, mouseY, delta)
         g.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         g.fill(left, top, left + panelWidth, top + 220, SpotlightTheme.color(0xFF202630))
         g.blit(RenderType::guiTextured, ResourceLocation.parse("spotlight:textures/gui/pfp.png"), left + 12, top + 12,
@@ -41,6 +42,5 @@ class AboutScreen(private val parent: Screen?) : Screen(catalogText("About Spotl
         g.themeText(font, "Spotlight", left + 88, top + 20, SpotlightTheme.color(0xFFF2F5FC))
         g.themeText(font, "Made by Horyzon", left + 88, top + 38, SpotlightTheme.color(0xFFF2F5FC))
         g.themeText(font, "Version ${metadata.version.friendlyString}", left + 88, top + 56, SpotlightTheme.color(0xFF9DADC3))
-        super.render(g, mouseX, mouseY, delta)
     }
 }
