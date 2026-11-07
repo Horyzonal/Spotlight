@@ -26,6 +26,7 @@ import dev.spotlight.commands.registerSeed
 import dev.spotlight.commands.registerUuid
 import dev.spotlight.commands.registerGamemode
 import dev.spotlight.commands.registerPing
+import dev.spotlight.commands.registerAbout
 import dev.spotlight.commands.registerSettings
 import dev.spotlight.commands.registerCatalog
 import dev.spotlight.commands.registerLight
@@ -75,6 +76,7 @@ internal fun registerBuiltIns() {
     registerPing()
     registerGamemode()
     registerSettings()
+    registerAbout()
     registerCatalog()
     registerLight()
     registerBiome()

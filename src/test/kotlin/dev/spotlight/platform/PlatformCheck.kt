@@ -119,12 +119,14 @@ internal object PlatformCheck {
         check(Spotlight.commands.drop(1).map { it.id.removePrefix("spotlight:") } == listOf(
             "fov", "gamma", "find_entities", "find_blocks", "tp", "sync_locations", "add_location", "spawn_location", "copy_item_id",
             "creative_give", "find_inventory", "copy_coordinates", "seed", "uuid", "ping",
-                        "gamemode_survival", "gamemode_creative", "gamemode_adventure", "gamemode_spectator", "settings", "minecraft_settings", "extensions_catalog",
+                        "gamemode_survival", "gamemode_creative", "gamemode_adventure", "gamemode_spectator", "settings", "minecraft_settings", "about", "extensions_catalog",
             "light_level", "biome", "chunk_info", "dimension_info", "world_time", "heightmap",
             "facing", "position", "fps", "memory", "player_info", "targeted_block", "targeted_entity", "effects", "connection", "server_plugins",
             "text_editor", "copy_item_data", "clear_item_name", "clear_item_lore", "fill", "clone",
                         "snake", "dino", "2048", "tetris", "banner_editor", "recipes", "sound_manager", "music_player", "current_song", "themes", "unbreakable", "kits", "client_chest", "item_archive", "mods", "wiki", "head_database", "server_heads", "player_skull", "custom_enchant",
         ))
+        val about = Spotlight.commands.single { it.id == "spotlight:about" }
+        check(about.title == "About Spotlight" && about.input == CommandInput.NONE && about.unavailable() == null)
         check(Spotlight.commands.single { it.id == "spotlight:settings" }.title == "Spotlight settings")
         check(Spotlight.commands.single { it.id == "spotlight:minecraft_settings" }.title == "Minecraft settings")
         for (id in listOf("light_level", "biome", "chunk_info", "dimension_info", "world_time", "heightmap")) {

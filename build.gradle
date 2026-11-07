@@ -429,8 +429,21 @@ tasks.register('releaseCheck') {
             }
             def mod = metadata.get("mods").find { it.get("modId") == "spotlight" }
             if (mod == null || mod.get("version") != project.version.toString() ||
-                metadata.get("license") != "MIT" || mod.get("authors") != "Horyzonal") {
+                metadata.get("license") != "MIT" || mod.get("authors") != "Horyzon") {
                 throw new GradleException("Release metadata mismatch")
+            }
+            if (mod.get("displayURL") != 'https://codeberg.org/horyzon/Spotlight/' || mod.get("modUrl") != 'https://codeberg.org/horyzon/Spotlight/') {
+                throw new GradleException('Spotlight homepage or repository metadata mismatch')
+            }
+            requireClass('dev.spotlight.commands.AboutKt')
+            requireClass('dev.spotlight.ui.AboutScreen')
+            requireEntry('assets/spotlight/textures/gui/pfp.png')
+            requireEntry('assets/spotlight/textures/gui/pfp.webp')
+            zip.getInputStream(zip.getEntry('assets/spotlight/textures/gui/pfp.png')).withCloseable {
+                def image = javax.imageio.ImageIO.read(it)
+                if (image == null || image.width != 800 || image.height != 800) {
+                    throw new GradleException('Spotlight profile image must be an 800x800 PNG')
+                }
             }
             requireClass("dev.spotlight.platform.SpotlightClient")
             def entrypoint = zip.getInputStream(zip.getEntry('dev/spotlight/platform/SpotlightClient.class')).withCloseable {

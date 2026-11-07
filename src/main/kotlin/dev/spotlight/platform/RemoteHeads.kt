@@ -37,7 +37,7 @@ internal class RemoteHeads(private val directory: Path, private val fetch: (Stri
             require(category in CATEGORIES)
             val request = HttpRequest.newBuilder(URI.create("$ENDPOINT?cat=$category&tags=true"))
                 .timeout(Duration.ofSeconds(60)).header("Accept", "application/json")
-                .header("User-Agent", "Spotlight/1.0.1 (Minecraft head browser)").GET().build()
+                .header("User-Agent", "Spotlight/1.0.2 (Minecraft head browser)").GET().build()
             return http.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
                 .thenApply { response ->
                     check(response.statusCode() == 200) { "Minecraft Heads HTTP ${response.statusCode()}" }
