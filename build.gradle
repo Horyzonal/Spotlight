@@ -372,8 +372,12 @@ tasks.register('releaseCheck') {
             }
             def requireClass = { String name -> requireEntry(name.replace('.', '/') + '.class') }
             def metadata = readJson('fabric.mod.json')
-            if (metadata.version != project.version.toString() || metadata.license != 'MIT' || metadata.authors != ['Horyzonal']) {
+            if (metadata.version != project.version.toString() || metadata.license != 'MIT' || metadata.authors != ['Horyzon']) {
                 throw new GradleException('Release metadata version, license or authors mismatch')
+            }
+            requireEntry('assets/spotlight/textures/gui/pfp.png')
+            if (metadata.contact?.homepage != 'https://codeberg.org/horyzon/Spotlight/' || metadata.contact?.sources != 'https://codeberg.org/horyzon/Spotlight/') {
+                throw new GradleException('Spotlight homepage or repository metadata mismatch')
             }
             metadata.entrypoints.values().flatten().each { entry ->
                 requireClass((entry instanceof Map ? entry.value : entry).split('::', 2)[0])

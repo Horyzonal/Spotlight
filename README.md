@@ -8,6 +8,7 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
+- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
@@ -40,7 +41,7 @@ Requires Minecraft Java **26.3**, **Java 25**, Fabric Loader, Fabric API and Fab
 scripts/dev build
 ```
 
-Production artifact: `build/libs/spotlight-1.0.1.jar`. 
+Production artifact: `build/libs/spotlight-1.0.2.jar`.
 
 
 ```sh

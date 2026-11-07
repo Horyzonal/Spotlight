@@ -4,7 +4,11 @@
   "version": "${version}",
   "name": "Spotlight",
   "description": "Keyboard-first Minecraft command palette with fuzzy search, macros, item and recipe tools, locations, region selection, text and banner editors, music controls, themes and mini-games.",
-  "authors": ["Horyzonal"],
+  "authors": ["Horyzon"],
+  "contact": {
+    "homepage": "https://codeberg.org/horyzon/Spotlight/",
+    "sources": "https://codeberg.org/horyzon/Spotlight/"
+  },
   "license": "MIT",
   "environment": "client",
   "entrypoints": { "client": ["dev.spotlight.platform.SpotlightClient"] },
