@@ -39,7 +39,7 @@ Requires Minecraft Java **1.21.1**, **Java 21**, **NeoForge 21.1.265+ within 21.
 scripts/dev build
 ```
 
-Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.2.jar`. Development runtime: `run/neoforge-1.21.1/`.
+Production artifact: `build/libs/spotlight-neoforge-mc1.21.1-1.0.3.jar`. Development runtime: `run/neoforge-1.21.1/`.
 
 
 ```sh
