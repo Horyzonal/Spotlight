@@ -144,7 +144,8 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         val foreground = SpotlightTheme.color(0xFFF2F5FC)
         val muted = SpotlightTheme.color(0xFF9DADC3)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
@@ -183,7 +184,12 @@ class CurrentSongScreen(private val parent: Screen?) : Screen(catalogText("Curre
         graphics.themeCenteredText(font, catalogText(state), cx, titleY + 37, muted)
         if (mouseX in left + 12 until left + panelWidth - 12 && mouseY in titleY until titleY + 34 && song != null)
             graphics.setTooltipForNextFrame(catalogText("${song!!.title}\n${song!!.artist ?: "Unknown artist"}"), mouseX, mouseY)
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
+        val foreground = SpotlightTheme.color(0xFFF2F5FC)
+        val cx = width / 2
         if (status.isNotEmpty()) {
             graphics.themeCenteredText(font, catalogClip(font, status, (panelWidth - 16).coerceAtLeast(1)), cx, top + panelHeight - 12, foreground)
             if (mouseY in top + panelHeight - 14 until top + panelHeight)

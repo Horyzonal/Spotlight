@@ -143,8 +143,12 @@ class MusicPlayerScreen(private val parent: Screen?) : Screen(catalogText("Music
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
     override fun onClose() { minecraft!!.setScreen(parent) }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, background)
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         fun text(value: String, y: Int, color: Int) = graphics.themeText(font, catalogClip(font, value, panelWidth), left, y, color)
         text(current, search.y - 12, foreground)

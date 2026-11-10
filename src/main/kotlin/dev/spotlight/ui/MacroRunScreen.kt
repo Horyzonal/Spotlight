@@ -329,7 +329,8 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
     }
     override fun onClose() { minecraft!!.setScreen(parent) }
     override fun getNarrationMessage(): Component = catalogText("${macro.name}. ${arguments.getOrNull(index)?.let { "${it.name}: ${it.type}. " }.orEmpty()}${command ?: liveText}. ${error ?: variableError.orEmpty()}")
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         val heading = arguments.getOrNull(index)?.let { "${macro.name} · ${index + 1}/${arguments.size} · ${it.name}: ${it.type.name.lowercase()}" }
             ?: "${macro.name} · Could not run"
@@ -337,6 +338,9 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
         (error ?: variableError)?.let { font.split(catalogText(it), panelWidth).take(2).forEachIndexed { line, text ->
             graphics.themeText(font, text, left, height - 64 + line * font.lineHeight, SpotlightTheme.color(0xFFFFB4A9))
         } }
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         if (count > 0 && arguments.isNotEmpty()) graphics.themeText(font,
             catalogClip(font, "${arguments[index].name} suggestions · ↑↓ Select · Ctrl+Space Fill", panelWidth),

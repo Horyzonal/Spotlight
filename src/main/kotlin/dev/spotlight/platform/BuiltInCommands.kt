@@ -1,5 +1,7 @@
 package dev.spotlight.platform
 
+import dev.spotlight.commands.registerLook
+import dev.spotlight.commands.registerTasks
 import dev.spotlight.commands.registerAbout
 import dev.spotlight.commands.registerHeads
 import dev.spotlight.commands.registerCustomEnchantments
@@ -61,6 +63,8 @@ import dev.spotlight.commands.registerThemes
 
 internal fun registerBuiltIns() {
     registerAbout()
+    registerTasks()
+    registerLook()
     registerFov()
     registerGamma()
     registerEntities()

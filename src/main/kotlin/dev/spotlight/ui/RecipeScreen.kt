@@ -180,9 +180,13 @@ class RecipeScreen(private val parent: Screen?) : Screen(catalogText("Recipes by
         graphics.themeText(font, catalogClip(font, value, available), x, y, SpotlightTheme.color(color))
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.disableScissor()
         val contentBottom = (footerY - 28).coerceAtLeast(0)
