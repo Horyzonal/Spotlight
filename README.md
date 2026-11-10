@@ -8,13 +8,11 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
-- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
 - Crafting recipes (kinda pointless)
 - Alternative method of /fill and /clone
-- Finding things (blocks, entities, items)
 - Locations, like waypoints (syncs with map mods)
 - UUID grabber
 - Alias commands like gmc, gms
@@ -35,15 +33,14 @@ A: idk
 
 ## Build and install
 
-This branch targets **Minecraft Java 26.2**. Requires **Java 25**, Fabric Loader, Fabric API **0.161.0+26.2**, and Fabric Language Kotlin. Exact versions are pinned in `gradle.properties`.
+Requires Minecraft Java **26.2**, **Java 25**, Fabric Loader, Fabric API and Fabric Language Kotlin. Exact dependency versions are pinned in `gradle.properties`.
 
 ```sh
-scripts/dev clean build
+scripts/dev build
 ```
 
 Production artifact: `build/libs/spotlight-mc26.2-1.0.2.jar`.
 
-Development client uses `run/26.2/` to avoid opening 26.3 worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port uses native 26.2 GLFW input and APIs; binary compatibility with 26.3 is not claimed.
 
 ```sh
 scripts/dev build check --offline
@@ -59,3 +56,8 @@ When I don't have inspiration, I just steal from other mods.
 thank you
 - [ClientCommands](https://github.com/Earthcomputer/clientcommands)
 - [FZMM](https://github.com/Zailer43/FZMM-Mod)
+- [Mod Menu](https://modrinth.com/mod/modmenu)
+- [Hey Wiki](https://modrinth.com/mod/hey-wiki)
+- [NBT Editor](https://modrinth.com/mod/nbt-editor)
+
+For ideas, concepts and inspiration.
