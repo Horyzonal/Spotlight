@@ -51,6 +51,7 @@ class SpotlightClient {
                 if (event.phase == TickEvent.Phase.END) {
                     LocationActions.tick()
                     FindTargets.tick()
+                      BackgroundTasks.tick()
                     RegionSelection.tick()
                     CommandHotkeys.tick()
                     ClientItemStorage.tick()
