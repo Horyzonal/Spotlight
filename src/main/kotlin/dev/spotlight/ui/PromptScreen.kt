@@ -54,10 +54,14 @@ internal class PromptScreen(
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))
         graphics.themeText(font, catalogText(title), maxOf(10, (width - font.width(catalogText(title))) / 2), height / 2 - 48, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, error ?: hint, (width - 20).coerceAtLeast(0)), 10, height / 2 + 54, SpotlightTheme.color(0xFFFFB4A9))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "${primaryModifierLabel}+Enter Save · Tab Next · Esc Back")
     }

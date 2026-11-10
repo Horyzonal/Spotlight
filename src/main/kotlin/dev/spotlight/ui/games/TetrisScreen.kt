@@ -47,8 +47,12 @@ class TetrisScreen(private val parent: Screen?) : Screen(catalogText("Tetris")) 
         return true
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), (height - 32).coerceAtLeast(1))
         val status = when { game.gameOver -> "Game over · $restartLabel"; game.paused -> "Paused · $pauseLabel"; else -> "Playing · $pauseLabel" }

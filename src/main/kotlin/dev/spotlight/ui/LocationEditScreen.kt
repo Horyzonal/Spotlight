@@ -63,10 +63,14 @@ internal class LocationEditScreen(private val parent: Screen?, private val locat
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xEE101722))
         fields.forEachIndexed { index, field -> graphics.themeText(font, catalogText(labels[index]), maxOf(2, field.x - 60), field.y + 6, SpotlightTheme.color(0xFFF2F5FC)) }
         error?.let { graphics.themeText(font, catalogClip(font, it, (width - 20).coerceAtLeast(0)), 10, height - 44, SpotlightTheme.color(0xFFFFB4A9)) }
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "${primaryModifierLabel}+Enter Save · Tab Next · Esc / ${primaryModifierLabel}+W Cancel")
     }

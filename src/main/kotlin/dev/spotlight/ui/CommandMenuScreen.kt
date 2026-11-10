@@ -107,9 +107,6 @@ internal class CommandMenuScreen(
 
     override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
-    }
-
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(left, top, left + menuWidth, top + menuHeight, SpotlightTheme.color(0xFA101722))
         graphics.renderOutline(left, top, menuWidth, menuHeight, SpotlightTheme.color(0xFF415877))
         graphics.enableScissor(left + 2, top, left + menuWidth - 2, top + menuHeight)
@@ -118,6 +115,9 @@ internal class CommandMenuScreen(
             if (row.actionIndex < 0) graphics.themeText(font, row.heading, left + 10, top + 23 + index * 22,
                 SpotlightTheme.color(0xFF9DADC3))
         }
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, "↑↓ / Tab Navigate · Enter Run · Esc Back", left + 5, top + menuHeight - 12, SpotlightTheme.color(0xFF9DADC3))
         graphics.disableScissor()

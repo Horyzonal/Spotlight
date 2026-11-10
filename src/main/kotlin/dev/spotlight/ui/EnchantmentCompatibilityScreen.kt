@@ -129,7 +129,8 @@ class EnchantmentCompatibilityScreen(private val parent: Screen) : Screen(catalo
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(g, mouseX, mouseY, delta)
         g.fill(0, 0, width, height, color(ThemeColor.SCREEN_BACKGROUND))
         val left = search.x
         val available = search.width
@@ -142,7 +143,12 @@ class EnchantmentCompatibilityScreen(private val parent: Screen) : Screen(catalo
         g.themeText(font, catalogClip(font, if (held.isEmpty) "Hold an item" else held.hoverName.string,
             (available - 32).coerceAtLeast(0)), left + 28, 28, color(ThemeColor.TEXT))
         g.themeText(font, catalogClip(font, "Held-item rules · read only", (available - 32).coerceAtLeast(0)), left + 28, 40, color(ThemeColor.TEXT_MUTED))
+    }
+
+    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(g, mouseX, mouseY, delta)
+        val left = search.x
+        val available = search.width
         if (failure != null || grid.children().isEmpty()) {
             g.themeText(font, catalogClip(font, failure ?: if (cards.isEmpty()) "No loaded enchantments" else "No matching enchantments", available),
                 left, 86, color(if (failure != null) ThemeColor.ERROR else ThemeColor.TEXT_MUTED))

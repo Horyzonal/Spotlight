@@ -60,9 +60,6 @@ internal class ConfirmSpotlightScreen(
 
     override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
-    }
-
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(left, top, left + panelWidth, top + panelHeight, SpotlightTheme.color(0xFA101722))
         graphics.renderOutline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
         val textBottom = top + panelHeight - 36 - hints.size * font.lineHeight
@@ -71,6 +68,9 @@ internal class ConfirmSpotlightScreen(
             graphics.themeText(font, line, left + 10, top + 10 + index * font.lineHeight, SpotlightTheme.color(0xFFF2F5FC))
         }
         graphics.disableScissor()
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         hints.forEachIndexed { index, line ->
             graphics.themeText(font, line, left + 10, top + panelHeight - 5 - (hints.size - index) * font.lineHeight, SpotlightTheme.color(0xFF9DADC3))
