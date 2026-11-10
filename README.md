@@ -39,7 +39,7 @@ Requires Minecraft Java **1.20.1**, **Java 17**, **Forge 47.4.28+ within 47.x** 
 scripts/dev build
 ```
 
-Production artifact: `build/libs/spotlight-forge-mc1.20.1-1.0.2.jar`. Development runtime: `run/forge-1.20.1/`.
+Production artifact: `build/libs/spotlight-forge-mc1.20.1-1.0.3.jar`. Development runtime: `run/forge-1.20.1/`.
 
 
 ```sh
@@ -47,7 +47,7 @@ scripts/dev build check --offline
 scripts/dev remoteHeadsCheck --offline -PliveHeads
 ```
 
-Legacy NeoForge: `scripts/dev build check --offline -Ploader=neoforge`; artifact: `build/neoforge/libs/spotlight-forge-mc1.20.1-1.0.2.jar`; runtime: `run/neoforge-1.20.1/`.
+Legacy NeoForge: `scripts/dev build check --offline -Ploader=neoforge`; artifact: `build/neoforge/libs/spotlight-forge-mc1.20.1-1.0.3.jar`; runtime: `run/neoforge-1.20.1/`.
 
 ## Attributions
 

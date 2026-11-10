@@ -39,7 +39,7 @@ object ItemFactsCheck {
         check(InstalledMods.webLink("file:///tmp/test") == null)
         check(InstalledMods.webLink("https://example.org/issues") != null)
         val installed = InstalledMods.search("spotlight").single { it.id == "spotlight" }
-        check(installed.name == "Spotlight" && installed.version == "1.0.2")
+        check(installed.name == "Spotlight" && installed.version == "1.0.3")
         check(installed.homepage.toString() == "https://codeberg.org/horyzon/Spotlight/")
         val metadata = net.minecraftforge.fml.ModList.get().getModContainerById("spotlight").orElseThrow().modInfo
         check(metadata.config.getConfigElement<String>("authors").orElseThrow() == "Horyzon")
