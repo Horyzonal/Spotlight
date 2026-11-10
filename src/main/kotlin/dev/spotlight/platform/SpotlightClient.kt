@@ -39,6 +39,7 @@ class SpotlightClient : ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             LocationActions.tick()
             FindTargets.tick()
+            BackgroundTasks.tick()
             RegionSelection.tick()
             CommandHotkeys.tick()
             ClientItemStorage.tick()
