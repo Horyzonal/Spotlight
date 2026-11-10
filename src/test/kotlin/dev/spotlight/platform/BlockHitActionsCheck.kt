@@ -27,7 +27,7 @@ object BlockHitActionsCheck {
         rejected { resolve(block = null) }
         rejected { resolve(block = "minecraft:stone") }
         rejected { resolve("$token; say injected") }
-        for (action in listOf("highlight", "location")) {
+        for (action in listOf("highlight", "location", "look")) {
             check(BlockHitActions.command(action, token) == "/spotlight:hit $action $token")
         }
         rejected { BlockHitActions.command("say injected", token) }
