@@ -48,6 +48,7 @@ class SpotlightClient(modEventBus: IEventBus) {
         val client = Minecraft.getInstance()
         LocationActions.tick()
         FindTargets.tick()
+        BackgroundTasks.tick()
         RegionSelection.tick()
         CommandHotkeys.tick()
         ClientItemStorage.tick()

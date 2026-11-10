@@ -58,8 +58,12 @@ class CloneScreen(private val parent: Screen?) : Screen(catalogText("clone")) {
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         val lines = listOf(
             4 to "clone · choose mask and behavior",

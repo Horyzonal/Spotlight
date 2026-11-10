@@ -835,9 +835,6 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
 
     override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0x99060A12))
-    }
-
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(left, top, left + panelWidth, bottom, SpotlightTheme.color(0xFA101722))
         graphics.renderOutline(left, top, panelWidth, panelHeight, SpotlightTheme.color(0xFF415877))
         graphics.enableScissor(left + 4, top, left + panelWidth - 4, bottom)
@@ -854,6 +851,9 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         }
         graphics.themeText(font, clipped(heading, (panelWidth - 24).coerceAtLeast(0)), left + 12, top + 12, SpotlightTheme.color(0xFFF2F5FC))
         graphics.disableScissor()
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(left + 4, top, left + panelWidth - 4, bottom)
         if (results.isEmpty() && listTop + 20 < footerTop) graphics.themeText(font, argumentHint() ?: if (input.value.trim() == "/seed") "Custom seed copies known full seed · singleplayer only" else if (input.value.startsWith('/')) "Enter runs valid command · Tab completes · ${primaryModifierLabel}+E edits target" else "No matches. Try an item ID or shorter query.", left + 15, listTop + 8, SpotlightTheme.color(0xFF9DADC3))

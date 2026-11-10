@@ -169,11 +169,15 @@ class SelectorScreen(
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Entity selector · edit flags, then apply"), left, top + 5, SpotlightTheme.color(0xFFF2F5FC))
         val message = error ?: "Preserves other flags · type, distance, limit, sort, name, team, tag…"
         graphics.themeText(font, catalogClip(font, message, panelWidth), left, height - 80, SpotlightTheme.color(0xFFFFC0A0))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "↑↓ Choices · Enter Choose / Set · ${primaryModifierLabel}+Enter Apply · Tab Next · Esc Back")
     }

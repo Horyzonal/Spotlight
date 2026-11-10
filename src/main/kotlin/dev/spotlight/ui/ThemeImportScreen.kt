@@ -157,8 +157,12 @@ class ThemeImportScreen(private val parent: ThemesScreen) : Screen(catalogText("
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, title, left, 10, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, if (fileMode) "Name (optional; uses file header)" else "Name (required)", panelWidth), left, 51, SpotlightTheme.color(0xFF9DADC3))

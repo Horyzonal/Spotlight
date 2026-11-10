@@ -90,11 +90,15 @@ class WikiScreen(private val parent: Screen?) : Screen(catalogText("Minecraft Wi
         if (event.isConfirmation && query.isFocused) { search(); return true }
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, title, left, 12, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, "Search sends only typed terms to minecraft.wiki; no inventory or coordinates.", panelWidth), left, 28, SpotlightTheme.color(0xFF9DADC3))
         graphics.themeText(font, catalogClip(font, status, panelWidth), left, height - 72, SpotlightTheme.color(0xFFF2F5FC))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         if (mouseY in 26..40) graphics.setTooltipForNextFrame(catalogText("Only Search / Enter sends typed terms to https://minecraft.wiki/api.php. No keystroke requests, API key, inventory or coordinates. Links require confirmation."), mouseX, mouseY)
         if (mouseY in height - 74..height - 60) graphics.setTooltipForNextFrame(catalogText(status), mouseX, mouseY)

@@ -27,7 +27,7 @@ internal object BlockHitActions {
         NeoForge.EVENT_BUS.addListener { _: ClientPlayerNetworkEvent.LoggingOut -> hits.clear() }
         NeoForge.EVENT_BUS.addListener { event: RegisterClientCommandsEvent ->
             val root = Commands.literal("spotlight:hit")
-            listOf("highlight", "location").forEach { action ->
+            listOf("highlight", "location", "look").forEach { action ->
                 root.then(Commands.literal(action).then(
                     Commands.argument("token", StringArgumentType.word()).executes { context ->
                         run(context.source, action, StringArgumentType.getString(context, "token"))
@@ -50,10 +50,11 @@ internal object BlockHitActions {
         return Component.literal(text).withStyle { it.withColor(SpotlightTheme.color(0xFFF2F5FC) and 0xFFFFFF) }
             .append(" ").append(button("[Highlight again]", "highlight", "Highlight only this block for another 15 seconds"))
             .append(" ").append(button("[Add location]", "location", "Open a prefilled location editor; nothing saves until Save"))
+            .append(" ").append(button("[Look at block]", "look", "Face this block's center from your eye position"))
     }
 
     internal fun command(action: String, token: UUID): String {
-        require(action == "highlight" || action == "location") { "Unknown block hit action" }
+        require(action in listOf("highlight", "location", "look")) { "Unknown block hit action" }
         return "/spotlight:hit $action $token"
     }
 
@@ -72,6 +73,7 @@ internal object BlockHitActions {
                     FindTargets.highlightBlock(BlockPos(hit.x, hit.y, hit.z))
                     source.sendSuccess({ Component.literal("Highlighting ${hit.name} at ${hit.x}, ${hit.y}, ${hit.z} for 15s") }, false)
                 }
+                "look" -> LookActions.at(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5)
                 "location" -> {
                     val draft = SavedLocation(UUID.randomUUID().toString(), "${hit.name} (${hit.x}, ${hit.y}, ${hit.z})",
                         hit.x.toDouble(), hit.y.toDouble(), hit.z.toDouble(), hit.dimension, hit.scope)

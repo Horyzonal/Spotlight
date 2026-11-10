@@ -170,8 +170,12 @@ class CatalogScreen(private val parent: Screen) : Screen(catalogText("Selection 
     }
 
     override fun onClose() { minecraft!!.setScreen(parent) }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "↑↓ Select · Enter Copy ID · Tab Next · Esc Back")
     }
