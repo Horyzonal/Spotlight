@@ -5,7 +5,7 @@ import dev.spotlight.platform.FindTargets
 import dev.spotlight.platform.worldUnavailable
 
 internal fun registerEntities() {
-    registerCommand("find_entities", "Find entities", "Loaded only; radius 32; highlights nearest 64", CommandInput.ENTITY, ::worldUnavailable) {
+    registerCommand("find_entities", "Find entities", "Keep searching loaded entities across render distance; highlights nearest 64; stop in Tasks", CommandInput.ENTITY, ::worldUnavailable) {
         FindTargets.entities(it.text)
     }
 }

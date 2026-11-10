@@ -5,7 +5,7 @@ import dev.spotlight.platform.FindTargets
 import dev.spotlight.platform.worldUnavailable
 
 internal fun registerBlocks() {
-    registerCommand("find_blocks", "Find blocks", "Nearest loaded block; full render distance and build height; bounded scan", CommandInput.BLOCK, ::worldUnavailable) {
+    registerCommand("find_blocks", "Find blocks", "Keep searching nearest loaded block across render distance and build height; stop in Tasks", CommandInput.BLOCK, ::worldUnavailable) {
         FindTargets.blocks(it.text)
     }
 }

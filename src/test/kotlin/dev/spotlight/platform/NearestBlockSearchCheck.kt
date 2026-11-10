@@ -54,7 +54,73 @@ internal object NearestBlockSearchCheck {
             return search.result
         }
         check(tie() == tie())
-        check(leaves == 2) 
+        check(leaves == 2)
+        persistentSearch()
         println("NearestBlockSearch checks passed")
+    }
+
+    private fun persistentSearch() {
+        data class Pass(val center: Int, var work: Int = 0)
+        var starts = 0
+        var advances = 0
+        var available = false
+        fun job() = PersistentTargetSearch<Int, Pass>(
+            create = { starts++; Pass(it) },
+            advance = { advances++; ++it.work == 2 },
+            found = { available },
+        )
+        val search = job()
+        check(search.tick(0) == null)
+        check(search.tick(0) == null)
+        repeat(20) { check(search.tick(0) == null) }
+        check(starts == 1 && advances == 2)
+        available = true
+        check(search.tick(0) == null)
+        check(search.tick(0)?.center == 0)
+        check(starts == 2 && advances == 4)
+        repeat(30) { check(search.tick(0) == null) }
+        check(starts == 2 && advances == 4)
+
+        val canceled = job()
+        canceled.tick(0)
+        canceled.cancel()
+        val before = advances
+        repeat(30) { check(canceled.tick(it) == null) }
+        check(advances == before)
+
+        val moving = job()
+        check(moving.tick(0) == null)
+        check(moving.tick(1) == null)
+        check(moving.tick(1)?.center == 1)
+
+        available = false
+        val refreshing = job()
+        refreshing.tick(0)
+        refreshing.tick(0)
+        val beforeRefresh = starts
+        refreshing.tick(1)
+        check(starts == beforeRefresh + 1)
+
+        available = true
+        val first = job()
+        val second = job()
+        first.tick(0)
+        second.tick(1)
+        first.cancel()
+        check(second.tick(1)?.center == 1)
+        check(first.tick(0) == null)
+
+        val candidates = NearestTargetCandidates<Int>(64)
+        for (distance in 1000 downTo 1) candidates.add(distance, distance.toDouble())
+        check(candidates.values() == (1..64).toList())
+
+        val center = net.minecraft.core.BlockPos(-1, 100, -1)
+        val area = FindTargets.SearchArea(center, 4)
+        check(area.contains(net.minecraft.core.BlockPos(63, -64, 63)))
+        check(area.contains(net.minecraft.core.BlockPos(-80, 319, -80)))
+        check(!area.contains(net.minecraft.core.BlockPos(64, 100, 0)))
+        check(!area.contains(net.minecraft.core.BlockPos(-81, 100, 0)))
+        val wider = FindTargets.SearchArea(center, 5)
+        check(wider != area && wider.contains(net.minecraft.core.BlockPos(64, 100, 0)))
     }
 }
