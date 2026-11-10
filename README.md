@@ -8,13 +8,11 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
-- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
 - Crafting recipes (kinda pointless)
 - Alternative method of /fill and /clone
-- Finding things (blocks, entities, items)
 - Locations, like waypoints (syncs with map mods)
 - UUID grabber
 - Alias commands like gmc, gms
@@ -35,14 +33,14 @@ A: idk
 
 ## Build and install
 
+Requires Minecraft Java **1.21.11**, **Java 21** (build uses JDK 25), Fabric Loader, Fabric API and Fabric Language Kotlin. Exact dependency versions are pinned in `gradle.properties`.
 
 ```sh
-scripts/dev clean build
+scripts/dev build
 ```
 
 Production artifact: `build/libs/spotlight-mc1.21.11-1.0.2.jar`.
 
-Development client uses `run/1.21.11/` to avoid opening newer worlds/configuration in an older game. Do not copy newer-version worlds into this directory without a backup. Port targets Minecraft 1.21.11 with Fabric Loader 0.20.1 and Fabric API 0.141.6+1.21.11. Build uses JDK 25; Java and Kotlin target Java 21 bytecode. Other Minecraft versions require separate builds.
 
 ```sh
 scripts/dev build check --offline
@@ -58,3 +56,8 @@ When I don't have inspiration, I just steal from other mods.
 thank you
 - [ClientCommands](https://github.com/Earthcomputer/clientcommands)
 - [FZMM](https://github.com/Zailer43/FZMM-Mod)
+- [Mod Menu](https://modrinth.com/mod/modmenu)
+- [Hey Wiki](https://modrinth.com/mod/hey-wiki)
+- [NBT Editor](https://modrinth.com/mod/nbt-editor)
+
+For ideas, concepts and inspiration.
