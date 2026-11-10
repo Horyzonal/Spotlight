@@ -250,9 +250,13 @@ abstract class StorageScreen(private val parent: Screen?, title: String) : Scree
     }
     internal fun removalSlot(event: MouseButtonEvent): Int? = storageRemovalSlot(width, height, left, gridTop, event)
         protected fun gridSlot(x: Double, y: Double): Int? = storageGridSlot(width, height, left, gridTop, x, y)
-    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(g, mouseX, mouseY, delta)
         g.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         g.enableScissor(0, 26, width, maxOf(26, height - 20))
+    }
+
+    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(g, if (contentContains(mouseX.toDouble(), mouseY.toDouble())) mouseX else -1, if (contentContains(mouseX.toDouble(), mouseY.toDouble())) mouseY else -1, delta)
         g.disableScissor()
         g.themeText(font, title, left, 10, SpotlightTheme.color(0xFFF2F5FC))

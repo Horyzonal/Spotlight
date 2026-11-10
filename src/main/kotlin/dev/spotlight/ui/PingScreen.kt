@@ -118,8 +118,12 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.enableScissor(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
         graphics.themeText(font, catalogClip(font, "Ping · ${results.size}/${entries.size} online players · Player / Latency", panelWidth), left, 38, SpotlightTheme.color(0xFF9DADC3))

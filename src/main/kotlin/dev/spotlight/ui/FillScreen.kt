@@ -213,9 +213,13 @@ class FillScreen(private val parent: Screen?) : Screen(catalogText("fill")) {
 
     override fun onClose() { minecraft!!.setScreen(parent) }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("fill · choose block and mode"), left, 12, SpotlightTheme.color(0xFFF2F5FC))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         results.drop(offset).take(count).forEachIndexed { index, entry ->
             val stack = fillBlockIcon(entry.detail)

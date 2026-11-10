@@ -251,8 +251,12 @@ class TextEditorScreen(private val parent: Screen?) : Screen(catalogText("Text e
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, title, form.x, 10, SpotlightTheme.color(0xFFF2F5FC))
         timeline.extractDragGhost(graphics, mouseX, mouseY)

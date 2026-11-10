@@ -80,11 +80,15 @@ class ModsScreen(private val parent: Screen?) : Screen(catalogText("Installed mo
     }
 
     override fun onClose() { minecraft!!.setScreen(parent) }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Installed mods · ${mods.size} matches · page ${page + 1}"), left, 12, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, "Selected: ${selected?.name ?: "none"}", panelWidth), left, height - 122, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, status, panelWidth), left, height - 72, SpotlightTheme.color(0xFF9DADC3))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         if (mouseY in height - 74..height - 60) graphics.setTooltipForNextFrame(catalogText(status), mouseX, mouseY)
     }

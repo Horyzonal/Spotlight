@@ -174,8 +174,12 @@ class SoundManagerScreen(private val parent: Screen?) : Screen(catalogText("Soun
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
     override fun onClose() { minecraft!!.setScreen(parent) }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, background)
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         if (manual) {
             graphics.themeText(font, catalogClip(font, "Volume 0–1", panelWidth / 2), left, bottom - 74, foreground)

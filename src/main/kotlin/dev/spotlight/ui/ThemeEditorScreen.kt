@@ -163,8 +163,12 @@ class ThemeEditorScreen(private val parent: Screen, entry: ThemeEntry? = null) :
         }
         return super.keyPressed(event.key(), event.scancode(), event.modifiers())
     }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         graphics.themeText(font, catalogText("Theme editor · Name"), left, 14, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, validation ?: notice, panelWidth), left, height - 50, SpotlightTheme.color(if (validation != null || failed) 0xFFFFB4A9 else 0xFF9DADC3))

@@ -153,8 +153,12 @@ class HeadDatabaseScreen(private val parent: Screen? = null, private val online:
         } }
         loadSource()
     }
-    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(g, mouseX, mouseY, delta)
         g.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
+    }
+
+    override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(g, mouseX, mouseY, delta)
         g.themeText(font, "${if (online) "Head database" else "Server heads"} · ${if (online) category ?: "All heads" else "Client-visible heads"} · $matches matches${if (searching) " · Searching…" else ""} · Page ${page + 1}", left, 10, SpotlightTheme.color(0xFFF2F5FC))
         g.themeText(font, catalogClip(font, if (online) HeadDatabase.remoteStatus else "Only client-visible profiles, equipment and inventory; no hidden storage", panelWidth), left, height - 29, SpotlightTheme.color(0xFFF2F5FC))

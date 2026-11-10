@@ -266,13 +266,17 @@ class MacroEditorScreen(private val parent: Screen?, private val macro: Macro? =
     }
 
     override fun onClose() { minecraft!!.setScreen(parent) }
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        super.renderBackground(graphics, mouseX, mouseY, delta)
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Macro name"), left, 17, SpotlightTheme.color(0xFFF2F5FC))
         graphics.themeText(font, catalogClip(font, error ?: "Command template · one command; line breaks rejected", panelWidth), left, 54,
                     if (error != null) SpotlightTheme.color(0xFFFFB4A9) else SpotlightTheme.color(0xFF9DADC3))
 
         if (catalogCustomFrame()) catalogFrame(graphics, editor)
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         super.render(graphics, mouseX, mouseY, delta)
         refreshCompletion()
         if (!listOpen) {
