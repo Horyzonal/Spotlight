@@ -42,5 +42,15 @@ internal fun paletteShortcut(key: Int, control: Boolean, shift: Boolean, alt: Bo
 
 internal fun cyclePaletteTab(current: Int, reverse: Boolean): Int = Math.floorMod(current + if (reverse) -1 else 1, 3)
 
+internal fun displayChord(chord: String): String = chord.split('+').joinToString("+") { part ->
+    when (part) {
+        "CTRL" -> primaryModifierLabel
+        "SUPER" -> if (macShortcuts) "Cmd" else "Super"
+        "ALT" -> if (macShortcuts) "Option" else "Alt"
+        "SHIFT" -> "Shift"
+        else -> part.lowercase().split('_').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+    }
+}
+
 internal fun slashCommandName(text: String): String? =
     text.takeIf { it.startsWith('/') }?.drop(1)?.takeWhile { !it.isWhitespace() }?.takeIf { it.isNotEmpty() }
