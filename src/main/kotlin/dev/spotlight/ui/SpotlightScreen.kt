@@ -190,7 +190,7 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
     private fun commandEntry(command: SpotlightCommand): Entry {
         val settings = Spotlight.settings()
         val alias = Spotlight.commandAliases(command.id).takeIf { it.isNotEmpty() }?.joinToString(" / ")
-        val hotkey = settings.hotkeys[command.id]
+        val hotkey = settings.hotkeys[command.id]?.let(::displayChord)
         return Entry(command.id, if (alias == null || command.id.startsWith("macro:")) command.title else "$alias · ${command.title}",
             listOfNotNull(alias?.takeIf { command.id.startsWith("macro:") }?.let { "Command: $it" }, command.description, hotkey).joinToString(" · "))
     }
@@ -558,9 +558,15 @@ class SpotlightScreen(private val parent: Screen?) : Screen(Component.literal("S
         val cmd = selectedCommand ?: return@attempt
         val settings = Spotlight.settings()
         val current = (if (hotkey) settings.hotkeys else settings.aliases)[cmd.id].orEmpty()
-        minecraft.setScreen(PromptScreen(this, "${if (hotkey) "Hotkey" else "Alias"}: ${cmd.title}", current,
-            if (hotkey) "Type ${primaryModifierLabel}+G, ${primaryModifierLabel}+SHIFT+G, etc. Empty clears binding. CTRL stays Control; SUPER is Command." else "One command token; empty clears alias.") { value ->
-            if (hotkey) settings.setHotkey(cmd.id, value) else settings.setAlias(cmd.id, value)
+        if (hotkey) {
+            minecraft.setScreen(HotkeyCaptureScreen(this, "Hotkey: ${cmd.title}", current) { value ->
+                settings.setHotkey(cmd.id, value)
+            })
+            return@attempt
+        }
+        minecraft.setScreen(PromptScreen(this, "Alias: ${cmd.title}", current,
+            "One command token; empty clears alias.") { value ->
+            settings.setAlias(cmd.id, value)
         })
     }
 

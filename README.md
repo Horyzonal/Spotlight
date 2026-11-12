@@ -39,7 +39,7 @@ Requires Minecraft Java **26.1**, **Java 25**, Fabric Loader, Fabric API and Fab
 scripts/dev build
 ```
 
-Production artifact: `build/libs/spotlight-mc26.1-1.0.3.jar`.
+Production artifact: `build/libs/spotlight-mc26.1-1.0.5.jar`.
 
 
 ```sh
