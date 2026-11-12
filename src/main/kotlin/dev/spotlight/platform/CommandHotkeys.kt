@@ -2,6 +2,7 @@ package dev.spotlight.platform
 
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.Minecraft
+import net.minecraft.client.input.InputQuirks
 
 internal fun hotkeyCode(name: String): Int? {
     val key = when (name) {
@@ -28,7 +29,10 @@ internal object CommandHotkeys {
     fun tick() {
         val client = Minecraft.getInstance()
         fun down(code: Int) = InputConstants.isKeyDown(client.window, code)
-        val activeModifiers = modifiers.filterValues { keys -> keys.any(::down) }.keys
+        val rawModifiers = modifiers.filterValues { keys -> keys.any(::down) }.keys
+        // On macOS Cmd is the primary modifier: treat it as CTRL so one binding works with Cmd or Ctrl.
+        val activeModifiers = if (InputQuirks.REPLACE_CTRL_KEY_WITH_CMD_KEY && "SUPER" in rawModifiers)
+            rawModifiers - "SUPER" + "CTRL" else rawModifiers
         val pressed = Spotlight.settings().hotkeys.filterValues { chord ->
             val parts = chord.split('+')
             val code = hotkeyCode(parts.last())
