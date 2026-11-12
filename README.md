@@ -8,13 +8,11 @@ The default hotkey is `` ` ``. Type in your command to use.
 Though most features can be used by the keyboard, there are a few commands for the mouse.
 
 ## Features
-- **About Spotlight:** made by Horyzon, profile image, personal website, repository, and mod homepage from installed metadata.
 - Replaces chat for minecraft /commands (Improvements to the original)
 - Text editor (With gradients)
 - Banner editor (GUI)
 - Crafting recipes (kinda pointless)
 - Alternative method of /fill and /clone
-- Finding things (blocks, entities, items)
 - Locations, like waypoints (syncs with map mods)
 - UUID grabber
 - Alias commands like gmc, gms
