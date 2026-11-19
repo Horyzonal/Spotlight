@@ -7,6 +7,7 @@ import dev.spotlight.commands.registerClientChest
 import dev.spotlight.commands.registerItemArchive
 import dev.spotlight.commands.registerMods
 import dev.spotlight.commands.registerWiki
+import dev.spotlight.commands.registerChat
 
 
 import dev.spotlight.commands.registerUnbreakable
@@ -117,6 +118,7 @@ internal fun registerBuiltIns() {
     registerItemArchive()
     registerMods()
     registerWiki()
+    registerChat()
 
     registerHeads()
     registerCustomEnchantments()

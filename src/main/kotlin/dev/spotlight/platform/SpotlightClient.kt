@@ -34,6 +34,7 @@ class SpotlightClient {
             MOD_BUS.addListener<FMLClientSetupEvent> { event ->
                 event.enqueueWork {
                     ExtendedOptions.initialize()
+                    ChatHistory.initialize()
                     registerBuiltIns()
                     Spotlight.initializeSpotlightSettings()
                     Spotlight.settings()
