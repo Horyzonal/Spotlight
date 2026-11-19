@@ -22,7 +22,7 @@ object MacroTemplates {
 
     fun arguments(template: String): List<MacroArgument> = parse(template).mapNotNull { it.argument }.distinct()
 
-    
+
     fun preview(template: String, arguments: Map<String, String>, variables: Map<String, String> = emptyMap()): String {
         val placeholders = parse(template)
         return buildString {
@@ -75,8 +75,9 @@ object MacroTemplates {
 
     private fun validateCommand(template: String) {
         CoreStorage.text(template, "Macro command", MAX_LENGTH)
-        require(template.startsWith('/') && template.length > 1 && !template[1].isWhitespace() && template[1] != '/') {
-            "Macro must start with one slash followed by a command"
+        require(template.isNotBlank() && template != "/" &&
+            (!template.startsWith('/') || template.length > 1 && !template[1].isWhitespace())) {
+            "Macro must be a chat message or slash command"
         }
     }
 
@@ -122,7 +123,7 @@ object MacroTemplates {
                 result += Placeholder(index, end + 1, argument, variable)
                 index = end + 1
             } else {
-                
+
                 require(quote != null || (!identifier.matches(token) &&
                     !identifier.matches(token.substringBefore('=')))) { "Unknown macro placeholder: {$token}" }
                 index++
