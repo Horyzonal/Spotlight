@@ -2,6 +2,8 @@
 
 The minecraft equivilant of MacOS' spotlight, Windows' Powertools, Raycast, Alfred and Vicinae.
 
+With a shit ton of unrelated things.
+
 ## How use
 The default hotkey is `` ` ``. Type in your command to use.
 
