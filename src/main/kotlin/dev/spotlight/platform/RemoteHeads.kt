@@ -37,15 +37,11 @@ internal class RemoteHeads(private val directory: Path, private val fetch: (Stri
             require(category in CATEGORIES)
             val request = HttpRequest.newBuilder(URI.create("$ENDPOINT?cat=$category&tags=true"))
                 .timeout(Duration.ofSeconds(60)).header("Accept", "application/json")
-                .header("User-Agent", "Spotlight/1.0.5 (Minecraft head browser)").GET().build()
-            return http.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+                .header("User-Agent", "Spotlight/1.0.6 (Minecraft head browser)").GET().build()
+            return http.sendAsync(request, HttpResponse.BodyHandlers.limiting(HttpResponse.BodyHandlers.ofString(Charsets.UTF_8), MAX_BYTES.toLong()))
                 .thenApply { response ->
                     check(response.statusCode() == 200) { "Minecraft Heads HTTP ${response.statusCode()}" }
-                    response.body().use { input ->
-                        val bytes = input.readNBytes(MAX_BYTES + 1)
-                        require(bytes.size <= MAX_BYTES) { "Category exceeds 16 MiB" }
-                        bytes.toString(Charsets.UTF_8)
-                    }
+                    response.body()
                 }
         }
         fun parse(json: String): List<RemoteHead> {
