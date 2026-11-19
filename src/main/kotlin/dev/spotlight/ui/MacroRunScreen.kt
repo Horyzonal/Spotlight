@@ -292,7 +292,8 @@ class MacroRunScreen(private val parent: Screen?, private val macro: Macro) : Sc
             checkDimensions()
             val expanded = MacroTemplates.expand(macro.template, drafts, variables)
             command = expanded
-            Spotlight.executeSlash(expanded)
+            val connection = requireNotNull(minecraft!!.connection) { "Join a world first" }
+            if (expanded.startsWith('/')) connection.sendCommand(expanded.substring(1)) else connection.sendChat(expanded)
             sent = true
         } catch (failure: Exception) { fail(failure) }
         finally { execution.finish(sent) }

@@ -74,7 +74,9 @@ object MacroCheck {
         for (value in listOf("NaN", "Infinity", "1e999", "0x1p2", "1f", "1 2")) {
             rejects { MacroTemplates.expand("/say {Argument=number}", mapOf("number" to value), emptyMap()) }
         }
-        for (invalid in listOf("", "say hi", "/", "//say hi", "/ say hi", "/say\nhi", "/say\rhi", "/say\u0000hi",
+        check(MacroTemplates.expand("say hi", emptyMap(), emptyMap()) == "say hi")
+        check(MacroTemplates.expand("//set stone", emptyMap(), emptyMap()) == "//set stone")
+        for (invalid in listOf("", "/", "/ say hi", "/say\nhi", "/say\rhi", "/say\u0000hi",
             "/say {Foo}", "/say {Unknown=x}", "/say {Argument=}", "/say {Argument=x:unknown}",
             "/say {Argument=x:TEXT:NUMBER}", "/say {Argument=x", "/say {Argument=x} {Argument=x:NUMBER}",
             "/say " + "x".repeat(32768))) {
