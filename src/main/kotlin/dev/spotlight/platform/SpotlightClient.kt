@@ -35,6 +35,7 @@ class SpotlightClient(modEventBus: IEventBus) {
     private fun initialize() {
         ExtendedOptions.initialize()
         BlockHitActions.initialize()
+        ChatHistory.initialize()
         registerBuiltIns()
         Spotlight.initializeSpotlightSettings()
         Spotlight.settings()
