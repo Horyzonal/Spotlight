@@ -1,3 +1,10 @@
+ClientCommands C2C encrypted-chat protocol
+Source: https://github.com/Earthcomputer/clientcommands/tree/fabric/src/main/java/net/earthcomputer/clientcommands/c2c
+Copyright (c) 2021 Earthcomputer
+License: GNU Lesser General Public License v3.0 or later
+Adapted in src/main/kotlin/dev/spotlight/platform/EncryptedChat.kt; protocol format and BaseUTF8 conversion retained, Minecraft integration and bounded decoding modified for Spotlight.
+Full license: docs/licenses/clientcommands-LICENSE.txt
+
 Minecraft Heads API data and attribution banner
 Provider: Minecraft Heads
 Website: https://minecraft-heads.com/

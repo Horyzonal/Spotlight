@@ -319,7 +319,7 @@ tasks.withType(Jar).configureEach {
 }
 
 tasks.named('jar') {
-    from('LICENSE', 'THIRD_PARTY_NOTICES')
+    from('LICENSE', 'THIRD_PARTY_NOTICES', 'docs/licenses/clientcommands-LICENSE.txt')
 }
 
 tasks.register('releaseCheck') {
@@ -406,6 +406,7 @@ tasks.named('check') {
     musicNavigationCheck: 'dev.spotlight.ui.MusicNavigationCheck',
     nbtCompletionCheck: 'dev.spotlight.core.NbtCompletionCheck',
     clientItemStorageCheck: 'dev.spotlight.platform.ClientItemStorageCheck',
+    encryptedChatCheck: 'dev.spotlight.platform.EncryptedChatCheck',
     itemFactsCheck: 'dev.spotlight.platform.ItemFactsCheck',
 
     headDatabaseCheck: 'dev.spotlight.platform.HeadDatabaseCheck',

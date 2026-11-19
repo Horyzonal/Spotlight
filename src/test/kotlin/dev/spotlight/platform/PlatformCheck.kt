@@ -36,10 +36,9 @@ internal object PlatformCheck {
         LookActionsCheck.main(emptyArray())
         SharedConstants.tryDetectVersion()
         Bootstrap.bootStrap()
-        val chatLog = ChatLog()
-        repeat(205) { chatLog.add(ChatMessage(null, null, net.minecraft.network.chat.Component.literal("message $it"))) }
-        check(chatLog.messages().size == 200 && chatLog.messages().first().text.string == "message 5")
-        check(chatPlayerKey(" Player_Name ") == "player_name")
+        check(chatTimestampNeeded(null, 0))
+        check(!chatTimestampNeeded(1_000, 2_000))
+        check(chatTimestampNeeded(1_000, 301_000))
         dev.spotlight.ui.SoundMenuCheck.main(emptyArray())
         dev.spotlight.ui.CurrentSongCheck.run()
         BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(VanillaRegistries.createWorldLookup()).forEach { it.apply() }
