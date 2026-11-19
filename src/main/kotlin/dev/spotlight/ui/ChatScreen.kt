@@ -6,16 +6,17 @@ import dev.spotlight.platform.ChatMessage
 import dev.spotlight.platform.EncryptedChat
 import dev.spotlight.platform.chatTimestampNeeded
 import dev.spotlight.platform.formatChatTime
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.gui.components.PlayerFaceExtractor
+import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.KeyEvent
+import net.minecraft.client.resources.PlayerSkin
 import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
-import net.minecraft.world.item.component.ResolvableProfile
+
 import java.util.UUID
 
 class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
@@ -46,13 +47,14 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     private var revision = -1
     private var supportTicks = 0
     private val tabButtons = mutableListOf<Button>()
-    private val avatars = mutableMapOf<UUID, ResolvableProfile>()
+    private val avatars = mutableMapOf<UUID, java.util.function.Supplier<PlayerSkin>>()
+
 
     private lateinit var input: EditBox
     private lateinit var encryptButton: Button
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun init() {
         selected?.let { id -> ChatHistory.conversation(id)?.let { selected = ChatHistory.open(it.name) } }
@@ -100,9 +102,9 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     }
 
     private fun createChat() {
-        val players = minecraft.connection?.onlinePlayers.orEmpty().map { it.profile.name }
+        val players = minecraft!!.connection?.onlinePlayers.orEmpty().map { it.profile.name }
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
-        minecraft.gui.setScreen(CreateChatScreen(this, players) { select(ChatHistory.open(it)) })
+        minecraft!!.setScreen(CreateChatScreen(this, players) { select(ChatHistory.open(it)) })
     }
 
     private fun rebuildTabs() {
@@ -129,7 +131,7 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         val unavailable = selected?.let(EncryptedChat::unavailable)
         encryptButton.active = selected != null && unavailable == null
         encryptButton.setTooltip(Tooltip.create(catalogText(unavailable
-            ?: if (selected?.let { it == minecraft.player?.uuid } == true)
+            ?: if (selected?.let { it == minecraft!!.player?.uuid } == true)
                 "Self-chat can use a local encryption key" else "Recipient has a Minecraft chat public key")))
     }
 
@@ -143,7 +145,7 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         if (text.isEmpty()) return
         try {
             require(text.length <= 256 && text.none { it < ' ' }) { "Message must be 1..256 characters without control characters" }
-            val connection = requireNotNull(minecraft.connection) { "Join a world first" }
+            val connection = requireNotNull(minecraft!!.connection) { "Join a world first" }
             val player = selected?.let { ChatHistory.conversation(it) }
             when {
                 selected == null -> connection.sendChat(text)
@@ -182,13 +184,13 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         layoutWidth = contentWidth
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xC0101722))
         graphics.fill(left, top, left + panelWidth, top + panelHeight, SpotlightTheme.color(0xFF202630))
         graphics.fill(left, top, contentLeft, top + panelHeight, SpotlightTheme.color(0xFF161D29))
-        graphics.verticalLine(contentLeft, top, top + panelHeight, SpotlightTheme.color(0xFF415877))
-        graphics.horizontalLine(contentLeft, top + 42, left + panelWidth, SpotlightTheme.color(0xFF415877))
-        graphics.horizontalLine(contentLeft, top + panelHeight - 42, left + panelWidth, SpotlightTheme.color(0xFF415877))
+        graphics.vLine(contentLeft, top, top + panelHeight, SpotlightTheme.color(0xFF415877))
+        graphics.hLine(contentLeft, top + 42, left + panelWidth, SpotlightTheme.color(0xFF415877))
+        graphics.hLine(contentLeft, top + panelHeight - 42, left + panelWidth, SpotlightTheme.color(0xFF415877))
         graphics.themeText(font, selected?.let { ChatHistory.conversation(it)?.name } ?: "Public",
             contentLeft + 12, top + 20, SpotlightTheme.color(0xFFF2F5FC))
         if (layoutWidth != contentWidth) rebuildRows()
@@ -211,10 +213,10 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         }
         if (status.isNotEmpty()) graphics.themeText(font, catalogClip(font, status, contentWidth - 24),
             contentLeft + 12, top + panelHeight - 58, SpotlightTheme.color(0xFFFFB4A9))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
     }
 
-    private fun drawMessage(graphics: GuiGraphicsExtractor, row: Row, y: Int) {
+    private fun drawMessage(graphics: GuiGraphics, row: Row, y: Int) {
         row.timestamp?.let {
             graphics.themeCenteredText(font, Component.literal(it), contentLeft + contentWidth / 2, y,
                 SpotlightTheme.color(0xFF9DADC3))
@@ -229,16 +231,18 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
             }
             return
         }
-        val own = profile.id() == minecraft.player?.uuid
+        val own = profile.id == minecraft!!.player?.uuid
         val textWidth = row.lines.maxOfOrNull(font::width) ?: 0
         val bubbleWidth = (textWidth + 16).coerceIn(24, (contentWidth - 64).coerceAtLeast(24))
         val bubbleX = if (own) left + panelWidth - 46 - bubbleWidth else contentLeft + 46
         val headX = if (own) left + panelWidth - 40 else contentLeft + 12
-        val online = minecraft.connection?.getPlayerInfo(profile.id())
-        if (online != null) PlayerFaceExtractor.extractRenderState(graphics, online.skin, headX, messageY, 28)
-        else PlayerFaceExtractor.extractRenderState(graphics,
-            avatars.getOrPut(profile.id()) { ResolvableProfile.createResolved(profile) }, headX, messageY, 28)
-        val sender = message.sender?.string ?: profile.name()
+        val online = minecraft!!.connection?.getPlayerInfo(profile.id)
+        if (online != null) PlayerFaceRenderer.draw(graphics, online.skin, headX, messageY, 28)
+        else PlayerFaceRenderer.draw(graphics,
+            avatars.getOrPut(profile.id) {
+                minecraft!!.skinManager.lookupInsecure(profile)
+            }.get(), headX, messageY, 28)
+        val sender = message.sender?.string ?: profile.name
         graphics.themeText(font, catalogClip(font, sender, contentWidth - 64), bubbleX + 2, messageY,
             SpotlightTheme.color(if (own) 0xFF9DCCFF else 0xFF9DADC3))
         val bubbleY = messageY + 13
@@ -247,7 +251,7 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
             SpotlightTheme.color(0xFF81B8FF))
         graphics.fill(bubbleX, bubbleY, bubbleX + bubbleWidth, bubbleBottom,
             SpotlightTheme.color(if (own) 0xFF28588C else 0xFF29333F))
-        graphics.outline(bubbleX, bubbleY, bubbleWidth, bubbleBottom - bubbleY,
+        graphics.renderOutline(bubbleX, bubbleY, bubbleWidth, bubbleBottom - bubbleY,
             SpotlightTheme.color(if (own) 0xFF4C83BD else 0xFF41505F))
         row.lines.forEachIndexed { index, line ->
             graphics.themeText(font, line, bubbleX + 8, bubbleY + 6 + index * font.lineHeight, SpotlightTheme.color(0xFFF2F5FC))
@@ -270,10 +274,10 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical)
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
-        if (event.isConfirmation && input.isFocused) { send(); return true }
-        if (event.isEscape) { onClose(); return true }
-        return super.keyPressed(event)
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if ((keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) && input.isFocused) { send(); return true }
+        if (keyCode == InputConstants.KEY_ESCAPE) { onClose(); return true }
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 }
 
@@ -291,7 +295,7 @@ private class CreateChatScreen(
     private lateinit var search: EditBox
 
     override fun isPauseScreen() = false
-    override fun onClose() { minecraft.gui.setScreen(parent) }
+    override fun onClose() { minecraft!!.setScreen(parent) }
 
     override fun init() {
         rows.clear()
@@ -327,26 +331,26 @@ private class CreateChatScreen(
     }
 
     private fun choose(player: String) {
-        minecraft.gui.setScreen(parent)
+        minecraft!!.setScreen(parent)
         select(player)
     }
 
-    override fun keyPressed(event: KeyEvent): Boolean {
-        if (event.isEscape) { onClose(); return true }
-        if (event.isConfirmation && search.isFocused) {
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (keyCode == InputConstants.KEY_ESCAPE) { onClose(); return true }
+        if ((keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) && search.isFocused) {
             matches().firstOrNull()?.let { choose(it); return true }
         }
-        return super.keyPressed(event)
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         graphics.fill(0, 0, width, height, SpotlightTheme.color(0xF0101722))
         graphics.themeText(font, catalogText("Create chat · choose an online player"), left, 20, SpotlightTheme.color(0xFFF2F5FC))
         if (matches().isEmpty()) graphics.themeCenteredText(font, catalogText("No matching online players"),
             left + panelWidth / 2, 86, SpotlightTheme.color(0xFF9DADC3))
         graphics.themeText(font, catalogText("${matches().size} players · page ${page + 1}"), left, height - 94,
             SpotlightTheme.color(0xFF9DADC3))
-        super.extractRenderState(graphics, mouseX, mouseY, delta)
+        super.render(graphics, mouseX, mouseY, delta)
         catalogHints(graphics, font, width, height, "Enter First match · Tab Next · Esc Back")
     }
 }

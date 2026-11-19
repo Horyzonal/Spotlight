@@ -52,23 +52,23 @@ internal object ChatHistory {
 
     fun initialize() {
         ClientReceiveMessageEvents.CHAT.register { message, _, profile, type, _ ->
-            val entry = ChatMessage(profile, type.name(), message)
+            val entry = ChatMessage(profile, type.name, message)
             when {
                 type.chatType().`is`(ChatType.MSG_COMMAND_INCOMING) -> {
                     val sender = profile ?: return@register
                     if (EncryptedChat.isPacket(message.string)) {
                         val decrypted = EncryptedChat.receive(message.string)
-                        addDirect(sender.id(), sender.name(), if (decrypted == null) ChatMessage(null, null,
+                        addDirect(sender.id, sender.name, if (decrypted == null) ChatMessage(null, null,
                             Component.literal("Unable to decrypt or unsupported C2C packet"))
-                        else ChatMessage(sender, type.name(), Component.literal(decrypted), encrypted = true))
-                    } else addDirect(sender.id(), sender.name(), entry)
+                        else ChatMessage(sender, type.name, Component.literal(decrypted), encrypted = true))
+                    } else addDirect(sender.id, sender.name, entry)
                 }
                 type.chatType().`is`(ChatType.MSG_COMMAND_OUTGOING) -> {
                     if (EncryptedChat.isPacket(message.string)) return@register
                     val target = type.targetName().map(Component::getString).orElse(null) ?: return@register
                     val info = Minecraft.getInstance().connection?.onlinePlayers
                         ?.firstOrNull { it.profile.name.equals(target, ignoreCase = true) } ?: return@register
-                    addDirect(info.profile.id(), info.profile.name, entry)
+                    addDirect(info.profile.id, info.profile.name, entry)
                 }
                 else -> add(public, entry)
             }

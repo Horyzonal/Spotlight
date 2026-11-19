@@ -39,7 +39,7 @@ internal object EncryptedChat {
         val connection = requireNotNull(client.connection) { "Join a world first" }
         val recipient = connection.onlinePlayers.firstOrNull { it.profile.name.equals(player, ignoreCase = true) }
             ?: error("Player is no longer online")
-        val self = recipient.profile.id() == client.player?.uuid
+        val self = recipient.profile.id == client.player?.uuid
         val publicKey = recipient.chatSession?.profilePublicKey()?.data()?.key()
             ?: (if (self) ownKeys()?.publicKey()?.data()?.key() ?: selfKeys.public else null)
             ?: error("Recipient has no Minecraft chat public key")
@@ -49,7 +49,7 @@ internal object EncryptedChat {
             "Encrypted message is too long for Minecraft chat (${command.length}/${SharedConstants.MAX_CHAT_LENGTH - 1} characters)"
         }
         connection.sendCommand(command)
-        ChatHistory.addOutgoing(recipient.profile.id(), text, encrypted = true)
+        ChatHistory.addOutgoing(recipient.profile.id, text, encrypted = true)
     }
 
     fun receive(text: String): String? {
