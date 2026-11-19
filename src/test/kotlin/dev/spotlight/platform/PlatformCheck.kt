@@ -36,6 +36,10 @@ internal object PlatformCheck {
         LookActionsCheck.main(emptyArray())
         SharedConstants.tryDetectVersion()
         Bootstrap.bootStrap()
+        val chatLog = ChatLog()
+        repeat(205) { chatLog.add(ChatMessage(null, null, net.minecraft.network.chat.Component.literal("message $it"))) }
+        check(chatLog.messages().size == 200 && chatLog.messages().first().text.string == "message 5")
+        check(chatPlayerKey(" Player_Name ") == "player_name")
         dev.spotlight.ui.SoundMenuCheck.main(emptyArray())
         dev.spotlight.ui.CurrentSongCheck.run()
         val registries = VanillaRegistries.createLookup()
@@ -121,7 +125,7 @@ internal object PlatformCheck {
             "light_level", "biome", "chunk_info", "dimension_info", "world_time", "heightmap",
             "facing", "position", "fps", "memory", "player_info", "targeted_block", "targeted_entity", "effects", "connection", "server_plugins",
             "text_editor", "copy_item_data", "clear_item_name", "clear_item_lore", "fill", "clone",
-                        "snake", "dino", "2048", "tetris", "banner_editor", "recipes", "sound_manager", "music_player", "current_song", "themes", "unbreakable", "kits", "client_chest", "item_archive", "mods", "wiki", "head_database", "server_heads", "player_skull", "custom_enchant",
+                        "snake", "dino", "2048", "tetris", "banner_editor", "recipes", "sound_manager", "music_player", "current_song", "themes", "unbreakable", "kits", "client_chest", "item_archive", "mods", "wiki", "chat", "head_database", "server_heads", "player_skull", "custom_enchant",
         ))
         check(Spotlight.commands.single { it.id == "spotlight:settings" }.title == "Spotlight settings")
         check(Spotlight.commands.single { it.id == "spotlight:minecraft_settings" }.title == "Minecraft settings")

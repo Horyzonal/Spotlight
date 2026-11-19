@@ -18,6 +18,7 @@ class SpotlightClient : ClientModInitializer {
     override fun onInitializeClient() {
         ExtendedOptions.initialize()
         BlockHitActions.initialize()
+        ChatHistory.initialize()
         registerBuiltIns()
         Spotlight.initializeSpotlightSettings()
         Spotlight.settings()
