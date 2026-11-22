@@ -35,6 +35,23 @@ loom {
             if (project.hasProperty('clientDebug')) {
                 vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
             }
+            if (project.hasProperty('visualPing')) {
+                def ping = project.property('visualPing').toString().toInteger()
+                if (ping < 0) throw new GradleException('visualPing must be non-negative')
+                vmArg "-Dspotlight.visualPing=${ping}"
+            }
+        }
+        client2 {
+            client()
+            runDir = 'run/client2'
+            if (project.hasProperty('clientDebug')) {
+                vmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5006'
+            }
+            if (project.hasProperty('visualPing')) {
+                def ping = project.property('visualPing').toString().toInteger()
+                if (ping < 0) throw new GradleException('visualPing must be non-negative')
+                vmArg "-Dspotlight.visualPing=${ping}"
+            }
         }
     }
 }

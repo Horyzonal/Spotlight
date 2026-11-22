@@ -21,6 +21,10 @@ import dev.spotlight.ui.cloneMasks
 import dev.spotlight.ui.cloneModes
 import dev.spotlight.ui.uuidEntries
 import dev.spotlight.ui.pingEntries
+import dev.spotlight.ui.fluctuatingVisualPing
+import dev.spotlight.ui.visualPacketCycle
+import dev.spotlight.ui.visualPacketProgress
+import dev.spotlight.ui.emojiEntries
 import java.util.UUID
 import net.minecraft.SharedConstants
 import net.minecraft.core.registries.BuiltInRegistries
@@ -113,7 +117,7 @@ internal object PlatformCheck {
             "light_level", "biome", "chunk_info", "dimension_info", "world_time", "heightmap",
             "facing", "position", "fps", "memory", "player_info", "targeted_block", "targeted_entity", "effects", "connection", "server_plugins",
             "text_editor", "copy_item_data", "clear_item_name", "clear_item_lore", "fill", "clone",
-                        "snake", "dino", "2048", "tetris", "banner_editor", "recipes", "sound_manager", "music_player", "current_song", "themes", "unbreakable", "kits", "client_chest", "item_archive", "mods", "wiki", "chat", "head_database", "server_heads", "player_skull", "custom_enchant",
+                        "snake", "dino", "2048", "tetris", "banner_editor", "recipes", "sound_manager", "music_player", "current_song", "themes", "unbreakable", "kits", "client_chest", "item_archive", "mods", "wiki", "chat", "emoji", "head_database", "server_heads", "player_skull", "custom_enchant",
         ))
         check(Spotlight.commands.single { it.id == "spotlight:settings" }.title == "Spotlight settings")
         check(Spotlight.commands.single { it.id == "spotlight:minecraft_settings" }.title == "Minecraft settings")
@@ -213,6 +217,7 @@ internal object PlatformCheck {
         check(uuid.title == "uuid" && uuid.input == CommandInput.NONE)
         val ping = Spotlight.commands.single { it.id == "spotlight:ping" }
         check(ping.title == "Ping" && ping.input == CommandInput.NONE)
+
         val playerId = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val entityId = UUID.fromString("00000000-0000-0000-0000-000000000002")
         val loadedPlayer = Entry(playerId.toString(), "Loaded player", "minecraft:player")
@@ -239,6 +244,24 @@ internal object PlatformCheck {
         val manyPings = pingEntries((1..100).map { Triple(UUID(0, it.toLong()), "Player$it", it) })
         check(Fuzzy.search("", manyPings, limit = manyPings.size).size == 100)
         check(pingEntries(listOf(Triple(playerId, "Self", 99))).single().detail == "99 ms")
+        check(fluctuatingVisualPing(100, 0) == 100)
+        check(fluctuatingVisualPing(100, 7) != 100)
+        check((0..60).all { fluctuatingVisualPing(100, it) in 75..125 })
+        check(fluctuatingVisualPing(0, 7) == 0)
+        check(runCatching { fluctuatingVisualPing(-1, 0) }.isFailure)
+        check(visualPacketCycle(0) == 0 && visualPacketProgress(0, 0) == null)
+        check(visualPacketCycle(50) == 2 && visualPacketCycle(100) == 2)
+        check(visualPacketCycle(1000) == 20)
+        check(visualPacketProgress(0, 1000) == 0f)
+        check(kotlin.math.abs(visualPacketProgress(5, 1000)!! - 0.5f) < 0.001f)
+        check(visualPacketProgress(19, 1000) == 0f)
+        check(visualPacketCycle(25) <= visualPacketCycle(50))
+        val emoji = emojiEntries()
+        check(emoji.size == emoji.map { it.id }.toSet().size)
+        check(emoji.size == 67)
+        check(Fuzzy.search("heart", emoji).single { it.detail == "❤" }.id == "heavy_black_heart")
+        check(emoji.single { it.id == "cloud" }.detail == "☁")
+        check(Fuzzy.search("not_an_emoji", emoji).isEmpty())
         check(Spotlight.commands.single { it.id == "spotlight:add_location" }.input == CommandInput.NONE)
         check(Spotlight.commands.single { it.id == "spotlight:spawn_location" }.title == "Spawn location")
         val spawnData = LevelData.RespawnData.of(Level.NETHER, BlockPos(0, 64, -12), 0f, 0f)

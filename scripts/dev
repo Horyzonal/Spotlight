@@ -24,4 +24,13 @@ export JAVA_TOOL_OPTIONS
 if [ "$#" -eq 0 ]; then
     set -- runClient -PclientDebug
 fi
+visual_ping=false
+for arg do
+    case "$arg" in -PvisualPing=*) visual_ping=true ;; esac
+done
+if [ "$visual_ping" = true ]; then
+    case " $* " in
+        *" runClient "*) set -- --parallel "$@" runClient2 ;;
+    esac
+fi
 exec ./gradlew "$@"

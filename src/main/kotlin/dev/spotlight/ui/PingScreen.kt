@@ -51,7 +51,11 @@ class PingScreen(private val parent: Screen?) : Screen(catalogText("Ping")) {
         search.value = query
         search.setResponder { query = it; selected = 0; offset = 0; refresh() }
         entries = currentEntries()
-        addRenderableWidget(catalogButton("Back", left, (height - 48).coerceAtLeast(34), panelWidth) { onClose() })
+        val half = (panelWidth - 4) / 2
+        addRenderableWidget(catalogButton("Back", left, (height - 48).coerceAtLeast(34), half) { onClose() })
+        addRenderableWidget(catalogButton("Visual ping", left + half + 4, (height - 48).coerceAtLeast(34), half) {
+            minecraft.gui.setScreen(VisualPingScreen(this))
+        })
         refresh()
         setInitialFocus(search)
     }

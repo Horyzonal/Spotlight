@@ -13,12 +13,14 @@ import java.security.PrivateKey
 import java.security.PublicKey
 
 import java.util.UUID
+import java.util.Base64
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import javax.crypto.Cipher
 
 internal object EncryptedChat {
     private const val PACKET_HEADER = "CCΕNC:"
+    internal const val TEST_PACKET_HEADER = PACKET_HEADER + "TEST:"
     private const val MAX_DECOMPRESSED = 65536
     // Offline/self-chat fallback; never substitutes for another player's profile key.
     private val selfKeys by lazy { KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair() }
@@ -30,6 +32,7 @@ internal object EncryptedChat {
         if (client.player?.uuid == player) return null
         val info = client.connection?.onlinePlayers?.firstOrNull { it.profile.id == player }
             ?: return "Recipient is offline"
+        if (System.getProperty("spotlight.visualPing") != null) return null
         return if (info.chatSession?.profilePublicKey()?.data()?.key() == null)
             "Recipient has no Minecraft chat public key" else null
     }
@@ -40,11 +43,14 @@ internal object EncryptedChat {
         val recipient = connection.onlinePlayers.firstOrNull { it.profile.name.equals(player, ignoreCase = true) }
             ?: error("Player is no longer online")
         val self = recipient.profile.id() == client.player?.uuid
-        val publicKey = recipient.chatSession?.profilePublicKey()?.data()?.key()
-            ?: (if (self) ownKeys()?.publicKey()?.data()?.key() ?: selfKeys.public else null)
-            ?: error("Recipient has no Minecraft chat public key")
-        val encoded = encodeBytes(encryptPayload(packMessage(text), publicKey))
-        val command = "msg $player $PACKET_HEADER$encoded"
+        val testing = System.getProperty("spotlight.visualPing") != null
+        val encoded = if (testing) Base64.getEncoder().encodeToString(text.toByteArray(Charsets.UTF_8)) else {
+            val publicKey = recipient.chatSession?.profilePublicKey()?.data()?.key()
+                ?: (if (self) ownKeys()?.publicKey()?.data()?.key() ?: selfKeys.public else null)
+                ?: error("Recipient has no Minecraft chat public key")
+            encodeBytes(encryptPayload(packMessage(text), publicKey))
+        }
+        val command = "msg $player ${if (testing) TEST_PACKET_HEADER else PACKET_HEADER}$encoded"
         require(command.length < SharedConstants.MAX_CHAT_LENGTH) {
             "Encrypted message is too long for Minecraft chat (${command.length}/${SharedConstants.MAX_CHAT_LENGTH - 1} characters)"
         }
@@ -53,8 +59,14 @@ internal object EncryptedChat {
     }
 
     fun receive(text: String): String? {
-        val privateKey = ownKeys()?.privateKey() ?: selfKeys.private
+        if (text.startsWith(TEST_PACKET_HEADER))
+            return runCatching {
+                val bytes = Base64.getDecoder().decode(text.removePrefix(TEST_PACKET_HEADER))
+                require(bytes.size <= 32767)
+                String(bytes, Charsets.UTF_8)
+            }.getOrNull()
         val packet = text.substringAfter(PACKET_HEADER)
+        val privateKey = ownKeys()?.privateKey() ?: selfKeys.private
         return runCatching { unpackMessage(decryptPayload(decodeBytes(packet), privateKey)) }.getOrNull()
     }
 

@@ -1,6 +1,10 @@
 package dev.spotlight.ui
 
+import com.mojang.blaze3d.platform.InputConstants
+
 import com.mojang.authlib.GameProfile
+import dev.spotlight.core.Entry
+import dev.spotlight.core.Fuzzy
 import dev.spotlight.platform.ChatHistory
 import dev.spotlight.platform.ChatMessage
 import dev.spotlight.platform.EncryptedChat
@@ -17,6 +21,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 import net.minecraft.world.item.component.ResolvableProfile
 import java.util.UUID
+import kotlin.math.sign
 
 class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     private data class Row(
@@ -46,7 +51,16 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     private var revision = -1
     private var supportTicks = 0
     private val tabButtons = mutableListOf<Button>()
+    private val emojiCells = mutableListOf<Button>()
     private val avatars = mutableMapOf<UUID, ResolvableProfile>()
+    private var emojiOpen = false
+    private var emojiQuery = ""
+    private var emojiSelected = 0
+    private var emojiOffset = 0
+    private var emojiColumns = 1
+    private var emojiRows = 1
+    private var emojiCellWidth = 1
+    private lateinit var emojiSearch: EditBox
 
     private lateinit var input: EditBox
     private lateinit var encryptButton: Button
@@ -55,6 +69,7 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     override fun onClose() { minecraft.gui.setScreen(parent) }
 
     override fun init() {
+        emojiOpen = false
         selected?.let { id -> ChatHistory.conversation(id)?.let { selected = ChatHistory.open(it.name) } }
         panelWidth = minOf(640, (width - 16).coerceAtLeast(1))
         panelHeight = minOf(400, (height - 16).coerceAtLeast(1))
@@ -76,10 +91,13 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         })
         updateEncryptionButton()
         input = addRenderableWidget(SpotlightEditBox(font, contentLeft + 12, top + panelHeight - 34,
-            contentWidth - 74, 22, catalogText("Message")))
+            (contentWidth - 106).coerceAtLeast(40), 22, catalogText("Message")))
         input.setMaxLength(256)
         input.value = draft
         input.setResponder { draft = it }
+        addRenderableWidget(catalogButton("☺", left + panelWidth - 98, top + panelHeight - 34, 32, 22) {
+            openEmojiPopup()
+        }).setTooltip(Tooltip.create(catalogText("Search and insert emoji")))
         addRenderableWidget(catalogButton("Send", left + panelWidth - 54, top + panelHeight - 34, 44, 22) { send() })
         updateInputHint()
         revision = ChatHistory.revision
@@ -97,11 +115,14 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         updateInputHint()
         updateEncryptionButton()
         setFocused(input)
+        input.isFocused = true
+        input.setCursorPosition(input.value.length)
     }
 
     private fun createChat() {
+        val self = minecraft.player?.name?.string
         val players = minecraft.connection?.onlinePlayers.orEmpty().map { it.profile.name }
-            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+            .sortedWith(compareByDescending<String> { it.equals(self, ignoreCase = true) }.then(String.CASE_INSENSITIVE_ORDER))
         minecraft.gui.setScreen(CreateChatScreen(this, players) { select(ChatHistory.open(it)) })
     }
 
@@ -159,6 +180,91 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         }
     }
 
+    private val emojiPopupWidth get() = minOf(360, (contentWidth - 24).coerceAtLeast(96))
+    private val emojiPopupHeight get() = minOf(244, (panelHeight - 60).coerceAtLeast(120))
+    private val emojiPopupLeft get() = left + panelWidth - emojiPopupWidth - 12
+    private val emojiPopupTop get() = top + panelHeight - emojiPopupHeight - 42
+
+    private fun openEmojiPopup() {
+        closeEmojiPopup()
+        emojiColumns = ((emojiPopupWidth - 24) / 80).coerceAtLeast(1)
+        emojiCellWidth = (emojiPopupWidth - 24) / emojiColumns
+        emojiRows = ((emojiPopupHeight - 104) / 42).coerceAtLeast(1)
+        emojiSearch = addRenderableWidget(SpotlightEditBox(font, emojiPopupLeft + 12, emojiPopupTop + 10,
+            emojiPopupWidth - 24, 20, catalogText("Search emoji names")))
+        emojiSearch.setMaxLength(128)
+        emojiSearch.setHint(catalogText("Search emoji names"))
+        emojiSearch.value = emojiQuery
+        emojiSearch.setResponder { emojiQuery = it; emojiSelected = 0; emojiOffset = 0; refreshEmoji() }
+        emojiOpen = true
+        refreshEmoji()
+        setFocused(emojiSearch)
+        emojiSearch.isFocused = true
+    }
+
+    private fun closeEmojiPopup() {
+        if (!emojiOpen) return
+        emojiCells.forEach(::removeWidget)
+        emojiCells.clear()
+        if (::emojiSearch.isInitialized) removeWidget(emojiSearch)
+        emojiOpen = false
+        setFocused(input)
+        input.isFocused = true
+        input.setCursorPosition(input.value.length)
+    }
+
+    private fun emojiMaxOffset(results: List<Entry>): Int =
+        (((results.size + emojiColumns - 1) / emojiColumns - emojiRows).coerceAtLeast(0)) * emojiColumns
+
+    private fun refreshEmoji() {
+        emojiCells.forEach(::removeWidget)
+        emojiCells.clear()
+        if (!emojiOpen) return
+        val results = Fuzzy.search(emojiQuery, emojiEntries(), limit = Int.MAX_VALUE)
+        emojiSelected = emojiSelected.coerceIn(0, (results.size - 1).coerceAtLeast(0))
+        emojiOffset = emojiOffset.coerceIn(0, emojiMaxOffset(results))
+        results.drop(emojiOffset).take(emojiColumns * emojiRows).forEachIndexed { index, entry ->
+            val x = emojiPopupLeft + 12 + index % emojiColumns * emojiCellWidth
+            val y = emojiPopupTop + 38 + index / emojiColumns * 42
+            val name = (if (emojiOffset + index == emojiSelected) "• " else "") + entry.title
+            emojiCells += addRenderableWidget(object : Button(x, y, emojiCellWidth - 4, 36,
+                catalogText("${entry.title} ${entry.detail}"), OnPress { insertEmoji(entry.id) }, CreateNarration { it.get() }) {
+                override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+                    val pose = graphics.pose()
+                    pose.pushMatrix()
+                    pose.translate(x + this.width / 2f, y + 3f)
+                    pose.scale(1.5f, 1.5f)
+                    graphics.themeCenteredText(font, Component.literal(entry.detail), 0, 0, SpotlightTheme.color(0xFFF2F5FC))
+                    pose.popMatrix()
+                    graphics.themeCenteredText(font, catalogClip(font, name, this.width - 6), x + this.width / 2, y + 24,
+                        SpotlightTheme.color(if (isHovered || isFocused) 0xFF81B8FF else 0xFF9DADC3))
+                }
+            })
+        }
+        emojiSearch.message = catalogText("${results.size} emoji · ${results.getOrNull(emojiSelected)?.title ?: "No matches"}")
+    }
+
+    private fun moveEmoji(step: Int, cycle: Boolean = false) {
+        val results = Fuzzy.search(emojiQuery, emojiEntries(), limit = Int.MAX_VALUE)
+        if (results.isEmpty()) return
+        emojiSelected = if (cycle) Math.floorMod(emojiSelected + step, results.size)
+            else (emojiSelected + step).coerceIn(0, results.lastIndex)
+        if (emojiSelected < emojiOffset) emojiOffset = emojiSelected / emojiColumns * emojiColumns
+        if (emojiSelected >= emojiOffset + emojiColumns * emojiRows)
+            emojiOffset = (emojiSelected / emojiColumns - emojiRows + 1) * emojiColumns
+        refreshEmoji()
+    }
+
+    private fun insertEmoji(id: String?) {
+        val emoji = emojiEntries().find { it.id == id }?.detail ?: return
+        draft += emoji
+        input.value = draft
+        setFocused(input)
+        input.isFocused = true
+        input.setCursorPosition(input.value.length)
+        closeEmojiPopup()
+    }
+
     override fun tick() {
         super.tick()
         if (revision != ChatHistory.revision) {
@@ -211,6 +317,13 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
         }
         if (status.isNotEmpty()) graphics.themeText(font, catalogClip(font, status, contentWidth - 24),
             contentLeft + 12, top + panelHeight - 58, SpotlightTheme.color(0xFFFFB4A9))
+        if (emojiOpen) {
+            graphics.fill(emojiPopupLeft, emojiPopupTop, emojiPopupLeft + emojiPopupWidth, emojiPopupTop + emojiPopupHeight,
+                SpotlightTheme.color(0xFF161D29))
+            graphics.outline(emojiPopupLeft, emojiPopupTop, emojiPopupWidth, emojiPopupHeight, SpotlightTheme.color(0xFF415877))
+            graphics.themeText(font, catalogText("Emoji catalog · Enter Insert · Esc Close"), emojiPopupLeft + 12, emojiPopupTop + emojiPopupHeight - 28,
+                SpotlightTheme.color(0xFF9DADC3))
+        }
         super.extractRenderState(graphics, mouseX, mouseY, delta)
     }
 
@@ -255,6 +368,13 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+        if (emojiOpen && mouseX >= emojiPopupLeft && mouseX < emojiPopupLeft + emojiPopupWidth &&
+            mouseY >= emojiPopupTop + 38 && mouseY < emojiPopupTop + emojiPopupHeight - 38) {
+            val results = Fuzzy.search(emojiQuery, emojiEntries(), limit = Int.MAX_VALUE)
+            emojiOffset = (emojiOffset - sign(vertical).toInt() * emojiColumns).coerceIn(0, emojiMaxOffset(results))
+            refreshEmoji()
+            return true
+        }
         if (mouseX < contentLeft && mouseY >= top + 88) {
             tabOffset = (tabOffset - vertical.toInt()).coerceIn(0,
                 (ChatHistory.conversations().size - (panelHeight - 100) / 32).coerceAtLeast(0))
@@ -271,6 +391,20 @@ class ChatScreen(private val parent: Screen?) : Screen(catalogText("Chat")) {
     }
 
     override fun keyPressed(event: KeyEvent): Boolean {
+        if (emojiOpen) {
+            if (event.isEscape) { closeEmojiPopup(); return true }
+            if (event.isConfirmation && !event.hasAltDown()) {
+                val results = Fuzzy.search(emojiQuery, emojiEntries(), limit = Int.MAX_VALUE)
+                insertEmoji(results.getOrNull(emojiSelected)?.id)
+                return true
+            }
+            if (!primaryModifier(event) && !event.hasAltDown()) {
+                if (event.isDown || event.isUp) { moveEmoji(if (event.isDown) emojiColumns else -emojiColumns); return true }
+                if (event.isLeft || event.isRight) { moveEmoji(if (event.isRight) 1 else -1); return true }
+                if (event.key() == InputConstants.KEY_TAB) { moveEmoji(if (event.hasShiftDown()) -1 else 1, cycle = true); return true }
+            }
+            return super.keyPressed(event)
+        }
         if (event.isConfirmation && input.isFocused) { send(); return true }
         if (event.isEscape) { onClose(); return true }
         return super.keyPressed(event)
@@ -322,7 +456,9 @@ private class CreateChatScreen(
         val matches = matches()
         page = page.coerceIn(0, ((matches.size - 1) / count).coerceAtLeast(0))
         matches.drop(page * count).take(count).forEachIndexed { index, player ->
-            rows += addRenderableWidget(catalogButton(player, left, 76 + index * 24, panelWidth) { choose(player) })
+            val self = player.equals(minecraft.player?.name?.string, ignoreCase = true)
+            rows += addRenderableWidget(catalogButton(if (self) "• $player · YOU" else player,
+                left, 76 + index * 24, panelWidth) { choose(player) })
         }
     }
 
